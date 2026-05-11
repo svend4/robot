@@ -1,0 +1,8 @@
+{
+  "events": [
+    "skill.started",
+    "primitive.entered",
+    "primitive.exited",
+    "skill.completed"
+  ]
+}

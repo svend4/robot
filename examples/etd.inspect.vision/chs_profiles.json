@@ -1,0 +1,26 @@
+{
+  "profiles": [
+    {
+      "name": "barcode_qa",
+      "taskType": "INSPECTION",
+      "payloadKg": 0.2,
+      "precisionMm": 1.0,
+      "fragility": "low",
+      "speedProfile": "normal",
+      "bodyMode": "stable_scan",
+      "armMode": "scan_arc",
+      "wristMode": "camera_align"
+    },
+    {
+      "name": "defect_scan",
+      "taskType": "INSPECTION",
+      "payloadKg": 0.2,
+      "precisionMm": 0.5,
+      "fragility": "variable",
+      "speedProfile": "slow_scan",
+      "bodyMode": "micro_stable",
+      "armMode": "vision_sweep",
+      "wristMode": "camera_align"
+    }
+  ]
+}

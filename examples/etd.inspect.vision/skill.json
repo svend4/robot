@@ -1,0 +1,31 @@
+{
+  "skillId": "etd.inspect.vision",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "inspect",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "barcode_qa",
+  "chsProfiles": [
+    "barcode_qa",
+    "defect_scan"
+  ],
+  "primitiveOrder": [
+    "approach_viewpoint",
+    "scan_target",
+    "capture_evidence",
+    "classify_result",
+    "report_quality"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 20,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "payload_out_of_range",
+    "station_incompatible",
+    "missing_service"
+  ]
+}

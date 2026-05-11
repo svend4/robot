@@ -1,0 +1,18 @@
+{
+  "body_mode": "stable_reach",
+  "arm_mode": "guarded_arc",
+  "wrist_mode": "adaptive_contact",
+  "primitive": "approach_viewpoint",
+  "target_pose": {
+    "x": 0.62,
+    "y": -0.14,
+    "z": 1.08,
+    "qx": 0,
+    "qy": 0,
+    "qz": 0,
+    "qw": 1
+  },
+  "speed_profile": "industrial_safe",
+  "force_profile": "adaptive",
+  "timeout_sec": 20
+}

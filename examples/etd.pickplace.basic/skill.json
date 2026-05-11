@@ -1,0 +1,31 @@
+{
+  "skillId": "etd.pickplace.basic",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "pickplace",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "small_box",
+  "chsProfiles": [
+    "small_box",
+    "fragile_item"
+  ],
+  "primitiveOrder": [
+    "approach_arc",
+    "guarded_grasp",
+    "lift_stabilize",
+    "transport_safe",
+    "place_release"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 18,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "payload_out_of_range",
+    "station_incompatible",
+    "missing_service"
+  ]
+}

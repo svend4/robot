@@ -1,0 +1,9 @@
+{
+  "station_id": "cobot_zone_a",
+  "allowed_skill_families": [
+    "cobot",
+    "pickplace"
+  ],
+  "max_payload_kg": 3,
+  "requires_human_aware": true
+}

@@ -1,0 +1,28 @@
+{
+  "policyVersion": "0.1.0",
+  "supportedLicenseClasses": [
+    "open_source",
+    "free_proprietary",
+    "paid_one_time",
+    "subscription",
+    "enterprise_private",
+    "oem_certified"
+  ],
+  "defaultRules": {
+    "paymentDoesNotBypassValidation": true,
+    "signatureRequiredForCommercialPackages": true,
+    "capabilityValidationRequired": true,
+    "stationCompatibilityRequiredForIndustrialPackages": true,
+    "safetyMetadataMustRemainReadable": true
+  },
+  "protectionOptions": {
+    "checksums": true,
+    "packageSigning": true,
+    "licenseActivation": true,
+    "robotBoundLicenses": true,
+    "siteBoundLicenses": true,
+    "encryptedPayloadsAllowed": true,
+    "encryptedSafetyMetadataAllowed": false,
+    "auditLoggingRequired": true
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etd-spec.local/capabilities.schema.json",
+  "title": "ETD capabilities schema",
+  "type": "object"
+}

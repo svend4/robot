@@ -1,0 +1,34 @@
+{
+  "profiles": [
+    {
+      "name": "peg_in_hole",
+      "taskType": "ASSEMBLY",
+      "payloadKg": 0.8,
+      "precisionMm": 0.5,
+      "targetDepthMm": 18,
+      "forceWindowN": [
+        5,
+        20
+      ],
+      "alignmentMode": "vision_plus_contact",
+      "bodyMode": "rigid_stable",
+      "armMode": "insertion_axis_hold",
+      "wristMode": "micro_adjust"
+    },
+    {
+      "name": "connector_insert",
+      "taskType": "ASSEMBLY",
+      "payloadKg": 0.4,
+      "precisionMm": 0.3,
+      "targetDepthMm": 12,
+      "forceWindowN": [
+        4,
+        15
+      ],
+      "alignmentMode": "fine_vision_guided",
+      "bodyMode": "micro_stable",
+      "armMode": "slow_axis_approach",
+      "wristMode": "soft_contact"
+    }
+  ]
+}

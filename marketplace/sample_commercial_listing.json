@@ -1,0 +1,32 @@
+{
+  "skillId": "etd.assembly.precision",
+  "version": "0.1.0",
+  "title": "ETD Precision Assembly",
+  "publisher": "etd-lab",
+  "licenseModel": "commercial_paid",
+  "license": "Commercial-EULA",
+  "pricingModel": "per_robot_subscription",
+  "sourceAvailable": false,
+  "requiresActivation": true,
+  "supportIncluded": true,
+  "riskLevel": "medium",
+  "certificationState": "reference_validated",
+  "allowedRobotClasses": ["humanoid", "fixed_manipulator", "dual_arm_system"],
+  "requiredRuntime": ">=0.1.0",
+  "signature": {
+    "required": true,
+    "algorithm": "ed25519",
+    "publisherKeyId": "etd-lab-prod-001"
+  },
+  "entitlement": {
+    "required": true,
+    "scope": "per_robot",
+    "offlineGracePeriodHours": 72
+  },
+  "protection": {
+    "metadataReadable": true,
+    "safetyMetadataReadable": true,
+    "payloadEncrypted": true,
+    "modelsEncrypted": true
+  }
+}

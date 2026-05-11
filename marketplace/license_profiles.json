@@ -1,0 +1,49 @@
+{
+  "profiles": [
+    {
+      "licenseType": "open_source",
+      "sourceAvailability": "public_source",
+      "commercialMode": "free",
+      "priceModel": "none",
+      "entitlementRequired": false,
+      "protectionProfile": "signed_integrity_only",
+      "typicalUse": "reference packages, research packages, SDK samples"
+    },
+    {
+      "licenseType": "community_free",
+      "sourceAvailability": "public_or_closed_source",
+      "commercialMode": "free",
+      "priceModel": "none",
+      "entitlementRequired": false,
+      "protectionProfile": "signed_integrity_only",
+      "typicalUse": "community routines and demos"
+    },
+    {
+      "licenseType": "commercial_closed_source",
+      "sourceAvailability": "closed_source",
+      "commercialMode": "paid_subscription",
+      "priceModel": "per_robot_or_per_site",
+      "entitlementRequired": true,
+      "protectionProfile": "signed_entitled_encrypted_payload",
+      "typicalUse": "industrial optimized policies and proprietary skill packages"
+    },
+    {
+      "licenseType": "commercial_source_available",
+      "sourceAvailability": "source_available_under_contract",
+      "commercialMode": "enterprise_contract",
+      "priceModel": "per_site_or_support_contract",
+      "entitlementRequired": true,
+      "protectionProfile": "signed_entitled",
+      "typicalUse": "enterprise due diligence and regulated customers"
+    },
+    {
+      "licenseType": "enterprise_private",
+      "sourceAvailability": "private_customer_source_or_closed_source",
+      "commercialMode": "enterprise_private",
+      "priceModel": "custom_contract",
+      "entitlementRequired": true,
+      "protectionProfile": "signed_entitled_encrypted_payload",
+      "typicalUse": "customer-specific plant or line skills"
+    }
+  ]
+}

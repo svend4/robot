@@ -1,0 +1,34 @@
+{
+  "profiles": [
+    {
+      "name": "safe_handover",
+      "taskType": "COBOT",
+      "payloadKg": 2.0,
+      "fragility": "medium",
+      "forceWindowN": [
+        2,
+        12
+      ],
+      "speedProfile": "human_aware",
+      "graspMode": "soft_contact",
+      "bodyMode": "social_standby",
+      "armMode": "handover_arc",
+      "wristMode": "compliant_release"
+    },
+    {
+      "name": "tool_pass",
+      "taskType": "COBOT",
+      "payloadKg": 1.0,
+      "fragility": "medium",
+      "forceWindowN": [
+        2,
+        10
+      ],
+      "speedProfile": "human_aware",
+      "graspMode": "secure_hold",
+      "bodyMode": "social_standby",
+      "armMode": "handover_arc",
+      "wristMode": "compliant_release"
+    }
+  ]
+}

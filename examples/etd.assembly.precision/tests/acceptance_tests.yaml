@@ -1,0 +1,13 @@
+scenarios:
+  - name: nominal_cycle
+    input:
+      payload_kg: 1.0
+      fragility: low
+    expected:
+      result: success
+      fallback_count_max: 0
+  - name: safety_pause
+    input:
+      human_too_close: true
+    expected:
+      result: protective_pause_or_abort

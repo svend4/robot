@@ -1,0 +1,34 @@
+{
+  "overall_pass": true,
+  "validation_summary": [
+    {
+      "package": "etd.assembly.precision",
+      "valid": true,
+      "level": "A"
+    },
+    {
+      "package": "etd.cobot.safeassist",
+      "valid": true,
+      "level": "A"
+    },
+    {
+      "package": "etd.inspect.vision",
+      "valid": true,
+      "level": "A"
+    },
+    {
+      "package": "etd.pickplace.basic",
+      "valid": true,
+      "level": "A"
+    }
+  ],
+  "failure_summary": {
+    "missing_service_level": "D"
+  },
+  "release_summary": [
+    "etd.assembly.precision-0.1.0.zip",
+    "etd.cobot.safeassist-0.1.0.zip",
+    "etd.inspect.vision-0.1.0.zip",
+    "etd.pickplace.basic-0.1.0.zip"
+  ]
+}

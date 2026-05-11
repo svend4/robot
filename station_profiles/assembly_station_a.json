@@ -1,0 +1,10 @@
+{
+  "station_id": "assembly_station_a",
+  "allowed_skill_families": [
+    "assembly",
+    "inspect",
+    "cobot"
+  ],
+  "max_payload_kg": 5,
+  "requires_human_aware": true
+}

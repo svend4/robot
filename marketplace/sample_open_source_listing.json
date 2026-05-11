@@ -1,0 +1,22 @@
+{
+  "skillId": "etd.pickplace.basic",
+  "version": "0.1.0",
+  "title": "ETD Pick & Place Basic",
+  "publisher": "etd-lab",
+  "licenseModel": "open_source",
+  "license": "Apache-2.0",
+  "pricingModel": "free",
+  "sourceAvailable": true,
+  "requiresActivation": false,
+  "supportIncluded": false,
+  "riskLevel": "low",
+  "certificationState": "reference_validated",
+  "allowedRobotClasses": ["humanoid", "mobile_manipulator"],
+  "requiredRuntime": ">=0.1.0",
+  "protection": {
+    "metadataReadable": true,
+    "safetyMetadataReadable": true,
+    "payloadEncrypted": false,
+    "modelsEncrypted": false
+  }
+}

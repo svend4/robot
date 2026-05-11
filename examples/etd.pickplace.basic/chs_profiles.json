@@ -1,0 +1,30 @@
+{
+  "profiles": [
+    {
+      "name": "small_box",
+      "taskType": "PICK_PLACE",
+      "payloadKg": 1.5,
+      "fragility": "low",
+      "speedProfile": "normal",
+      "graspMode": "parallel_grip",
+      "bodyMode": "stable_reach",
+      "armMode": "guarded_arc",
+      "wristMode": "adaptive_contact"
+    },
+    {
+      "name": "fragile_item",
+      "taskType": "PICK_PLACE",
+      "payloadKg": 0.8,
+      "fragility": "high",
+      "forceWindowN": [
+        2,
+        10
+      ],
+      "speedProfile": "gentle",
+      "graspMode": "soft_contact",
+      "bodyMode": "micro_stable",
+      "armMode": "slow_arc",
+      "wristMode": "minimal_force"
+    }
+  ]
+}

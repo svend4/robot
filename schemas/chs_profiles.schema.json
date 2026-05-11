@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etd-spec.local/chs_profiles.schema.json",
+  "title": "ETD chs_profiles schema",
+  "type": "object"
+}

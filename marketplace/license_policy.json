@@ -1,0 +1,50 @@
+{
+  "policyVersion": "0.1.0",
+  "supportedLicenseClasses": [
+    "open_source",
+    "freeware",
+    "source_available",
+    "commercial",
+    "commercial_candidate",
+    "enterprise_private",
+    "enterprise_private_candidate",
+    "research_only",
+    "dataset_only",
+    "model_only"
+  ],
+  "supportedPricingModels": [
+    "free",
+    "one_time_purchase",
+    "subscription_per_robot",
+    "subscription_per_site",
+    "subscription_per_station",
+    "usage_based",
+    "enterprise_quote",
+    "bundled_with_oem",
+    "reward_only"
+  ],
+  "protectionLevels": {
+    "P0_open": "No protection beyond normal copyright/license terms",
+    "P1_signed": "Package integrity and publisher signature required",
+    "P2_licensed": "Activation requires a valid license entitlement",
+    "P3_bound": "License bound to robot, station, or site context",
+    "P4_protected_model": "Protected model or encrypted/signed model assets",
+    "P5_enterprise": "Private enterprise package with SLA and customer-specific station profiles"
+  },
+  "commercialInstallRequires": [
+    "schema_valid",
+    "capability_safe",
+    "compatibility_level_A_or_B",
+    "signed_package",
+    "valid_entitlement",
+    "station_allowed"
+  ],
+  "commercialBlockedIf": [
+    "forbidden_capability",
+    "missing_required_service",
+    "safety_override_requested",
+    "license_expired",
+    "robot_or_station_not_entitled",
+    "package_signature_invalid"
+  ]
+}

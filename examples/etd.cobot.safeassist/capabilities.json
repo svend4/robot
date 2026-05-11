@@ -1,0 +1,23 @@
+{
+  "read": [
+    "state.robot_pose",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "perception.object_pose",
+    "perception.part_alignment",
+    "workflow.job_context"
+  ],
+  "write": [
+    "command.skill_intent",
+    "telemetry.events",
+    "telemetry.metrics"
+  ],
+  "forbidden": [
+    "command.servo_torque",
+    "command.joint_limit_override",
+    "command.collision_disable",
+    "command.emergency_stop_override",
+    "command.balance_core_override"
+  ]
+}

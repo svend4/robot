@@ -1,0 +1,32 @@
+{
+  "skillId": "etd.assembly.precision",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "assembly",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "peg_in_hole",
+  "chsProfiles": [
+    "peg_in_hole",
+    "connector_insert"
+  ],
+  "primitiveOrder": [
+    "approach_align",
+    "contact_probe",
+    "micro_adjust",
+    "controlled_insert",
+    "settle_and_verify",
+    "release_safe"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 35,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "payload_out_of_range",
+    "station_incompatible",
+    "missing_service"
+  ]
+}

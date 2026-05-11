@@ -1,8 +1,7 @@
-# Report summary
+# ETD Prototype Report
 
-overall_pass: True
+Overall pass: **True**
 
-## validation
 - etd.assembly.precision: valid=True, level=A
 - etd.cobot.safeassist: valid=True, level=A
 - etd.inspect.vision: valid=True, level=A

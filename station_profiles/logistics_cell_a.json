@@ -1,0 +1,9 @@
+{
+  "station_id": "logistics_cell_a",
+  "allowed_skill_families": [
+    "pickplace",
+    "inspect"
+  ],
+  "max_payload_kg": 8,
+  "requires_human_aware": false
+}

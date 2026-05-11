@@ -1,0 +1,100 @@
+{
+  "policyVersion": "0.2.0",
+  "installRequires": [
+    "schema_valid",
+    "capability_safe",
+    "compatibility_level_A_or_B",
+    "station_allowed",
+    "signature_present_for_executable_package"
+  ],
+  "blockedIf": [
+    "forbidden_capability",
+    "missing_required_service",
+    "safety_override_requested",
+    "license_required_but_missing",
+    "package_signature_invalid",
+    "station_incompatible"
+  ],
+  "reviewLevels": {
+    "low": "automatic_reference_validation",
+    "medium": "simulated_scenario_review",
+    "high": "manual_safety_review_required"
+  },
+  "licenseModels": {
+    "open_source": {
+      "description": "Source code is public or substantially visible under an open-source license.",
+      "requiresEntitlement": false,
+      "requiresSignature": true
+    },
+    "source_available": {
+      "description": "Source can be inspected but redistribution or commercial use may be restricted.",
+      "requiresEntitlement": false,
+      "requiresSignature": true
+    },
+    "free_binary": {
+      "description": "Free package distributed without public source code.",
+      "requiresEntitlement": false,
+      "requiresSignature": true
+    },
+    "commercial": {
+      "description": "Paid package with license or subscription requirements.",
+      "requiresEntitlement": true,
+      "requiresSignature": true
+    },
+    "enterprise_private": {
+      "description": "Private package for a specific customer, site, robot fleet, or station.",
+      "requiresEntitlement": true,
+      "requiresSignature": true
+    },
+    "dataset_license": {
+      "description": "Dataset/model package governed by data or model licensing terms.",
+      "requiresEntitlement": true,
+      "requiresSignature": true
+    }
+  },
+  "pricingModels": [
+    "free",
+    "developer_reward",
+    "per_robot",
+    "per_site",
+    "subscription",
+    "per_execution",
+    "enterprise_contract"
+  ],
+  "protectionControls": [
+    "package_signature",
+    "immutable_hash",
+    "publisher_identity",
+    "entitlement_token",
+    "robot_device_binding",
+    "station_allow_list",
+    "audit_log",
+    "revocation_list"
+  ],
+  "commercialExecutionRule": "Commercial protection must never allow a package to bypass runtime capability restrictions or OEM safety boundaries.",
+  "licensePolicy": {
+    "allowedLicenseTypes": [
+      "open_source",
+      "community_free",
+      "commercial_closed_source",
+      "commercial_source_available",
+      "enterprise_private"
+    ],
+    "productionRequires": [
+      "publisher_identity",
+      "package_hash_manifest",
+      "package_signature",
+      "license_metadata"
+    ],
+    "commercialRequires": [
+      "entitlement_check",
+      "audit_log",
+      "support_contact"
+    ]
+  },
+  "protectionProfiles": {
+    "signed_integrity_only": "Open or reference package: verify publisher and detect tampering.",
+    "signed_entitled": "Commercial package: verify signature and license entitlement.",
+    "signed_entitled_encrypted_payload": "Commercial closed-source package with protected model/policy payload."
+  }
+}

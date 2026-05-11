@@ -1,0 +1,40 @@
+{
+  "policyVersion": "0.1.0",
+  "supportedLicenseModels": [
+    "open_source",
+    "free_closed_source",
+    "commercial_paid",
+    "enterprise_private",
+    "oem_certified_commercial"
+  ],
+  "defaultForReferencePackages": "open_source",
+  "commercialRequirements": {
+    "requiresPackageSignature": true,
+    "requiresPublisherIdentity": true,
+    "requiresLicenseMetadata": true,
+    "requiresActivationForPaidPackages": true,
+    "requiresReadableSafetyMetadata": true,
+    "allowsEncryptedPayload": true,
+    "blocksEncryptedSafetyMetadata": true
+  },
+  "openSourceRequirements": {
+    "requiresLicense": true,
+    "recommendedLicenses": ["Apache-2.0", "MIT", "BSD-3-Clause"],
+    "requiresCapabilityValidation": true
+  },
+  "reviewRules": {
+    "lowRisk": "automatic_validation_allowed",
+    "mediumRisk": "simulation_review_required",
+    "highRisk": "manual_safety_review_required",
+    "humanAware": "manual_safety_review_required",
+    "toolUse": "manual_safety_review_required"
+  },
+  "blockedIf": [
+    "forbidden_capability_requested",
+    "safety_metadata_encrypted",
+    "unsigned_commercial_package",
+    "missing_license_metadata",
+    "license_entitlement_invalid",
+    "station_incompatible"
+  ]
+}

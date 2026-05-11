@@ -1,0 +1,18 @@
+{
+  "runtime_version": "0.1.0",
+  "robot_class": "humanoid",
+  "available_services": [
+    "perception.object_pose",
+    "perception.part_alignment",
+    "manipulation.arm_control",
+    "force_control.contact_feedback",
+    "workflow.job_context",
+    "state.robot_pose",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "safety.zone_monitor",
+    "telemetry.metrics"
+  ],
+  "platform_profile": "atlas_style_humanoid_v1"
+}

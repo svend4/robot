@@ -1,0 +1,84 @@
+apiVersion: etd.robotics/v0.1
+kind: SkillPackage
+metadata:
+  name: etd.inspect.vision
+  version: 0.1.0
+  title: etd.inspect.vision
+  vendor: etd-lab
+  description: ETD reference skill package for inspect.
+  license: MIT
+compatibility:
+  robotClass:
+  - humanoid
+  - mobile_manipulator
+  - fixed_manipulator
+  runtime: '>=0.1.0'
+  osLayer: application
+  requiresServices:
+  - perception.object_pose
+  - manipulation.arm_control
+  - workflow.job_context
+  - state.robot_pose
+  - state.arm_state
+  - state.wrist_state
+  - state.safety_state
+  - safety.zone_monitor
+  optionalServices:
+  - perception.part_alignment
+  - telemetry.metrics
+execution:
+  mode: task_oriented
+  realtimeClass: non_safety_critical
+  maxCycleTimeSec: 20
+  defaultTimeoutSec: 30
+  retryPolicy: bounded_retry
+  maxRetries: 2
+etdMapping:
+  MVS:
+    role: fine_contact_and_release
+    concerns:
+    - wrist_pose
+    - force_window
+    - contact_stability
+  SVS:
+    role: arm_trajectory_and_local_clearance
+    concerns:
+    - elbow_path
+    - approach_curve
+    - obstacle_bypass
+  BVS:
+    role: body_posture_and_global_reach
+    concerns:
+    - stance
+    - center_of_mass_margin
+    - reachability
+  CHS:
+    role: task_context
+    concerns:
+    - task_type
+    - payload_class
+    - destination
+    - priority
+    - tolerance
+constraints:
+  payloadKgMax: 2
+  objectSizeCmMax: 60
+  minConfidence: 0.82
+safety:
+  packageCanNotOverride:
+  - emergency_stop
+  - collision_core
+  - locomotion_balance_core
+  - certified_torque_limits
+  - human_protective_stop
+  fallbackSkill: etd.safe_stop_and_retreat
+  fallbackMode: safe_hold_or_abort
+  requiresHumanAwareBehavior: true
+telemetry:
+  events:
+  - skill.started
+  - primitive.entered
+  - primitive.exited
+  - fallback.triggered
+  - skill.completed
+  - skill.aborted

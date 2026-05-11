@@ -1,0 +1,31 @@
+{
+  "skillId": "etd.cobot.safeassist",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "cobot",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "safe_handover",
+  "chsProfiles": [
+    "safe_handover",
+    "tool_pass"
+  ],
+  "primitiveOrder": [
+    "detect_human_ready",
+    "approach_handover_zone",
+    "hold_for_transfer",
+    "release_on_confirmation",
+    "retreat_safe"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 30,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "payload_out_of_range",
+    "station_incompatible",
+    "missing_service"
+  ]
+}
