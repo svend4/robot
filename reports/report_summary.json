@@ -20,6 +20,18 @@
       "score": 1.0
     },
     {
+      "package": "etd.hyundai.mobed_transport",
+      "valid": true,
+      "level": "A",
+      "score": 1.0
+    },
+    {
+      "package": "etd.hyundai.wia_welding",
+      "valid": true,
+      "level": "A",
+      "score": 1.0
+    },
+    {
       "package": "etd.inspect.vision",
       "valid": true,
       "level": "A",
@@ -37,6 +49,7 @@
   },
   "release_summary": [
     "etd.assembly.precision-0.1.0.zip",
+    "etd.atlas.humanoid_walkfetch-0.1.0.zip",
     "etd.cobot.safeassist-0.1.0.zip",
     "etd.inspect.vision-0.1.0.zip",
     "etd.pickplace.basic-0.1.0.zip"
