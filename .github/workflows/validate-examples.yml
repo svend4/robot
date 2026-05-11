@@ -23,6 +23,9 @@ jobs:
       - name: Validate all examples (JSON Schema + semantic checks)
         run: python validate_examples.py
 
+      - name: Run unit and integration tests
+        run: python -m pytest tests/ -v
+
       - name: Generate validation report
         run: python sim/report_runner.py
 

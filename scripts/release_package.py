@@ -29,7 +29,8 @@ def _zip_dir(src: Path, dest: Path) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description='Validate, sign, and package an ETD skill')
     ap.add_argument('package', help='Path to the skill package directory')
-    ap.add_argument('--runtime-context', default='runtime_context.json')
+    ap.add_argument('--runtime-context', default=None,
+                    help='Path to runtime context JSON (auto-detected if not set)')
     ap.add_argument('--key', default='keys/etd_signing_key.pem',
                     help='Path to PEM private key for signing')
     ap.add_argument('--out', default='release_out', help='Output directory')
@@ -43,7 +44,14 @@ def main() -> None:
 
     # ── Step 1: validate ─────────────────────────────────────────────────────
     print(f'[1/3] Validating {pkg.name} ...')
-    ctx = load_runtime_context(ROOT / args.runtime_context)
+    if args.runtime_context:
+        ctx_path = ROOT / args.runtime_context
+    elif any(kw in pkg.name for kw in ('atlas', 'humanoid')):
+        atlas_ctx = ROOT / 'runtime_context_atlas.json'
+        ctx_path = atlas_ctx if atlas_ctx.exists() else ROOT / 'runtime_context.json'
+    else:
+        ctx_path = ROOT / 'runtime_context.json'
+    ctx = load_runtime_context(ctx_path)
     rep = ETDReferenceValidator(ctx).validate_package(pkg)
     if not rep.valid:
         print('Validation FAILED:')
