@@ -105,6 +105,18 @@ class AcceptanceMiddleware:
             return {'path_ready': True, 'estimated_time_s': 30}
         if topic == 'manipulation.lift_control':
             return {'lift_ready': True, 'current_height_mm': 0}
+        if topic == 'perception.intent_detector':
+            return {
+                'confidence': self._safety.get('confidence', 0.91),
+                'mode': 'overhead',
+                'direction': 'up',
+            }
+        if topic == 'state.exo_joint_state':
+            return {'calibrated': True, 'torque_within_limits': True}
+        if topic == 'state.fatigue_monitor':
+            return {'fatigue_pct': self._safety.get('fatigue_pct', 20), 'session_sec': 0}
+        if topic == 'perception.imu_pose':
+            return {'valid': True, 'roll_deg': 0.2, 'pitch_deg': 0.1, 'yaw_deg': 0.0}
         return None
 
 

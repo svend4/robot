@@ -17,6 +17,8 @@ def _pick_context(pkg_name: str, ctxs: dict):
         return ctxs['wia']
     if 'mobed' in pkg_name or 'transport' in pkg_name:
         return ctxs['mobed']
+    if 'vest' in pkg_name or 'exoskeleton' in pkg_name:
+        return ctxs['exo']
     return ctxs['base']
 
 
@@ -29,7 +31,9 @@ def main():
                if (root / 'runtime_context_wia.json').exists() else base_ctx)
     mobed_ctx = (load_runtime_context(root / 'runtime_context_mobed.json')
                  if (root / 'runtime_context_mobed.json').exists() else base_ctx)
-    ctxs = {'base': base_ctx, 'atlas': atlas_ctx, 'wia': wia_ctx, 'mobed': mobed_ctx}
+    exo_ctx = (load_runtime_context(root / 'runtime_context_exo.json')
+               if (root / 'runtime_context_exo.json').exists() else base_ctx)
+    ctxs = {'base': base_ctx, 'atlas': atlas_ctx, 'wia': wia_ctx, 'mobed': mobed_ctx, 'exo': exo_ctx}
 
     validation = []
     for pkg in sorted((root / 'examples').iterdir()):

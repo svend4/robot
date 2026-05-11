@@ -1,0 +1,17 @@
+{
+  "runtime_version": "0.1.0",
+  "robot_class": "exoskeleton",
+  "available_services": [
+    "state.exo_joint_state",
+    "state.safety_state",
+    "state.fatigue_monitor",
+    "perception.intent_detector",
+    "perception.imu_pose",
+    "force_control.torque_assist",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "safety.zone_monitor",
+    "telemetry.metrics",
+    "telemetry.ergonomic_report"
+  ]
+}

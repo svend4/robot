@@ -1,0 +1,34 @@
+{
+  "skillId": "etd.hyundai.vest_exoskeleton",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "assist",
+  "executionMode": "task_oriented",
+  "supportsTransfer": false,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "overhead_assembly",
+  "chsProfiles": [
+    "overhead_assembly",
+    "heavy_carry",
+    "lumbar_support"
+  ],
+  "primitiveOrder": [
+    "calibrate_fit",
+    "detect_intent",
+    "engage_assist",
+    "monitor_fatigue",
+    "adapt_gain",
+    "disengage_assist"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 3600,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "operator_panic_release",
+    "joint_torque_exceeded",
+    "intent_confidence_lost",
+    "imu_pose_invalid",
+    "emergency_stop"
+  ]
+}

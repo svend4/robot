@@ -38,7 +38,7 @@ def test_list_skills_all():
     r = client.get('/store/skills')
     assert r.status_code == 200
     body = r.json()
-    assert body['count'] == 7
+    assert body['count'] == 8
     ids = {s['skillId'] for s in body['skills']}
     assert 'etd.pickplace.basic' in ids
     assert 'etd.atlas.humanoid_walkfetch' in ids

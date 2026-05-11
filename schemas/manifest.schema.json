@@ -55,7 +55,7 @@
           "minItems": 1,
           "items": {
             "type": "string",
-            "enum": ["humanoid", "mobile_manipulator", "fixed_manipulator", "mobile_platform", "cobot", "amr"]
+            "enum": ["humanoid", "mobile_manipulator", "fixed_manipulator", "mobile_platform", "cobot", "amr", "exoskeleton", "wearable"]
           }
         },
         "runtime": {

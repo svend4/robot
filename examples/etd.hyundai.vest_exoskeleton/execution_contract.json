@@ -1,0 +1,9 @@
+{
+  "body_mode": "wearable_assist",
+  "arm_mode": "torque_assist",
+  "wrist_mode": "compliant",
+  "primitive": "engage_assist",
+  "speed_profile": "gentle",
+  "force_profile": "contact_seek",
+  "timeout_sec": 3600
+}

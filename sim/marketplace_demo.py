@@ -18,6 +18,7 @@ _CTX_FILES = {
     'atlas':    ROOT / 'runtime_context_atlas.json',
     'welding':  ROOT / 'runtime_context_wia.json',
     'transport': ROOT / 'runtime_context_mobed.json',
+    'assist':    ROOT / 'runtime_context_exo.json',
 }
 
 

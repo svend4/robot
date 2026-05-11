@@ -1,0 +1,52 @@
+suite: etd.hyundai.vest_exoskeleton acceptance tests
+version: 0.1.0
+skill_id: etd.hyundai.vest_exoskeleton
+
+tests:
+  - id: overhead_assembly_nominal_pass
+    description: Nominal overhead-assembly assist session — full cycle completes
+    profile: overhead_assembly
+    input:
+      job_context: {profileId: overhead_assembly, operatorId: WORKER-07}
+    expect:
+      status: completed
+      result_keys: [assist_cycles, fatigue_pct, final_gain]
+
+  - id: heavy_carry_nominal_pass
+    description: Heavy-carry assist session with lumbar and arm combined
+    profile: heavy_carry
+    input:
+      job_context: {profileId: heavy_carry, operatorId: WORKER-03}
+    expect:
+      status: completed
+      result_keys: [profile, primitives_executed]
+
+  - id: abort_low_intent_confidence
+    description: Intent confidence below threshold aborts at detect_intent
+    profile: overhead_assembly
+    inject:
+      at_primitive: detect_intent
+      perception_override: {confidence: 0.50}
+    expect:
+      status: aborted
+      reason: intent_confidence_below_threshold
+
+  - id: abort_panic_release
+    description: Operator panic release mid-assist causes immediate torque-zero
+    profile: overhead_assembly
+    inject:
+      at_primitive: engage_assist
+      safety_state: {operator_panic_release: true}
+    expect:
+      status: aborted
+      reason: operator_panic_release
+
+  - id: abort_human_in_forbidden_zone
+    description: Human enters forbidden zone during assist monitoring
+    profile: overhead_assembly
+    inject:
+      at_primitive: monitor_fatigue
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone

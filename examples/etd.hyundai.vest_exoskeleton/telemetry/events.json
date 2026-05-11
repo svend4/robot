@@ -1,0 +1,17 @@
+{
+  "events": [
+    "skill.started",
+    "primitive.entered",
+    "primitive.exited",
+    "assist.intent_detected",
+    "assist.torque_applied",
+    "assist.overhead_mode_entered",
+    "assist.lumbar_mode_entered",
+    "assist.fatigue_threshold_reached",
+    "assist.mode_switched",
+    "safety.torque_limit_approached",
+    "safety.operator_panic_release",
+    "skill.completed",
+    "skill.aborted"
+  ]
+}

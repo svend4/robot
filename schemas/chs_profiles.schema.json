@@ -26,7 +26,7 @@
         },
         "taskType": {
           "type": "string",
-          "enum": ["PICK_PLACE", "ASSEMBLY", "INSPECTION", "COBOT_ASSIST", "COBOT", "TRANSPORT", "WELD", "NAVIGATION", "HUMANOID_FETCH"]
+          "enum": ["PICK_PLACE", "ASSEMBLY", "INSPECTION", "COBOT_ASSIST", "COBOT", "TRANSPORT", "WELD", "NAVIGATION", "HUMANOID_FETCH", "ASSIST"]
         },
         "payloadKg": {
           "type": "number",

@@ -27,6 +27,7 @@ _CTX_MAP = [
     (('atlas', 'humanoid'),          'runtime_context_atlas.json'),
     (('wia', 'welding'),             'runtime_context_wia.json'),
     (('mobed', 'transport', 'amr'),  'runtime_context_mobed.json'),
+    (('vest', 'exoskeleton', 'exo'),     'runtime_context_exo.json'),
 ]
 
 

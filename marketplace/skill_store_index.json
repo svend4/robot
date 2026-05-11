@@ -126,6 +126,25 @@
       "supportLevel": "community",
       "platformTarget": "hyundai_mobed_amr",
       "notes": "MobED / WIA H-Motion AMR logistics transport with human-aware speed adaptation. Payload up to 100 kg at up to 1.2 m/s."
+    },
+    {
+      "skillId": "etd.hyundai.vest_exoskeleton",
+      "version": "0.1.0",
+      "family": "assist",
+      "packagePath": "examples/etd.hyundai.vest_exoskeleton",
+      "publisher": "etd-lab",
+      "publisherVerification": "reference",
+      "riskLevel": "medium",
+      "certificationState": "reference_validated",
+      "targetUse": "wearable operator-assist for automotive assembly and logistics",
+      "licenseModel": "commercial",
+      "pricingModel": "subscription",
+      "sourceAvailability": "binary_only",
+      "requiresEntitlement": true,
+      "requiresSignature": true,
+      "supportLevel": "enterprise",
+      "platformTarget": "hyundai_vex_hmex",
+      "notes": "Hyundai VEX/H-MEX exoskeleton overhead-assist, heavy-carry, and lumbar-support modes. Adaptive gain under fatigue. Immediate torque-zero on panic release."
     }
   ]
 }

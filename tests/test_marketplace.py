@@ -42,7 +42,7 @@ def atlas_ctx():
 
 def test_store_lists_seven_skills(store):
     entries = store.list_entries()
-    assert len(entries) == 7
+    assert len(entries) == 8
 
 
 def test_store_list_skills_returns_dicts(store):

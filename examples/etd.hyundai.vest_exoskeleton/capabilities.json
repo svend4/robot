@@ -1,0 +1,24 @@
+{
+  "read": [
+    "state.exo_joint_state",
+    "state.safety_state",
+    "state.fatigue_monitor",
+    "perception.intent_detector",
+    "perception.imu_pose",
+    "force_control.torque_assist",
+    "workflow.job_context"
+  ],
+  "write": [
+    "command.skill_intent",
+    "force_control.torque_assist",
+    "telemetry.events",
+    "telemetry.metrics",
+    "telemetry.ergonomic_report"
+  ],
+  "forbidden": [
+    "command.servo_torque",
+    "command.emergency_stop_override",
+    "command.collision_disable",
+    "command.joint_limit_override"
+  ]
+}

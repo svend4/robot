@@ -1,0 +1,112 @@
+apiVersion: etd.robotics/v0.1
+kind: SkillPackage
+metadata:
+  name: etd.hyundai.vest_exoskeleton
+  version: 0.1.0
+  title: Hyundai VEX/H-MEX Exoskeleton Assist Skill
+  vendor: etd-lab
+  description: >
+    ETD reference skill for the Hyundai VEX (Vest Exoskeleton) and H-MEX
+    (H-type Medical Exoskeleton) wearable assist robots.  Supports overhead
+    arm-assist, lumbar-support, and repetitive-motion fatigue-reduction modes
+    for automotive assembly and logistics operators.
+    Skill coordinates intent detection, torque-assist delivery, and real-time
+    ergonomic monitoring while enforcing operator-safety limits at all times.
+  license: MIT
+  homepage: https://github.com/svend4/robot
+  tags:
+    - exoskeleton
+    - wearable
+    - hyundai
+    - assist
+    - ergonomics
+    - automotive
+
+compatibility:
+  robotClass:
+    - exoskeleton
+    - wearable
+  runtime: '>=0.1.0'
+  osLayer: application
+  requiresServices:
+    - state.exo_joint_state
+    - state.safety_state
+    - perception.intent_detector
+    - perception.imu_pose
+    - force_control.torque_assist
+    - workflow.job_context
+    - safety.zone_monitor
+    - telemetry.metrics
+  optionalServices:
+    - state.fatigue_monitor
+    - telemetry.ergonomic_report
+    - workflow.mission_planner
+
+execution:
+  mode: task_oriented
+  realtimeClass: hard_realtime
+  maxCycleTimeSec: 3600
+  defaultTimeoutSec: 3700
+  retryPolicy: no_retry
+  maxRetries: 0
+
+etdMapping:
+  MVS:
+    role: joint_torque_and_force_assist
+    concerns:
+      - elbow_assist_torque
+      - shoulder_unloading
+      - lumbar_support_torque
+      - wrist_compliance
+  SVS:
+    role: limb_trajectory_and_assist_profile
+    concerns:
+      - arm_path_prediction
+      - overhead_reach_mode
+      - carry_assist_profile
+      - fatigue_adaptive_gain
+  BVS:
+    role: whole_body_posture_and_balance
+    concerns:
+      - centre_of_gravity_offset
+      - stance_stability_during_assist
+      - gait_synchronisation
+  CHS:
+    role: task_context_and_operator_intent
+    concerns:
+      - assist_mode
+      - task_type
+      - payload_class
+      - operator_profile
+      - fatigue_threshold
+
+constraints:
+  payloadKgMax: 30
+  objectSizeCmMax: 200
+  minConfidence: 0.80
+
+safety:
+  packageCanNotOverride:
+    - emergency_stop
+    - collision_core
+    - certified_torque_limits
+    - human_protective_stop
+  fallbackSkill: etd.safe_stop_and_retreat
+  fallbackMode: immediate_abort
+  requiresHumanAwareBehavior: true
+
+telemetry:
+  events:
+    - skill.started
+    - primitive.entered
+    - primitive.exited
+    - assist.intent_detected
+    - assist.torque_applied
+    - assist.overhead_mode_entered
+    - assist.lumbar_mode_entered
+    - assist.fatigue_threshold_reached
+    - assist.mode_switched
+    - safety.torque_limit_approached
+    - safety.operator_panic_release
+    - skill.completed
+    - skill.aborted

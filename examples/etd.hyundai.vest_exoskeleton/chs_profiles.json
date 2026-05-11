@@ -1,0 +1,52 @@
+{
+  "profiles": [
+    {
+      "name": "overhead_assembly",
+      "taskType": "ASSIST",
+      "description": "Overhead arm-assist for automotive assembly line tasks (door fitting, roof panels)",
+      "payloadKg": 15.0,
+      "speedProfile": "human_aware",
+      "bodyMode": "wearable_assist",
+      "armMode": "torque_assist",
+      "wristMode": "compliant",
+      "maxAssistForceN": 120,
+      "intentConfidenceMin": 0.82,
+      "fatigueThresholdPct": 70,
+      "assistModes": ["overhead", "reach"],
+      "maxSessionSec": 3600,
+      "yieldToHuman": true
+    },
+    {
+      "name": "heavy_carry",
+      "taskType": "ASSIST",
+      "description": "Full-body assist for carrying parts up to 30 kg — lumbar and arm combined",
+      "payloadKg": 30.0,
+      "speedProfile": "gentle",
+      "bodyMode": "wearable_assist",
+      "armMode": "torque_assist",
+      "wristMode": "compliant",
+      "maxAssistForceN": 150,
+      "intentConfidenceMin": 0.85,
+      "fatigueThresholdPct": 60,
+      "assistModes": ["lumbar", "carry"],
+      "maxSessionSec": 1800,
+      "yieldToHuman": true
+    },
+    {
+      "name": "lumbar_support",
+      "taskType": "ASSIST",
+      "description": "Passive lumbar-support mode for repetitive bending and assembly tasks",
+      "payloadKg": 10.0,
+      "speedProfile": "gentle",
+      "bodyMode": "wearable_assist",
+      "armMode": "passive_support",
+      "wristMode": "compliant",
+      "maxAssistForceN": 80,
+      "intentConfidenceMin": 0.80,
+      "fatigueThresholdPct": 80,
+      "assistModes": ["lumbar"],
+      "maxSessionSec": 7200,
+      "yieldToHuman": true
+    }
+  ]
+}

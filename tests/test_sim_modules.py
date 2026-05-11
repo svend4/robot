@@ -267,7 +267,7 @@ from sim.scenario_runner import run_all_scenarios
 
 def test_scenario_runner_all_valid():
     results = run_all_scenarios()
-    assert len(results) == 7
+    assert len(results) == 8
     for r in results:
         assert r['valid'] is True, f'{r["package"]} expected valid, got {r}'
 
@@ -284,7 +284,8 @@ def test_scenario_runner_uses_correct_context():
     assert ctx_map['etd.atlas.humanoid_walkfetch'] == 'runtime_context_atlas.json'
     assert ctx_map['etd.hyundai.wia_welding']      == 'runtime_context_wia.json'
     assert ctx_map['etd.hyundai.mobed_transport']  == 'runtime_context_mobed.json'
-    assert ctx_map['etd.pickplace.basic']          == 'runtime_context.json'
+    assert ctx_map['etd.pickplace.basic']              == 'runtime_context.json'
+    assert ctx_map['etd.hyundai.vest_exoskeleton']     == 'runtime_context_exo.json'
 
 
 # ── sim.failure_scenarios ────────────────────────────────────────────────────

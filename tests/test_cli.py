@@ -84,7 +84,7 @@ def test_list_all():
     assert 'etd.pickplace.basic' in result.output
     assert 'etd.atlas.humanoid_walkfetch' in result.output
     assert 'etd.hyundai.wia_welding' in result.output
-    assert '7 skill(s) found.' in result.output
+    assert '8 skill(s) found.' in result.output
 
 
 def test_list_filter_family():
@@ -105,7 +105,7 @@ def test_list_json():
     assert result.exit_code == 0, result.output
     parsed = json.loads(result.output)
     assert isinstance(parsed, list)
-    assert len(parsed) == 7
+    assert len(parsed) == 8
 
 
 # ── info command ──────────────────────────────────────────────────────────────

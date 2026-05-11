@@ -23,7 +23,7 @@
     },
     "family": {
       "type": "string",
-      "enum": ["pickplace", "assembly", "inspect", "cobot", "transport", "weld", "humanoid", "navigation"]
+      "enum": ["pickplace", "assembly", "inspect", "cobot", "transport", "weld", "humanoid", "navigation", "assist"]
     },
     "executionMode": {
       "type": "string",

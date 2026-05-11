@@ -1,0 +1,21 @@
+{
+  "station_id": "exo_assembly_a",
+  "allowed_skill_families": ["assist", "cobot", "assembly"],
+  "max_payload_kg": 30.0,
+  "requires_human_aware": true,
+  "available_services": [
+    "state.exo_joint_state",
+    "state.safety_state",
+    "state.fatigue_monitor",
+    "perception.intent_detector",
+    "perception.imu_pose",
+    "force_control.torque_assist",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "safety.zone_monitor",
+    "telemetry.metrics",
+    "telemetry.ergonomic_report"
+  ],
+  "platform": "hyundai_vex_hmex",
+  "notes": "Hyundai VEX/H-MEX exoskeleton assembly assist station — overhead and lumbar modes"
+}

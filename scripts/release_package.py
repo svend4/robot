@@ -55,6 +55,9 @@ def main() -> None:
     elif any(kw in pkg.name for kw in ('mobed', 'transport', 'amr')):
         ctx_path = next((ROOT / f for f in ('runtime_context_mobed.json',) if (ROOT / f).exists()),
                         ROOT / 'runtime_context.json')
+    elif any(kw in pkg.name for kw in ('vest', 'exoskeleton', 'exo')):
+        ctx_path = next((ROOT / f for f in ('runtime_context_exo.json',) if (ROOT / f).exists()),
+                        ROOT / 'runtime_context.json')
     else:
         ctx_path = ROOT / 'runtime_context.json'
     ctx = load_runtime_context(ctx_path)
