@@ -29,6 +29,7 @@ _FORBIDDEN_COMMANDS = frozenset({'servo_torque', 'collision_disable', 'emergency
 _KNOWN_STATIONS = frozenset({
     'logistics_cell_a', 'assembly_station_a', 'cobot_zone_a',
     'weld_station_a', 'mobed_logistics_a', 'humanoid_hmgma_a',
+    'exo_assembly_a',
     'unknown',  # legacy default
 })
 

@@ -1,8 +1,283 @@
 {
+  "description": "Sample ETD skill event sequences — nominal and abort scenarios",
+  "robot_ids": [
+    "robot-01",
+    "cobot-02",
+    "mobed-03"
+  ],
   "events": [
-    "skill.started",
-    "primitive.entered",
-    "primitive.exited",
-    "skill.completed"
+    {
+      "event": "skill.started",
+      "skill_id": "etd.pickplace.basic",
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "approach_arc"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "approach_arc",
+        "status": "ok"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "guarded_grasp"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "guarded_grasp",
+        "status": "ok"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "lift_stabilize"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "lift_stabilize",
+        "status": "ok"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "transport_safe"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "transport_safe",
+        "status": "ok"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "place_release"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "primitive": "place_release",
+        "status": "ok"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "skill.completed",
+      "skill_id": "etd.pickplace.basic",
+      "data": {
+        "result": "success"
+      },
+      "robot_id": "robot-01",
+      "site_id": "assembly_station_a"
+    },
+    {
+      "event": "skill.started",
+      "skill_id": "etd.hyundai.wia_welding",
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.wia_welding",
+      "data": {
+        "primitive": "approach_seam_start"
+      },
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.wia_welding",
+      "data": {
+        "primitive": "approach_seam_start",
+        "status": "ok"
+      },
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.wia_welding",
+      "data": {
+        "primitive": "torch_align"
+      },
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.wia_welding",
+      "data": {
+        "primitive": "torch_align",
+        "status": "ok"
+      },
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "skill.aborted",
+      "skill_id": "etd.hyundai.wia_welding",
+      "data": {
+        "reason": "human_in_forbidden_zone"
+      },
+      "robot_id": "cobot-02",
+      "site_id": "weld_station_a"
+    },
+    {
+      "event": "skill.started",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "navigate_to_pickup"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "navigate_to_pickup",
+        "status": "ok"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "dock_and_lift"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "dock_and_lift",
+        "status": "ok"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "navigate_to_destination"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "navigate_to_destination",
+        "status": "ok"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "dock_and_lower"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "dock_and_lower",
+        "status": "ok"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.entered",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "confirm_delivery"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "primitive.exited",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "primitive": "confirm_delivery",
+        "status": "ok"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    },
+    {
+      "event": "skill.completed",
+      "skill_id": "etd.hyundai.mobed_transport",
+      "data": {
+        "result": "success"
+      },
+      "robot_id": "mobed-03",
+      "site_id": "logistics_cell_a"
+    }
   ]
 }

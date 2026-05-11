@@ -124,6 +124,16 @@ class TracingMiddleware:
             return {'path_ready': True, 'estimated_time_s': 30}
         if topic == 'manipulation.lift_control':
             return {'lift_ready': True, 'current_height_mm': 0}
+        # Exoskeleton topics
+        if topic == 'state.exo_joint_state':
+            return {'calibrated': True, 'torque_within_limits': True}
+        if topic == 'perception.intent_detector':
+            return {'confidence': self._safety.get('confidence', 0.96),
+                    'mode': 'overhead', 'direction': 'up'}
+        if topic == 'state.fatigue_monitor':
+            return {'fatigue_pct': self._safety.get('fatigue_pct', 20), 'session_sec': 0}
+        if topic == 'perception.imu_pose':
+            return {'valid': True, 'roll_deg': 0.2, 'pitch_deg': 0.1, 'yaw_deg': 0.0}
         return None
 
 
@@ -142,6 +152,8 @@ def _load_adapter_run(skill_id: str):
 
 def run_traced(skill_id: str, profile: str) -> SkillTrace:
     """Run a skill with a tracing middleware and return the execution trace."""
+    import random
+    random.seed(42)  # deterministic classification confidence in visualizer
     trace = SkillTrace(skill_id=skill_id, profile=profile, start=time.time())
     mw = TracingMiddleware(trace)
     run_fn = _load_adapter_run(skill_id)
@@ -250,12 +262,14 @@ def _plot_gantt(traces: List[SkillTrace], save_path: Optional[str] = None) -> No
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 _SKILL_PROFILES = [
-    ('etd.pickplace.basic',            'fragile_item'),
-    ('etd.assembly.precision',         'peg_in_hole'),
-    ('etd.inspect.vision',             'defect_scan'),
-    ('etd.cobot.safeassist',           'safe_handover'),
-    ('etd.hyundai.wia_welding',        'standard_seam'),
-    ('etd.hyundai.mobed_transport',    'standard_carry'),
+    ('etd.pickplace.basic',              'fragile_item'),
+    ('etd.assembly.precision',           'peg_in_hole'),
+    ('etd.inspect.vision',               'defect_scan'),
+    ('etd.cobot.safeassist',             'safe_handover'),
+    ('etd.hyundai.wia_welding',          'standard_seam'),
+    ('etd.hyundai.mobed_transport',      'standard_carry'),
+    ('etd.atlas.humanoid_walkfetch',     'sequencing_carry'),
+    ('etd.hyundai.vest_exoskeleton',     'overhead_assembly'),
 ]
 
 
