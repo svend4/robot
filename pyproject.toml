@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etd-skill-runtime"
+version = "0.1.0"
+description = "ETD Robotics Skill Runtime — application-layer skill package framework for industrial robots and humanoids"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+keywords = ["robotics", "skill", "etd", "humanoid", "marketplace", "hyundai", "boston-dynamics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "PyYAML>=6.0",
+    "jsonschema>=4.21.0",
+    "PyNaCl>=1.5.0",
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "click>=8.1.7",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "matplotlib>=3.8.0",
+]
+all = [
+    "matplotlib>=3.8.0",
+]
+
+[project.scripts]
+etd = "etd_cli:cli"
+
+[project.urls]
+Repository = "https://github.com/svend4/robot"
+
+[tool.setuptools]
+py-modules = ["etd_cli", "etd_reference_validator", "validate_examples"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "adapters*", "marketplace*", "scripts*", "sim*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

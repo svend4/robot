@@ -1,0 +1,20 @@
+{
+  "station_id": "mobed_logistics_a",
+  "allowed_skill_families": ["transport", "pickplace"],
+  "max_payload_kg": 100.0,
+  "requires_human_aware": true,
+  "available_services": [
+    "navigation.path_planner",
+    "perception.obstacle_detector",
+    "perception.scene_map",
+    "manipulation.lift_control",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "state.robot_pose",
+    "state.safety_state",
+    "safety.zone_monitor",
+    "telemetry.metrics"
+  ],
+  "platform": "hyundai_mobed_amr",
+  "notes": "Hyundai MobED AMR logistics cell — supports payloads up to 100 kg"
+}

@@ -1,0 +1,24 @@
+{
+  "station_id": "weld_station_a",
+  "allowed_skill_families": ["weld", "inspect"],
+  "max_payload_kg": 2.0,
+  "requires_human_aware": true,
+  "arc_zone_enforced": true,
+  "arc_zone_radius_m": 1.5,
+  "available_services": [
+    "perception.seam_tracker",
+    "manipulation.arm_control",
+    "force_control.contact_feedback",
+    "workflow.job_context",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "safety.zone_monitor",
+    "welding.torch_control",
+    "welding.arc_monitor",
+    "vision.weld_inspection",
+    "telemetry.metrics"
+  ],
+  "platform": "hyundai_wia_h_motion_cobot",
+  "notes": "Hyundai WIA H-Motion cobot welding cell — arc zone exclusion enforced"
+}

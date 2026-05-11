@@ -1,0 +1,26 @@
+{
+  "station_id": "humanoid_hmgma_a",
+  "allowed_skill_families": ["humanoid", "pickplace", "transport"],
+  "max_payload_kg": 10.0,
+  "requires_human_aware": true,
+  "available_services": [
+    "perception.object_pose",
+    "perception.scene_map",
+    "perception.part_alignment",
+    "manipulation.arm_control",
+    "locomotion.walk_planner",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "state.robot_pose",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "state.balance_state",
+    "safety.zone_monitor",
+    "safety.human_detector",
+    "navigation.path_planner",
+    "telemetry.metrics"
+  ],
+  "platform": "boston_dynamics_atlas",
+  "notes": "Hyundai Motor Group Manufacturing Alabama — Atlas humanoid station, HMGMA sequencing line"
+}
