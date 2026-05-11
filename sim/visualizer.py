@@ -112,6 +112,18 @@ class TracingMiddleware:
         if topic == 'perception.object_pose':
             return {'confidence': 0.96, 'x': 3.0, 'y': 1.5, 'z': 0.8,
                     'object_class': 'automotive_part', 'mass_estimate_kg': 4.5}
+        # Hyundai WIA welding topics
+        if topic == 'perception.seam_tracker':
+            return {'confidence': 0.96, 'offset_mm': 0.3, 'seam_found': True}
+        if topic == 'vision.weld_inspection':
+            return {'pass': True, 'defects': [], 'confidence': 0.97}
+        # MobED transport topics
+        if topic == 'perception.obstacle_detector':
+            return {'obstacles': [], 'clear': True}
+        if topic == 'navigation.path_planner':
+            return {'path_ready': True, 'estimated_time_s': 30}
+        if topic == 'manipulation.lift_control':
+            return {'lift_ready': True, 'current_height_mm': 0}
         return None
 
 
@@ -238,10 +250,12 @@ def _plot_gantt(traces: List[SkillTrace], save_path: Optional[str] = None) -> No
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 _SKILL_PROFILES = [
-    ('etd.pickplace.basic',    'fragile_item'),
-    ('etd.assembly.precision', 'peg_in_hole'),
-    ('etd.inspect.vision',     'defect_scan'),
-    ('etd.cobot.safeassist',   'safe_handover'),
+    ('etd.pickplace.basic',            'fragile_item'),
+    ('etd.assembly.precision',         'peg_in_hole'),
+    ('etd.inspect.vision',             'defect_scan'),
+    ('etd.cobot.safeassist',           'safe_handover'),
+    ('etd.hyundai.wia_welding',        'standard_seam'),
+    ('etd.hyundai.mobed_transport',    'standard_carry'),
 ]
 
 

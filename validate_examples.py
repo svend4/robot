@@ -13,14 +13,22 @@ _CTX_MAP = {}  # skill_id -> RuntimeContext override
 
 def _load_contexts(root: Path) -> dict:
     base_ctx = load_runtime_context(root / 'runtime_context.json')
-    atlas_ctx_path = root / 'runtime_context_atlas.json'
-    atlas_ctx = load_runtime_context(atlas_ctx_path) if atlas_ctx_path.exists() else base_ctx
-    return {'base': base_ctx, 'atlas': atlas_ctx}
+    atlas_ctx = (load_runtime_context(root / 'runtime_context_atlas.json')
+                 if (root / 'runtime_context_atlas.json').exists() else base_ctx)
+    wia_ctx = (load_runtime_context(root / 'runtime_context_wia.json')
+               if (root / 'runtime_context_wia.json').exists() else base_ctx)
+    mobed_ctx = (load_runtime_context(root / 'runtime_context_mobed.json')
+                 if (root / 'runtime_context_mobed.json').exists() else base_ctx)
+    return {'base': base_ctx, 'atlas': atlas_ctx, 'wia': wia_ctx, 'mobed': mobed_ctx}
 
 
 def _pick_context(pkg_name: str, contexts: dict) -> RuntimeContext:
     if 'atlas' in pkg_name or 'humanoid' in pkg_name:
         return contexts['atlas']
+    if 'wia_welding' in pkg_name or 'wia_weld' in pkg_name:
+        return contexts['wia']
+    if 'mobed' in pkg_name or 'transport' in pkg_name:
+        return contexts['mobed']
     return contexts['base']
 
 

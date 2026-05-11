@@ -1,0 +1,49 @@
+suite: etd.hyundai.mobed_transport acceptance tests
+version: 0.1.0
+skill_id: etd.hyundai.mobed_transport
+
+tests:
+  - id: standard_carry_nominal_pass
+    description: Standard carry transport completes with delivery confirmed
+    profile: standard_carry
+    input:
+      job_context: {chsProfile: standard_carry, priority: normal}
+    expect:
+      status: completed
+      result_keys: [payload_kg, delivered]
+
+  - id: heavy_carry_nominal_pass
+    description: Heavy carry (100 kg) transport completes
+    profile: heavy_carry
+    input:
+      job_context: {chsProfile: heavy_carry, payloadKg: 95.0}
+    expect:
+      status: completed
+
+  - id: human_aware_carry_nominal_pass
+    description: Human-aware carry profile completes
+    profile: human_aware_carry
+    input:
+      job_context: {chsProfile: human_aware_carry, priority: normal}
+    expect:
+      status: completed
+
+  - id: abort_human_forbidden_zone_pickup_nav
+    description: Human in forbidden zone aborts during navigation to pickup
+    profile: standard_carry
+    inject:
+      at_primitive: navigate_to_pickup
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_human_forbidden_zone_destination_nav
+    description: Human in forbidden zone aborts during navigation to destination
+    profile: standard_carry
+    inject:
+      at_primitive: navigate_to_destination
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone

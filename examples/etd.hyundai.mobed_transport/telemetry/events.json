@@ -1,0 +1,15 @@
+{
+  "events": [
+    "skill.started",
+    "skill.completed",
+    "skill.aborted",
+    "primitive.entered",
+    "primitive.exited",
+    "navigation.started",
+    "navigation.arrived",
+    "navigation.progress",
+    "transport.lifted",
+    "transport.delivered",
+    "safety.human_near"
+  ]
+}

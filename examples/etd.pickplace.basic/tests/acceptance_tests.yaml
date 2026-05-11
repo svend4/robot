@@ -1,13 +1,51 @@
-scenarios:
-  - name: nominal_cycle
+suite: etd.pickplace.basic acceptance tests
+version: 0.2.0
+skill_id: etd.pickplace.basic
+
+tests:
+  - id: small_box_cycle_pass
+    description: Default small_box profile completes full pick-place cycle
+    profile: small_box
     input:
-      payload_kg: 1.0
-      fragility: low
-    expected:
-      result: success
-      fallback_count_max: 0
-  - name: safety_pause
+      job_context: {chsProfile: small_box, priority: normal}
+    expect:
+      status: completed
+
+  - id: fragile_item_cycle_pass
+    description: Fragile item profile completes with payload reported
+    profile: fragile_item
     input:
-      human_too_close: true
-    expected:
-      result: protective_pause_or_abort
+      job_context: {chsProfile: fragile_item, priority: normal}
+    expect:
+      status: completed
+      result_keys: [payload_kg]
+
+  - id: abort_at_approach
+    description: Human in forbidden zone aborts at approach_arc
+    profile: small_box
+    inject:
+      at_primitive: approach_arc
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_at_grasp
+    description: Human enters forbidden zone during active grasp
+    profile: small_box
+    inject:
+      at_primitive: guarded_grasp
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_at_place
+    description: Human enters forbidden zone during place operation
+    profile: fragile_item
+    inject:
+      at_primitive: place_release
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone

@@ -1,0 +1,17 @@
+{
+  "runtime_version": "0.1.0",
+  "robot_class": "amr",
+  "available_services": [
+    "navigation.path_planner",
+    "perception.obstacle_detector",
+    "perception.scene_map",
+    "manipulation.lift_control",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "state.robot_pose",
+    "state.safety_state",
+    "safety.zone_monitor",
+    "telemetry.metrics"
+  ],
+  "platform_profile": "hyundai_mobed_amr"
+}

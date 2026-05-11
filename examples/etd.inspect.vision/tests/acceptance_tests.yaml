@@ -1,13 +1,41 @@
-scenarios:
-  - name: nominal_cycle
+suite: etd.inspect.vision acceptance tests
+version: 0.2.0
+skill_id: etd.inspect.vision
+
+tests:
+  - id: defect_scan_nominal_pass
+    description: Defect scan profile completes and reports QC result
+    profile: defect_scan
     input:
-      payload_kg: 1.0
-      fragility: low
-    expected:
-      result: success
-      fallback_count_max: 0
-  - name: safety_pause
+      job_context: {chsProfile: defect_scan, priority: normal}
+    expect:
+      status: completed
+      result_keys: [pass_qc, confidence]
+
+  - id: barcode_verify_nominal_pass
+    description: Barcode verification profile completes successfully
+    profile: barcode_verify
     input:
-      human_too_close: true
-    expected:
-      result: protective_pause_or_abort
+      job_context: {chsProfile: barcode_verify, priority: normal}
+    expect:
+      status: completed
+
+  - id: abort_at_approach_human_zone
+    description: Human in forbidden zone aborts at approach_viewpoint
+    profile: defect_scan
+    inject:
+      at_primitive: approach_viewpoint
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_during_capture_human_zone
+    description: Human intrusion during multi-frame capture aborts skill
+    profile: defect_scan
+    inject:
+      at_primitive: capture_evidence
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone

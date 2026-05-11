@@ -70,7 +70,7 @@ def _resolve_context(job: Dict[str, Any]) -> CobotContext:
         profile=profile_name,
         payload_kg=job.get('payloadKg', d['payloadKg']),
         force_window=job.get('forceWindowN', d['forceWindowN']),
-        human_ready_timeout_sec=d['humanReadyTimeoutSec'],
+        human_ready_timeout_sec=job.get('humanReadyTimeoutSec', d['humanReadyTimeoutSec']),
         safety_radius_m=d['safetyRadiusM'],
         offer_pose=d['offerPoseOffset'],
         body_mode=d['bodyMode'],

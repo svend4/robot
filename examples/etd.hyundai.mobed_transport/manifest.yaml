@@ -1,0 +1,82 @@
+apiVersion: etd.robotics/v0.1
+kind: SkillPackage
+metadata:
+  name: etd.hyundai.mobed_transport
+  version: 0.1.0
+  title: etd.hyundai.mobed_transport
+  vendor: etd-lab
+  description: >
+    Hyundai MobED / WIA H-Motion AMR autonomous transport skill. Navigates
+    point-to-point with obstacle avoidance, payload lift/lower, and
+    human-aware speed adaptation. Payload up to 100 kg at 1.2 m/s.
+  license: MIT
+  tags: [transport, amr, mobed, hyundai-wia, logistics, navigation]
+
+compatibility:
+  robotClass:
+    - mobile_manipulator
+    - amr
+  runtime: ">=0.1.0"
+  osLayer: application
+  requiresServices:
+    - navigation.path_planner
+    - perception.obstacle_detector
+    - manipulation.lift_control
+    - workflow.job_context
+    - state.robot_pose
+    - state.safety_state
+    - safety.zone_monitor
+  optionalServices:
+    - perception.scene_map
+    - telemetry.metrics
+    - workflow.mission_planner
+
+execution:
+  mode: task_oriented
+  realtimeClass: non_safety_critical
+  maxCycleTimeSec: 300
+  defaultTimeoutSec: 320
+  retryPolicy: bounded_retry
+  maxRetries: 1
+
+etdMapping:
+  MVS:
+    role: lift_platform_fine_control
+    concerns: [lift_height, payload_balance, dock_alignment]
+  SVS:
+    role: drive_path_following
+    concerns: [path_tracking, obstacle_response, speed_regulation]
+  BVS:
+    role: platform_stability_and_tilt
+    concerns: [platform_tilt, center_of_mass, payload_inertia]
+  CHS:
+    role: task_context
+    concerns: [origin, destination, payload_class, speed_tier, human_proximity]
+
+constraints:
+  payloadKgMax: 100.0
+  objectSizeCmMax: 200
+  minConfidence: 0.85
+
+safety:
+  packageCanNotOverride:
+    - emergency_stop
+    - collision_core
+    - locomotion_balance_core
+    - human_protective_stop
+  fallbackSkill: etd.safe_stop_and_retreat
+  fallbackMode: safe_hold_or_abort
+  requiresHumanAwareBehavior: true
+
+telemetry:
+  events:
+    - skill.started
+    - primitive.entered
+    - primitive.exited
+    - skill.completed
+    - skill.aborted
+    - navigation.started
+    - navigation.arrived
+    - transport.lifted
+    - transport.delivered
+    - safety.human_near

@@ -1,0 +1,34 @@
+{
+  "skillId": "etd.hyundai.wia_welding",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "weld",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "standard_seam",
+  "chsProfiles": [
+    "standard_seam",
+    "precision_seam",
+    "tack_weld"
+  ],
+  "primitiveOrder": [
+    "approach_seam_start",
+    "torch_align",
+    "ignite_arc",
+    "weld_traverse",
+    "extinguish_arc",
+    "post_weld_inspect",
+    "retract_clear"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 120,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "arc_unstable",
+    "seam_track_lost",
+    "torch_contact_force_exceeded"
+  ]
+}

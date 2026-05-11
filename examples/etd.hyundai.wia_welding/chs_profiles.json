@@ -1,0 +1,52 @@
+{
+  "profiles": [
+    {
+      "name": "standard_seam",
+      "taskType": "WELD",
+      "speedProfile": "industrial_safe",
+      "graspMode": "adaptive",
+      "payloadKg": 0.8,
+      "travelSpeedMmS": 6.0,
+      "wireFeedRateMmMin": 4500,
+      "amperageA": 160,
+      "voltageV": 19.5,
+      "seamTrackingEnabled": true,
+      "postInspectionEnabled": true,
+      "bodyMode": "stable_reach",
+      "armMode": "guarded_arc",
+      "wristMode": "impedance_fine"
+    },
+    {
+      "name": "precision_seam",
+      "taskType": "WELD",
+      "speedProfile": "precision",
+      "graspMode": "adaptive",
+      "payloadKg": 0.8,
+      "travelSpeedMmS": 3.5,
+      "wireFeedRateMmMin": 3800,
+      "amperageA": 130,
+      "voltageV": 17.5,
+      "seamTrackingEnabled": true,
+      "postInspectionEnabled": true,
+      "bodyMode": "micro_stable",
+      "armMode": "slow_arc",
+      "wristMode": "minimal_force"
+    },
+    {
+      "name": "tack_weld",
+      "taskType": "WELD",
+      "speedProfile": "fast",
+      "graspMode": "adaptive",
+      "payloadKg": 0.5,
+      "travelSpeedMmS": 0.0,
+      "wireFeedRateMmMin": 3000,
+      "amperageA": 100,
+      "voltageV": 16.0,
+      "seamTrackingEnabled": false,
+      "postInspectionEnabled": false,
+      "bodyMode": "stable_reach",
+      "armMode": "precision_arc",
+      "wristMode": "adaptive_contact"
+    }
+  ]
+}

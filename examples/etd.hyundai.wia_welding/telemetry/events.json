@@ -1,0 +1,14 @@
+{
+  "events": [
+    "skill.started",
+    "skill.completed",
+    "skill.aborted",
+    "primitive.entered",
+    "primitive.exited",
+    "welding.arc_started",
+    "welding.arc_stopped",
+    "welding.seam_progress",
+    "welding.arc_unstable",
+    "inspection.result"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "body_mode": "dynamic_balance",
+  "arm_mode": "guarded_arc",
+  "wrist_mode": "adaptive_contact",
+  "primitive": "navigate_to_pickup",
+  "speed_profile": "normal",
+  "force_profile": "compliant",
+  "timeout_sec": 300
+}

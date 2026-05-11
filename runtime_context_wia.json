@@ -1,0 +1,23 @@
+{
+  "runtime_version": "0.1.0",
+  "robot_class": "cobot",
+  "available_services": [
+    "perception.object_pose",
+    "perception.part_alignment",
+    "perception.seam_tracker",
+    "manipulation.arm_control",
+    "force_control.contact_feedback",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "state.robot_pose",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "safety.zone_monitor",
+    "welding.torch_control",
+    "welding.arc_monitor",
+    "vision.weld_inspection",
+    "telemetry.metrics"
+  ],
+  "platform_profile": "hyundai_wia_h_motion_cobot"
+}

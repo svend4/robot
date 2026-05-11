@@ -1,0 +1,84 @@
+apiVersion: etd.robotics/v0.1
+kind: SkillPackage
+metadata:
+  name: etd.hyundai.wia_welding
+  version: 0.1.0
+  title: etd.hyundai.wia_welding
+  vendor: etd-lab
+  description: >
+    Hyundai WIA cobot arc-welding skill. Executes a weld seam sequence with
+    vision-guided seam tracking, force-controlled torch positioning, and
+    post-weld inspection for Hyundai WIA H-Motion cobot platforms.
+  license: MIT
+  tags: [welding, cobot, hyundai-wia, automotive, arc-weld]
+
+compatibility:
+  robotClass:
+    - cobot
+    - fixed_manipulator
+  runtime: ">=0.1.0"
+  osLayer: application
+  requiresServices:
+    - perception.seam_tracker
+    - manipulation.arm_control
+    - force_control.contact_feedback
+    - workflow.job_context
+    - state.arm_state
+    - state.wrist_state
+    - state.safety_state
+    - safety.zone_monitor
+    - welding.torch_control
+    - welding.arc_monitor
+  optionalServices:
+    - vision.weld_inspection
+    - telemetry.metrics
+    - workflow.mission_planner
+
+execution:
+  mode: task_oriented
+  realtimeClass: soft_realtime
+  maxCycleTimeSec: 120
+  defaultTimeoutSec: 130
+  retryPolicy: no_retry
+  maxRetries: 0
+
+etdMapping:
+  MVS:
+    role: torch_wrist_micro_alignment
+    concerns: [torch_tip_position, contact_force, wrist_angle]
+  SVS:
+    role: arm_seam_path_tracking
+    concerns: [seam_trajectory, seam_offset_correction, travel_speed]
+  BVS:
+    role: cobot_base_stability
+    concerns: [base_stability, vibration_damping, reach_margin]
+  CHS:
+    role: task_context
+    concerns: [seam_type, wire_feed, amperage, travel_speed, inspection_mode]
+
+constraints:
+  payloadKgMax: 2.0
+  objectSizeCmMax: 50
+  minConfidence: 0.88
+
+safety:
+  packageCanNotOverride:
+    - emergency_stop
+    - collision_core
+    - certified_torque_limits
+    - human_protective_stop
+  fallbackSkill: etd.safe_stop_and_retreat
+  fallbackMode: safe_hold_or_abort
+  requiresHumanAwareBehavior: true
+
+telemetry:
+  events:
+    - skill.started
+    - primitive.entered
+    - primitive.exited
+    - skill.completed
+    - skill.aborted
+    - welding.arc_started
+    - welding.arc_stopped
+    - welding.seam_progress
+    - inspection.result

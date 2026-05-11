@@ -1,13 +1,45 @@
-scenarios:
-  - name: nominal_cycle
+suite: etd.cobot.safeassist acceptance tests
+version: 0.2.0
+skill_id: etd.cobot.safeassist
+
+tests:
+  - id: safe_handover_nominal_pass
+    description: Full safe handover cycle completes with human acceptance
+    profile: safe_handover
     input:
-      payload_kg: 1.0
-      fragility: low
-    expected:
-      result: success
-      fallback_count_max: 0
-  - name: safety_pause
+      job_context: {chsProfile: safe_handover, priority: normal}
+    expect:
+      status: completed
+      result_keys: [handover_accepted, payload_kg]
+
+  - id: abort_human_forbidden_zone_approach
+    description: Human in forbidden zone aborts at initial approach
+    profile: safe_handover
+    inject:
+      at_primitive: social_approach
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_human_forbidden_zone_during_handover
+    description: Human enters forbidden zone during active transfer
+    profile: safe_handover
+    inject:
+      at_primitive: handover_transfer
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_wait_human_ready_timeout
+    description: Skill aborts when human does not signal ready within timeout
+    profile: safe_handover
     input:
-      human_too_close: true
-    expected:
-      result: protective_pause_or_abort
+      job_context: {chsProfile: safe_handover, priority: normal, humanReadyTimeoutSec: 0.05}
+    inject:
+      at_primitive: wait_human_ready
+      safety_state: {human_ready_signal: false, human_in_forbidden_zone: false}
+    expect:
+      status: aborted
+      reason: human_ready_timeout

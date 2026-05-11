@@ -32,6 +32,9 @@ jobs:
       - name: Marketplace install-decision demo
         run: python sim/marketplace_demo.py
 
+      - name: Acceptance tests (skill scenario runner)
+        run: python sim/acceptance_runner.py
+
       - name: ASCII execution timeline (all skills)
         run: python sim/visualizer.py
 

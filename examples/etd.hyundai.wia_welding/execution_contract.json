@@ -1,0 +1,9 @@
+{
+  "body_mode": "stable_reach",
+  "arm_mode": "guarded_arc",
+  "wrist_mode": "impedance_fine",
+  "primitive": "ignite_arc",
+  "speed_profile": "industrial_safe",
+  "force_profile": "contact_seek",
+  "timeout_sec": 120
+}

@@ -1,0 +1,46 @@
+{
+  "profiles": [
+    {
+      "name": "standard_carry",
+      "taskType": "TRANSPORT",
+      "speedProfile": "normal",
+      "graspMode": "secure_hold",
+      "payloadKg": 50.0,
+      "maxSpeedMs": 1.2,
+      "humanAwareSpeedMs": 0.4,
+      "liftHeightMm": 80,
+      "navigationTimeoutSec": 180,
+      "bodyMode": "dynamic_balance",
+      "armMode": "guarded_arc",
+      "wristMode": "adaptive_contact"
+    },
+    {
+      "name": "heavy_carry",
+      "taskType": "TRANSPORT",
+      "speedProfile": "gentle",
+      "graspMode": "secure_hold",
+      "payloadKg": 100.0,
+      "maxSpeedMs": 0.6,
+      "humanAwareSpeedMs": 0.2,
+      "liftHeightMm": 60,
+      "navigationTimeoutSec": 300,
+      "bodyMode": "micro_stable",
+      "armMode": "slow_arc",
+      "wristMode": "minimal_force"
+    },
+    {
+      "name": "human_aware_carry",
+      "taskType": "TRANSPORT",
+      "speedProfile": "human_aware",
+      "graspMode": "compliant",
+      "payloadKg": 30.0,
+      "maxSpeedMs": 0.8,
+      "humanAwareSpeedMs": 0.2,
+      "liftHeightMm": 80,
+      "navigationTimeoutSec": 240,
+      "bodyMode": "dynamic_balance",
+      "armMode": "guarded_arc",
+      "wristMode": "adaptive_contact"
+    }
+  ]
+}

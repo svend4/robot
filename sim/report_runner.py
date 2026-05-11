@@ -10,23 +10,32 @@ import json
 from etd_reference_validator import ETDReferenceValidator, load_runtime_context, RuntimeContext
 
 
-def _pick_context(pkg_name: str, base_ctx, atlas_ctx):
+def _pick_context(pkg_name: str, ctxs: dict):
     if 'atlas' in pkg_name or 'humanoid' in pkg_name:
-        return atlas_ctx
-    return base_ctx
+        return ctxs['atlas']
+    if 'wia_welding' in pkg_name or 'wia_weld' in pkg_name:
+        return ctxs['wia']
+    if 'mobed' in pkg_name or 'transport' in pkg_name:
+        return ctxs['mobed']
+    return ctxs['base']
 
 
 def main():
     root = ROOT
     base_ctx = load_runtime_context(root / 'runtime_context.json')
-    atlas_ctx_path = root / 'runtime_context_atlas.json'
-    atlas_ctx = load_runtime_context(atlas_ctx_path) if atlas_ctx_path.exists() else base_ctx
+    atlas_ctx = (load_runtime_context(root / 'runtime_context_atlas.json')
+                 if (root / 'runtime_context_atlas.json').exists() else base_ctx)
+    wia_ctx = (load_runtime_context(root / 'runtime_context_wia.json')
+               if (root / 'runtime_context_wia.json').exists() else base_ctx)
+    mobed_ctx = (load_runtime_context(root / 'runtime_context_mobed.json')
+                 if (root / 'runtime_context_mobed.json').exists() else base_ctx)
+    ctxs = {'base': base_ctx, 'atlas': atlas_ctx, 'wia': wia_ctx, 'mobed': mobed_ctx}
 
     validation = []
     for pkg in sorted((root / 'examples').iterdir()):
         if not pkg.is_dir():
             continue
-        ctx = _pick_context(pkg.name, base_ctx, atlas_ctx)
+        ctx = _pick_context(pkg.name, ctxs)
         rep = ETDReferenceValidator(ctx).validate_package(pkg)
         validation.append({
             'package': pkg.name,

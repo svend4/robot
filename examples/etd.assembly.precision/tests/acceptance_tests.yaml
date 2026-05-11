@@ -1,13 +1,50 @@
-scenarios:
-  - name: nominal_cycle
+suite: etd.assembly.precision acceptance tests
+version: 0.2.0
+skill_id: etd.assembly.precision
+
+tests:
+  - id: peg_in_hole_nominal_pass
+    description: Standard peg-in-hole assembly completes successfully
+    profile: peg_in_hole
     input:
-      payload_kg: 1.0
-      fragility: low
-    expected:
-      result: success
-      fallback_count_max: 0
-  - name: safety_pause
+      job_context: {chsProfile: peg_in_hole, priority: normal}
+    expect:
+      status: completed
+
+  - id: tight_fit_nominal_pass
+    description: Tight-fit profile completes with higher precision requirements
+    profile: tight_fit
     input:
-      human_too_close: true
-    expected:
-      result: protective_pause_or_abort
+      job_context: {chsProfile: tight_fit, priority: normal}
+    expect:
+      status: completed
+
+  - id: abort_low_alignment_confidence
+    description: Aborts when vision alignment confidence drops below threshold
+    profile: peg_in_hole
+    inject:
+      at_primitive: vision_align
+      perception_override: {confidence: 0.65, aligned: false}
+    expect:
+      status: aborted
+      reason: alignment_confidence_below_threshold
+
+  - id: abort_human_forbidden_zone_contact
+    description: Aborts on human intrusion during contact phase
+    profile: peg_in_hole
+    inject:
+      at_primitive: contact_seek
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_seat_force_insufficient
+    description: Aborts when seating force feedback is too low during seat_verify
+    profile: peg_in_hole
+    inject:
+      at_primitive: seat_verify
+      force_override: {normal_force_n: 2.0}
+    expect:
+      status: aborted
+      reason: insufficient_seating_force

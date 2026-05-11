@@ -1,0 +1,24 @@
+{
+  "read": [
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "perception.seam_tracker",
+    "force_control.contact_feedback",
+    "welding.arc_monitor",
+    "workflow.job_context",
+    "vision.weld_inspection"
+  ],
+  "write": [
+    "command.skill_intent",
+    "welding.torch_control",
+    "telemetry.events",
+    "telemetry.metrics",
+    "workflow.qc_report"
+  ],
+  "forbidden": [
+    "command.servo_torque",
+    "command.emergency_stop_override",
+    "command.collision_disable"
+  ]
+}

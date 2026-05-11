@@ -1,0 +1,32 @@
+{
+  "skillId": "etd.hyundai.mobed_transport",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "transport",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "standard_carry",
+  "chsProfiles": [
+    "standard_carry",
+    "heavy_carry",
+    "human_aware_carry"
+  ],
+  "primitiveOrder": [
+    "navigate_to_pickup",
+    "dock_and_lift",
+    "navigate_to_destination",
+    "dock_and_lower",
+    "confirm_delivery"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 300,
+    "noSafetyViolation": true
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "obstacle_blocking_path",
+    "payload_balance_lost",
+    "navigation_timeout"
+  ]
+}

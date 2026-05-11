@@ -110,10 +110,21 @@ def run(job_context: Dict[str, Any], middleware: Any = None) -> Dict[str, Any]:
     ctx = _resolve_context(job_context)
     completed: List[str] = []
 
+    def _safety_state() -> Dict[str, Any]:
+        return (middleware.read('state.safety_state') or {}) if hasattr(middleware, 'read') else {}
+
     _publish(middleware, 'skill.started', {'profile': ctx.profile, 'precision_mm': ctx.precision_mm})
 
     for primitive in PRIMITIVE_ORDER:
         _publish(middleware, 'primitive.entered', {'primitive': primitive})
+
+        safety = _safety_state()
+        if safety.get('human_in_forbidden_zone'):
+            _publish(middleware, 'skill.aborted', {
+                'reason': 'human_in_forbidden_zone', 'at_primitive': primitive,
+            })
+            return {'status': 'aborted', 'reason': 'human_in_forbidden_zone',
+                    'at_primitive': primitive, 'primitives_completed': completed}
 
         # ── Vision alignment gate ─────────────────────────────────────────────
         if primitive == 'vision_align':

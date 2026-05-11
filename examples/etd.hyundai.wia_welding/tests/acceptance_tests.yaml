@@ -1,0 +1,51 @@
+suite: etd.hyundai.wia_welding acceptance tests
+version: 0.1.0
+skill_id: etd.hyundai.wia_welding
+
+tests:
+  - id: standard_seam_nominal_pass
+    description: Standard seam weld completes with inspection pass
+    profile: standard_seam
+    input:
+      job_context: {chsProfile: standard_seam, priority: normal}
+    expect:
+      status: completed
+      result_keys: [seam_length_mm, amperage_a, inspection_pass]
+
+  - id: tack_weld_nominal_pass
+    description: Tack weld profile completes (no inspection required)
+    profile: tack_weld
+    input:
+      job_context: {chsProfile: tack_weld, priority: normal}
+    expect:
+      status: completed
+
+  - id: abort_human_forbidden_zone_approach
+    description: Human in forbidden zone aborts before torch approach
+    profile: standard_seam
+    inject:
+      at_primitive: approach_seam_start
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_human_during_traversal
+    description: Human enters arc zone during active weld traversal
+    profile: standard_seam
+    inject:
+      at_primitive: weld_traverse
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_seam_track_confidence_low
+    description: Aborts when seam tracker confidence below threshold at torch_align
+    profile: precision_seam
+    inject:
+      at_primitive: torch_align
+      perception_override: {confidence: 0.70}
+    expect:
+      status: aborted
+      reason: seam_track_confidence_low

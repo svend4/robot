@@ -13,14 +13,18 @@ if str(ROOT) not in sys.path:
 from etd_reference_validator import load_runtime_context
 from marketplace.skill_store import SkillStore, default_runtime_context
 
-_ATLAS_CTX_PATH = ROOT / 'runtime_context_atlas.json'
-_ATLAS_SKILLS = {'humanoid', 'atlas'}
+_CTX_FILES = {
+    'humanoid': ROOT / 'runtime_context_atlas.json',
+    'atlas':    ROOT / 'runtime_context_atlas.json',
+    'welding':  ROOT / 'runtime_context_wia.json',
+    'transport': ROOT / 'runtime_context_mobed.json',
+}
 
 
 def _pick_context(entry_family: str):
-    if any(kw in entry_family for kw in _ATLAS_SKILLS):
-        if _ATLAS_CTX_PATH.exists():
-            return load_runtime_context(_ATLAS_CTX_PATH)
+    for kw, path in _CTX_FILES.items():
+        if kw in entry_family and path.exists():
+            return load_runtime_context(path)
     return default_runtime_context()
 
 

@@ -1,0 +1,22 @@
+{
+  "read": [
+    "state.robot_pose",
+    "state.safety_state",
+    "perception.obstacle_detector",
+    "perception.scene_map",
+    "navigation.path_planner",
+    "workflow.job_context"
+  ],
+  "write": [
+    "command.skill_intent",
+    "manipulation.lift_control",
+    "telemetry.events",
+    "telemetry.metrics",
+    "workflow.delivery_report"
+  ],
+  "forbidden": [
+    "command.emergency_stop_override",
+    "command.collision_disable",
+    "command.locomotion_override"
+  ]
+}

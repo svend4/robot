@@ -88,6 +88,44 @@
       "supportLevel": "community",
       "platformTarget": "boston_dynamics_atlas",
       "notes": "Reference skill for Hyundai Motor Group manufacturing tasks. Requires locomotion.walk_planner and state.balance_state services from Atlas OEM stack."
+    },
+    {
+      "skillId": "etd.hyundai.wia_welding",
+      "version": "0.1.0",
+      "family": "welding",
+      "packagePath": "examples/etd.hyundai.wia_welding",
+      "publisher": "etd-lab",
+      "publisherVerification": "reference",
+      "riskLevel": "medium",
+      "certificationState": "reference_validated",
+      "targetUse": "arc welding seam execution for Hyundai WIA cobot platforms",
+      "licenseModel": "open_source",
+      "pricingModel": "free",
+      "sourceAvailability": "full_source",
+      "requiresEntitlement": false,
+      "requiresSignature": true,
+      "supportLevel": "community",
+      "platformTarget": "hyundai_wia_h_motion",
+      "notes": "Hyundai WIA H-Motion cobot arc welding skill with vision seam tracking. Requires welding.torch_control and welding.arc_monitor OEM services."
+    },
+    {
+      "skillId": "etd.hyundai.mobed_transport",
+      "version": "0.1.0",
+      "family": "transport",
+      "packagePath": "examples/etd.hyundai.mobed_transport",
+      "publisher": "etd-lab",
+      "publisherVerification": "reference",
+      "riskLevel": "low",
+      "certificationState": "reference_validated",
+      "targetUse": "autonomous point-to-point transport for Hyundai MobED AMR platform",
+      "licenseModel": "open_source",
+      "pricingModel": "free",
+      "sourceAvailability": "full_source",
+      "requiresEntitlement": false,
+      "requiresSignature": true,
+      "supportLevel": "community",
+      "platformTarget": "hyundai_mobed_amr",
+      "notes": "MobED / WIA H-Motion AMR logistics transport with human-aware speed adaptation. Payload up to 100 kg at up to 1.2 m/s."
     }
   ]
 }
