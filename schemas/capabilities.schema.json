@@ -1,6 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://etd-spec.local/capabilities.schema.json",
-  "title": "ETD capabilities schema",
-  "type": "object"
+  "title": "ETD Skill Capabilities",
+  "description": "Whitelist of read/write capabilities and explicit forbidden capabilities for safety enforcement.",
+  "type": "object",
+  "required": ["read", "write"],
+  "additionalProperties": false,
+  "properties": {
+    "read": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" },
+      "description": "Services the skill may read. Format: <namespace>.<topic>"
+    },
+    "write": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" },
+      "description": "Services the skill may write. Must include command.skill_intent; must NOT include forbidden commands."
+    },
+    "forbidden": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "command.servo_torque",
+          "command.joint_limit_override",
+          "command.collision_disable",
+          "command.emergency_stop_override",
+          "command.balance_core_override",
+          "command.locomotion_override",
+          "command.safety_zone_disable"
+        ]
+      },
+      "description": "Explicitly declared forbidden capabilities (safety enforcement)"
+    }
+  }
 }

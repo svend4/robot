@@ -1,0 +1,20 @@
+{
+  "events": [
+    "skill.started",
+    "skill.completed",
+    "skill.aborted",
+    "skill.failed",
+    "primitive.entered",
+    "primitive.exited",
+    "locomotion.walking_started",
+    "locomotion.target_reached",
+    "grasp.contact_detected",
+    "grasp.object_secured",
+    "carry.balanced",
+    "delivery.deposited",
+    "handover.offered",
+    "handover.accepted",
+    "fallback.triggered",
+    "balance.warning"
+  ]
+}

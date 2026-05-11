@@ -1,13 +1,40 @@
-name: validate-examples
-on: [push, pull_request]
+name: ETD CI — Validate, Report, Marketplace
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['main']
+
 jobs:
   validate:
+    name: Validate all skill packages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r requirements.txt
-      - run: python validate_examples.py
-      - run: python sim/report_runner.py
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate all examples (JSON Schema + semantic checks)
+        run: python validate_examples.py
+
+      - name: Generate validation report
+        run: python sim/report_runner.py
+
+      - name: Marketplace install-decision demo
+        run: python sim/marketplace_demo.py
+
+      - name: ASCII execution timeline (all skills)
+        run: python sim/visualizer.py
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: etd-validation-report
+          path: reports/

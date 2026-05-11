@@ -1,0 +1,119 @@
+apiVersion: etd.robotics/v0.1
+kind: SkillPackage
+metadata:
+  name: etd.atlas.humanoid_walkfetch
+  version: 0.1.0
+  title: Atlas Humanoid Walk-and-Fetch
+  vendor: etd-lab
+  description: >
+    ETD reference skill for Boston Dynamics Atlas (Hyundai Motor Group).
+    Walk to a target location, identify and grasp an object, carry it to
+    a destination, and hand it over or deposit it. Designed for human-centric
+    environments in automotive production (HMGMA sequencing tasks).
+    Inspired by the Hyundai AI Robotics Strategy announced at CES 2026.
+  license: MIT
+  homepage: https://github.com/svend4/robot
+  tags:
+    - humanoid
+    - atlas
+    - hyundai
+    - walk-and-fetch
+    - automotive
+
+compatibility:
+  robotClass:
+    - humanoid
+  runtime: '>=0.1.0'
+  osLayer: application
+  requiresServices:
+    - perception.object_pose
+    - perception.scene_map
+    - manipulation.arm_control
+    - locomotion.walk_planner
+    - workflow.job_context
+    - state.robot_pose
+    - state.arm_state
+    - state.wrist_state
+    - state.safety_state
+    - state.balance_state
+    - safety.zone_monitor
+    - safety.human_detector
+  optionalServices:
+    - perception.part_alignment
+    - telemetry.metrics
+    - workflow.mission_planner
+
+execution:
+  mode: task_oriented
+  realtimeClass: non_safety_critical
+  maxCycleTimeSec: 120
+  defaultTimeoutSec: 150
+  retryPolicy: bounded_retry
+  maxRetries: 1
+
+etdMapping:
+  MVS:
+    role: grasping_wrist_and_fine_contact
+    concerns:
+      - wrist_pose
+      - grasp_force
+      - contact_stability
+      - object_handover_compliance
+  SVS:
+    role: arm_trajectory_reach_and_carry
+    concerns:
+      - elbow_path
+      - approach_curve
+      - obstacle_bypass
+      - carry_stabilization
+  BVS:
+    role: whole_body_locomotion_and_posture
+    concerns:
+      - gait_plan
+      - center_of_mass_margin
+      - reachability_during_walk
+      - balance_during_carry
+      - stance_at_target
+  CHS:
+    role: task_context_and_mission_parameters
+    concerns:
+      - fetch_target
+      - delivery_destination
+      - object_class
+      - payload_class
+      - priority
+      - human_handover_mode
+
+constraints:
+  payloadKgMax: 10
+  objectSizeCmMax: 60
+  minConfidence: 0.85
+  maxReachM: 0.85
+
+safety:
+  packageCanNotOverride:
+    - emergency_stop
+    - collision_core
+    - locomotion_balance_core
+    - certified_torque_limits
+    - human_protective_stop
+  fallbackSkill: etd.safe_stop_and_retreat
+  fallbackMode: safe_hold_or_abort
+  requiresHumanAwareBehavior: true
+
+telemetry:
+  events:
+    - skill.started
+    - primitive.entered
+    - primitive.exited
+    - locomotion.walking_started
+    - locomotion.target_reached
+    - grasp.contact_detected
+    - grasp.object_secured
+    - carry.balanced
+    - delivery.deposited
+    - handover.offered
+    - handover.accepted
+    - fallback.triggered
+    - skill.completed
+    - skill.aborted

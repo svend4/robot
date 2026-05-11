@@ -4,4 +4,4 @@ __pycache__/
 .DS_Store
 release_out/*.zip
 *.zip
-
+keys/etd_signing_key.hex

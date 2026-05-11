@@ -69,6 +69,25 @@
       "requiresEntitlement": true,
       "requiresSignature": true,
       "supportLevel": "enterprise"
+    },
+    {
+      "skillId": "etd.atlas.humanoid_walkfetch",
+      "version": "0.1.0",
+      "family": "humanoid",
+      "packagePath": "examples/etd.atlas.humanoid_walkfetch",
+      "publisher": "etd-lab",
+      "publisherVerification": "reference",
+      "riskLevel": "medium",
+      "certificationState": "reference_validated",
+      "targetUse": "Atlas humanoid walk-and-fetch for automotive production (HMGMA)",
+      "licenseModel": "open_source",
+      "pricingModel": "free",
+      "sourceAvailability": "full_source",
+      "requiresEntitlement": false,
+      "requiresSignature": true,
+      "supportLevel": "community",
+      "platformTarget": "boston_dynamics_atlas",
+      "notes": "Reference skill for Hyundai Motor Group manufacturing tasks. Requires locomotion.walk_planner and state.balance_state services from Atlas OEM stack."
     }
   ]
 }

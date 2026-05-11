@@ -1,0 +1,34 @@
+# ETD ExecuteSkill — ROS 2 Action Definition
+# Builds to etd_ros2_bridge/action/ExecuteSkill.action
+#
+# Goal: JSON-encoded CHS job context
+# Feedback: current event name during skill execution
+# Result: JSON-encoded execution result
+
+# ── Goal ─────────────────────────────────────────────────────────────────────
+# JSON-encoded job context dict (chsProfile, payloadKg, destination, ...)
+string job_context_json
+
+# Skill ID to execute (optional — server may be bound to one skill at launch)
+string skill_id
+
+# ---
+
+# ── Feedback ──────────────────────────────────────────────────────────────────
+# Current event emitted by the skill (skill.started, primitive.entered, ...)
+string current_event
+
+# Current primitive being executed
+string current_primitive
+
+# ---
+
+# ── Result ────────────────────────────────────────────────────────────────────
+# JSON-encoded result dict (status, primitives_executed, profile, ...)
+string result_json
+
+# Short status string: completed | aborted | failed
+string status
+
+# Error/abort reason (empty if status == completed)
+string reason

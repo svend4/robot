@@ -1,0 +1,53 @@
+{
+  "profiles": [
+    {
+      "name": "sequencing_carry",
+      "taskType": "HUMANOID_FETCH",
+      "payloadKg": 5.0,
+      "fragility": "medium",
+      "speedProfile": "industrial_safe",
+      "bodyMode": "walk_carry_stable",
+      "armMode": "carry_arc",
+      "wristMode": "secure_grip",
+      "graspMode": "parallel_grip",
+      "forceWindowN": [15, 60],
+      "walkSpeedMs": 0.8,
+      "humanAwareRadius": 2.0,
+      "yieldToHuman": true,
+      "deliveryMode": "deposit"
+    },
+    {
+      "name": "precision_fetch",
+      "taskType": "HUMANOID_FETCH",
+      "payloadKg": 2.0,
+      "fragility": "high",
+      "speedProfile": "gentle",
+      "bodyMode": "micro_stable",
+      "armMode": "slow_arc",
+      "wristMode": "minimal_force",
+      "graspMode": "soft_contact",
+      "forceWindowN": [5, 20],
+      "precisionMm": 2.0,
+      "walkSpeedMs": 0.4,
+      "humanAwareRadius": 2.5,
+      "yieldToHuman": true,
+      "deliveryMode": "deposit"
+    },
+    {
+      "name": "human_handover",
+      "taskType": "HUMANOID_FETCH",
+      "payloadKg": 3.0,
+      "fragility": "medium",
+      "speedProfile": "human_aware",
+      "bodyMode": "social_standby",
+      "armMode": "handover_arc",
+      "wristMode": "compliant_release",
+      "graspMode": "secure_hold",
+      "forceWindowN": [5, 30],
+      "walkSpeedMs": 0.5,
+      "humanAwareRadius": 1.5,
+      "yieldToHuman": true,
+      "deliveryMode": "handover"
+    }
+  ]
+}

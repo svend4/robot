@@ -1,0 +1,20 @@
+{
+  "body_mode": "walk_carry_stable",
+  "arm_mode": "carry_arc",
+  "wrist_mode": "secure_grip",
+  "primitive": "localize_target",
+  "target_pose": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "qx": 0,
+    "qy": 0,
+    "qz": 0,
+    "qw": 1,
+    "frame": "world_map"
+  },
+  "speed_profile": "industrial_safe",
+  "force_profile": "adaptive",
+  "timeout_sec": 120,
+  "yield_on_human_detect": true
+}

@@ -1,0 +1,66 @@
+suite: etd.atlas.humanoid_walkfetch acceptance tests
+version: 0.1.0
+
+tests:
+  - id: walk_fetch_sequencing_carry_pass
+    description: Basic sequencing carry completes with payload 5kg
+    profile: sequencing_carry
+    input:
+      fetchTarget: {x: 3.0, y: 1.5, frame: world_map}
+      deliveryDestination: {x: 8.0, y: 0.0, frame: world_map}
+      payloadKg: 5.0
+    expect:
+      status: completed
+      primitives_executed: 9
+      balance_maintained: true
+
+  - id: walk_fetch_precision_carry_pass
+    description: Precision fetch with 2kg fragile object
+    profile: precision_fetch
+    input:
+      fetchTarget: {x: 2.0, y: 0.5, frame: world_map}
+      deliveryDestination: {x: 6.0, y: 0.0, frame: world_map}
+      payloadKg: 1.8
+    expect:
+      status: completed
+      primitives_executed: 9
+
+  - id: walk_fetch_human_handover_pass
+    description: Fetch and hand over to human worker
+    profile: human_handover
+    input:
+      fetchTarget: {x: 2.5, y: 1.0, frame: world_map}
+      deliveryDestination: {x: 0.0, y: 0.0, frame: robot_front}
+      humanId: WORKER-01
+      payloadKg: 2.5
+    expect:
+      status: completed
+      handover_accepted: true
+
+  - id: abort_on_forbidden_zone
+    description: Skill aborts when human enters forbidden zone during walk
+    profile: sequencing_carry
+    inject:
+      at_primitive: walk_to_target
+      safety_state: {human_in_forbidden_zone: true}
+    expect:
+      status: aborted
+      reason: human_in_forbidden_zone
+
+  - id: abort_on_grasp_low_confidence
+    description: Skill aborts when grasp confidence is below threshold
+    profile: precision_fetch
+    inject:
+      at_primitive: approach_object
+      perception_override: {confidence: 0.60}
+    expect:
+      status: aborted
+      reason: grasp_confidence_low
+
+  - id: payload_over_limit_blocked
+    description: Validator rejects skill if payload exceeds payloadKgMax=10
+    profile: sequencing_carry
+    input:
+      payloadKg: 15.0
+    expect:
+      validator_error: payload_within_constraints

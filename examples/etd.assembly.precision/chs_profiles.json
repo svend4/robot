@@ -6,10 +6,8 @@
       "payloadKg": 0.8,
       "precisionMm": 0.5,
       "targetDepthMm": 18,
-      "forceWindowN": [
-        5,
-        20
-      ],
+      "forceWindowN": [5, 20],
+      "speedProfile": "precision",
       "alignmentMode": "vision_plus_contact",
       "bodyMode": "rigid_stable",
       "armMode": "insertion_axis_hold",
@@ -21,10 +19,8 @@
       "payloadKg": 0.4,
       "precisionMm": 0.3,
       "targetDepthMm": 12,
-      "forceWindowN": [
-        4,
-        15
-      ],
+      "forceWindowN": [4, 15],
+      "speedProfile": "precision",
       "alignmentMode": "fine_vision_guided",
       "bodyMode": "micro_stable",
       "armMode": "slow_axis_approach",

@@ -1,6 +1,65 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://etd-spec.local/execution_contract.schema.json",
-  "title": "ETD execution_contract schema",
-  "type": "object"
+  "title": "ETD Execution Contract",
+  "description": "Declares the initial execution parameters for a skill: modes, primitive, target pose, speed/force profiles, timeout.",
+  "type": "object",
+  "required": ["body_mode", "arm_mode", "wrist_mode", "primitive", "speed_profile", "force_profile", "timeout_sec"],
+  "additionalProperties": false,
+  "properties": {
+    "body_mode": {
+      "type": "string",
+      "description": "BVS body posture at execution start"
+    },
+    "arm_mode": {
+      "type": "string",
+      "description": "SVS arm trajectory mode at execution start"
+    },
+    "wrist_mode": {
+      "type": "string",
+      "description": "MVS wrist contact mode at execution start"
+    },
+    "primitive": {
+      "type": "string",
+      "description": "First primitive to execute"
+    },
+    "target_pose": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "qx": { "type": "number", "default": 0 },
+        "qy": { "type": "number", "default": 0 },
+        "qz": { "type": "number", "default": 0 },
+        "qw": { "type": "number", "default": 1 },
+        "frame": { "type": "string", "default": "robot_base" }
+      }
+    },
+    "speed_profile": {
+      "type": "string",
+      "enum": ["fast", "normal", "gentle", "slow_scan", "industrial_safe", "precision"]
+    },
+    "force_profile": {
+      "type": "string",
+      "enum": ["adaptive", "fixed", "compliant", "zero_force", "contact_seek"]
+    },
+    "timeout_sec": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "scan_path": {
+      "type": "string",
+      "description": "Optional: named scan path for inspection skills"
+    },
+    "yield_on_human_detect": { "type": "boolean" },
+    "force_window_n": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number", "minimum": 0 }
+    }
+  }
 }

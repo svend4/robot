@@ -1,0 +1,22 @@
+{
+  "runtime_version": "0.1.0",
+  "robot_class": "humanoid",
+  "platform_profile": "boston_dynamics_atlas",
+  "available_services": [
+    "perception.object_pose",
+    "perception.scene_map",
+    "perception.part_alignment",
+    "manipulation.arm_control",
+    "locomotion.walk_planner",
+    "workflow.job_context",
+    "workflow.mission_planner",
+    "state.robot_pose",
+    "state.arm_state",
+    "state.wrist_state",
+    "state.safety_state",
+    "state.balance_state",
+    "safety.zone_monitor",
+    "safety.human_detector",
+    "telemetry.metrics"
+  ]
+}

@@ -1,6 +1,67 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://etd-spec.local/skill.schema.json",
-  "title": "ETD skill schema",
-  "type": "object"
+  "title": "ETD Skill Descriptor",
+  "description": "Runtime descriptor for an ETD skill package: ID, entrypoint, profiles, primitive order, success/abort criteria.",
+  "type": "object",
+  "required": ["skillId", "version", "entrypoint", "family", "executionMode", "defaultChsProfile", "chsProfiles", "primitiveOrder", "successCriteria", "abortConditions"],
+  "additionalProperties": false,
+  "properties": {
+    "skillId": {
+      "type": "string",
+      "pattern": "^etd\\.[a-z0-9]+\\.[a-z0-9_]+$",
+      "description": "Must match manifest.metadata.name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "entrypoint": {
+      "type": "string",
+      "pattern": "^[a-z0-9/_]+\\.py:[a-z_]+$",
+      "description": "Path to entry module and function, e.g. policies/chs_adapter.py:run"
+    },
+    "family": {
+      "type": "string",
+      "enum": ["pickplace", "assembly", "inspect", "cobot", "transport", "weld", "humanoid", "navigation"]
+    },
+    "executionMode": {
+      "type": "string",
+      "enum": ["task_oriented", "continuous", "event_driven", "reactive"]
+    },
+    "supportsTransfer": { "type": "boolean" },
+    "supportsHumanAwareMode": { "type": "boolean" },
+    "defaultChsProfile": {
+      "type": "string",
+      "description": "Must match one entry in chsProfiles"
+    },
+    "chsProfiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "primitiveOrder": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "string" },
+      "description": "Ordered list of movement primitives executed by this skill"
+    },
+    "successCriteria": {
+      "type": "object",
+      "required": ["maxCycleTimeSec", "noSafetyViolation"],
+      "additionalProperties": false,
+      "properties": {
+        "maxCycleTimeSec": { "type": "number", "exclusiveMinimum": 0 },
+        "noSafetyViolation": { "type": "boolean" },
+        "minConfidenceScore": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "maxForceExceedanceCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "abortConditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  }
 }

@@ -4,22 +4,32 @@
     {
       "package": "etd.assembly.precision",
       "valid": true,
-      "level": "A"
+      "level": "A",
+      "score": 1.0
+    },
+    {
+      "package": "etd.atlas.humanoid_walkfetch",
+      "valid": true,
+      "level": "A",
+      "score": 1.0
     },
     {
       "package": "etd.cobot.safeassist",
       "valid": true,
-      "level": "A"
+      "level": "A",
+      "score": 1.0
     },
     {
       "package": "etd.inspect.vision",
       "valid": true,
-      "level": "A"
+      "level": "A",
+      "score": 1.0
     },
     {
       "package": "etd.pickplace.basic",
       "valid": true,
-      "level": "A"
+      "level": "A",
+      "score": 1.0
     }
   ],
   "failure_summary": {

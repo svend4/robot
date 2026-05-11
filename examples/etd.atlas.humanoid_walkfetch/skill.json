@@ -1,0 +1,40 @@
+{
+  "skillId": "etd.atlas.humanoid_walkfetch",
+  "version": "0.1.0",
+  "entrypoint": "policies/chs_adapter.py:run",
+  "family": "humanoid",
+  "executionMode": "task_oriented",
+  "supportsTransfer": true,
+  "supportsHumanAwareMode": true,
+  "defaultChsProfile": "sequencing_carry",
+  "chsProfiles": [
+    "sequencing_carry",
+    "precision_fetch",
+    "human_handover"
+  ],
+  "primitiveOrder": [
+    "localize_target",
+    "plan_walk_path",
+    "walk_to_target",
+    "stabilize_stance",
+    "approach_object",
+    "grasp_object",
+    "secure_carry_posture",
+    "walk_to_destination",
+    "deposit_or_handover"
+  ],
+  "successCriteria": {
+    "maxCycleTimeSec": 120,
+    "noSafetyViolation": true,
+    "minConfidenceScore": 0.85
+  },
+  "abortConditions": [
+    "human_in_forbidden_zone",
+    "balance_loss_detected",
+    "payload_out_of_range",
+    "localization_failure",
+    "grasp_confidence_low",
+    "station_incompatible",
+    "missing_service"
+  ]
+}

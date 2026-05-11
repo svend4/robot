@@ -1,6 +1,185 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://etd-spec.local/manifest.schema.json",
-  "title": "ETD manifest schema",
-  "type": "object"
+  "title": "ETD SkillPackage Manifest",
+  "description": "Defines a robot skill package: identity, compatibility, execution parameters, ETD-layer mapping, safety constraints, and telemetry.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "compatibility", "execution", "etdMapping", "constraints", "safety", "telemetry"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "pattern": "^etd\\.robotics/v[0-9]+\\.[0-9]+$",
+      "description": "API version in the form etd.robotics/vX.Y"
+    },
+    "kind": {
+      "type": "string",
+      "const": "SkillPackage"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version", "vendor", "description", "license"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^etd\\.[a-z0-9]+\\.[a-z0-9_]+$",
+          "description": "Canonical skill ID in the form etd.<family>.<name>"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "SemVer version string"
+        },
+        "title": { "type": "string" },
+        "vendor": { "type": "string" },
+        "description": { "type": "string", "minLength": 10 },
+        "license": {
+          "type": "string",
+          "enum": ["MIT", "Apache-2.0", "GPL-3.0", "LGPL-2.1", "BSD-2-Clause", "BSD-3-Clause", "proprietary", "commercial"]
+        },
+        "homepage": { "type": "string", "format": "uri" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["robotClass", "runtime", "osLayer", "requiresServices"],
+      "additionalProperties": false,
+      "properties": {
+        "robotClass": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["humanoid", "mobile_manipulator", "fixed_manipulator", "mobile_platform", "cobot", "amr"]
+          }
+        },
+        "runtime": {
+          "type": "string",
+          "pattern": "^(>=|>|==|~=|\\^)[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Runtime version constraint, e.g. >=0.1.0"
+        },
+        "osLayer": {
+          "type": "string",
+          "enum": ["application", "middleware", "system"]
+        },
+        "requiresServices": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "optionalServices": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "required": ["mode", "realtimeClass", "maxCycleTimeSec", "defaultTimeoutSec", "retryPolicy", "maxRetries"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["task_oriented", "continuous", "event_driven", "reactive"]
+        },
+        "realtimeClass": {
+          "type": "string",
+          "enum": ["non_safety_critical", "bounded_contact_sensitive", "soft_realtime", "hard_realtime"]
+        },
+        "maxCycleTimeSec": { "type": "number", "exclusiveMinimum": 0 },
+        "defaultTimeoutSec": { "type": "number", "exclusiveMinimum": 0 },
+        "retryPolicy": {
+          "type": "string",
+          "enum": ["no_retry", "bounded_retry", "infinite_retry"]
+        },
+        "maxRetries": { "type": "integer", "minimum": 0, "maximum": 10 }
+      }
+    },
+    "etdMapping": {
+      "type": "object",
+      "required": ["MVS", "SVS", "BVS", "CHS"],
+      "additionalProperties": false,
+      "description": "Maps skill responsibilities to ETD movement layers",
+      "properties": {
+        "MVS": { "$ref": "#/$defs/etdLayer" },
+        "SVS": { "$ref": "#/$defs/etdLayer" },
+        "BVS": { "$ref": "#/$defs/etdLayer" },
+        "CHS": { "$ref": "#/$defs/etdLayer" }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["payloadKgMax", "objectSizeCmMax", "minConfidence"],
+      "additionalProperties": false,
+      "properties": {
+        "payloadKgMax": { "type": "number", "exclusiveMinimum": 0 },
+        "objectSizeCmMax": { "type": "number", "exclusiveMinimum": 0 },
+        "minConfidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "precisionMmMax": { "type": "number", "exclusiveMinimum": 0 },
+        "maxReachM": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "required": ["packageCanNotOverride", "fallbackSkill", "fallbackMode", "requiresHumanAwareBehavior"],
+      "additionalProperties": false,
+      "properties": {
+        "packageCanNotOverride": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "emergency_stop",
+              "collision_core",
+              "locomotion_balance_core",
+              "certified_torque_limits",
+              "human_protective_stop",
+              "servo_torque",
+              "joint_limits"
+            ]
+          }
+        },
+        "fallbackSkill": { "type": "string" },
+        "fallbackMode": {
+          "type": "string",
+          "enum": ["safe_hold_or_abort", "immediate_abort", "graceful_stop", "human_handover"]
+        },
+        "requiresHumanAwareBehavior": { "type": "boolean" }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": ["events"],
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string" },
+          "description": "Must include at least one of skill.started / skill.completed / skill.aborted / skill.failed"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "etdLayer": {
+      "type": "object",
+      "required": ["role", "concerns"],
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string", "minLength": 3 },
+        "concerns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
 }
