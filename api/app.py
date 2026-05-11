@@ -30,6 +30,7 @@ from pydantic import BaseModel
 
 from etd_reference_validator import ETDReferenceValidator, RuntimeContext, load_runtime_context
 from marketplace.skill_store import SkillStore, default_runtime_context
+from adapters.station_profile_loader import load_all_profiles, check_skill_compatible
 
 app = FastAPI(
     title='ETD Skill Store API',
@@ -42,6 +43,7 @@ app = FastAPI(
 _ctx_path = ROOT / 'runtime_context.json'
 _default_ctx = load_runtime_context(_ctx_path) if _ctx_path.exists() else RuntimeContext()
 _store = SkillStore(ROOT)
+_station_profiles_dir = ROOT / 'station_profiles'
 
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ class InstallRequest(BaseModel):
     robot_class: Optional[str] = 'humanoid'
     runtime_version: Optional[str] = '0.1.0'
     available_services: Optional[List[str]] = []
+    station_id: Optional[str] = None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -117,12 +120,32 @@ def get_skill(skill_id: str) -> JSONResponse:
     return JSONResponse(content=entry)
 
 
+@app.get('/store/stations', tags=['store'])
+def list_stations() -> JSONResponse:
+    """List all known station profiles."""
+    profiles = load_all_profiles(_station_profiles_dir)
+    return JSONResponse(content={
+        'count': len(profiles),
+        'stations': [p.to_dict() for p in profiles.values()],
+    })
+
+
+@app.get('/store/stations/{station_id}', tags=['store'])
+def get_station(station_id: str) -> JSONResponse:
+    """Get a single station profile by ID."""
+    profiles = load_all_profiles(_station_profiles_dir)
+    if station_id not in profiles:
+        raise HTTPException(status_code=404, detail=f'Station not found: {station_id}')
+    return JSONResponse(content=profiles[station_id].to_dict())
+
+
 @app.post('/store/install', tags=['store'])
 def install_decision(req: InstallRequest) -> JSONResponse:
     """Return an install decision for a skill given robot context and entitlement.
 
-    The decision includes whether install is allowed, validation level,
-    license model, and pricing model.
+    Optionally pass station_id to also check station compatibility.
+    The response includes whether install is allowed, validation level,
+    license model, pricing model, and (if station_id given) station_compatible.
     """
     ctx = default_runtime_context()
     ctx.robot_class = req.robot_class or ctx.robot_class
@@ -135,7 +158,30 @@ def install_decision(req: InstallRequest) -> JSONResponse:
     )
     if decision is None:
         raise HTTPException(status_code=404, detail=f'Skill not found: {req.skill_id}')
-    return JSONResponse(content=asdict(decision))
+
+    result = asdict(decision)
+
+    if req.station_id:
+        profiles = load_all_profiles(_station_profiles_dir)
+        if req.station_id not in profiles:
+            raise HTTPException(status_code=404, detail=f'Station not found: {req.station_id}')
+        profile = profiles[req.station_id]
+        entry = _store.find_skill(req.skill_id)
+        if entry:
+            compat = check_skill_compatible(
+                profile,
+                skill_family=entry.get('family', ''),
+                payload_kg=entry.get('maxPayloadKg', 0.0),
+                requires_human_aware=entry.get('requiresHumanAware', False),
+                required_services=entry.get('requiredServices', []),
+                skill_id=req.skill_id,
+            )
+            result['station_compatible'] = compat.compatible
+            result['station_reason'] = compat.reason
+            result['station_missing_services'] = compat.missing_services
+            result['station_warnings'] = compat.warnings
+
+    return JSONResponse(content=result)
 
 
 @app.get('/store/policy', tags=['store'])

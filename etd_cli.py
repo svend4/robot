@@ -2,12 +2,13 @@
 """ETD CLI — command-line tool for managing ETD skill packages.
 
 Usage:
-    python etd_cli.py validate  <package-path> [--runtime-context FILE] [--json]
+    python etd_cli.py validate  <package-path> [--runtime-context FILE] [--station-profile FILE] [--json]
     python etd_cli.py publish   <package-path> [--key FILE] [--out DIR] [--skip-sign]
     python etd_cli.py verify    <package-path> [--pub-key FILE]
-    python etd_cli.py install   <skill-id>     [--token TOKEN] [--robot-class CLASS]
+    python etd_cli.py install   <skill-id>     [--token TOKEN] [--robot-class CLASS] [--station-profile FILE]
     python etd_cli.py list      [--family FAM] [--free] [--json]
     python etd_cli.py info      <skill-id>
+    python etd_cli.py stations  [--dir DIR] [--json]
     python etd_cli.py keygen    [--out-dir DIR]
     python etd_cli.py serve     [--host HOST] [--port PORT]
 """
@@ -26,17 +27,19 @@ import click
 
 from etd_reference_validator import ETDReferenceValidator, RuntimeContext, load_runtime_context
 from marketplace.skill_store import SkillStore, default_runtime_context
+from adapters.station_profile_loader import load_station_profile, load_all_profiles, check_skill_compatible
 
 _CTX_PATH = ROOT / 'runtime_context.json'
+_STATION_PROFILES_DIR = ROOT / 'station_profiles'
 
 
-def _load_ctx(runtime_context: str, robot_class: str, services: tuple) -> RuntimeContext:
+def _load_ctx(runtime_context: str, robot_class: str | None, services: tuple) -> RuntimeContext:
     ctx_path = Path(runtime_context)
     if ctx_path.exists():
         ctx = load_runtime_context(ctx_path)
     else:
         ctx = default_runtime_context()
-    if robot_class:
+    if robot_class is not None:
         ctx.robot_class = robot_class
     if services:
         ctx.available_services = list(services)
@@ -71,18 +74,76 @@ def cli():
     """ETD Skill Package CLI — validate, publish, sign, and manage robot skill packages."""
 
 
+def _check_station(package_path: str, station_profile_path: str, as_json: bool) -> None:
+    """Print station compatibility result for a validated package."""
+    import yaml
+    pkg = Path(package_path)
+    manifest_path = pkg / 'manifest.yaml'
+    skill_path = pkg / 'skill.json'
+    if not manifest_path.exists() or not skill_path.exists():
+        click.echo(click.style('  Station check skipped: manifest.yaml or skill.json not found', fg='yellow'))
+        return
+    manifest = yaml.safe_load(manifest_path.read_text())
+    skill = json.loads(skill_path.read_text())
+    family = skill.get('family', '')
+    payload = skill.get('maxPayloadKg', 0.0)
+    human_aware = manifest.get('safety', {}).get('humanAware', False)
+    required_services = [s['name'] for s in skill.get('requiredServices', [])] if skill.get('requiredServices') else []
+    profile = load_station_profile(station_profile_path)
+    result = check_skill_compatible(profile, family, payload, human_aware, required_services,
+                                    skill_id=manifest.get('skillId', ''))
+    if as_json:
+        from dataclasses import asdict as _asdict
+        click.echo(json.dumps({'station_check': _asdict(result)}, indent=2))
+    else:
+        compat_str = click.style('COMPATIBLE', fg='green', bold=True) if result.compatible else click.style('INCOMPATIBLE', fg='red', bold=True)
+        click.echo(f'\nStation {result.station_id}: {compat_str}  ({result.reason})')
+        if result.missing_services:
+            click.echo(click.style('  Missing services: ' + ', '.join(result.missing_services), fg='red'))
+        for w in result.warnings:
+            click.echo(click.style(f'  ! {w}', fg='yellow'))
+
+
+def _check_station_entry(entry: dict | None, station_profile_path: str) -> None:
+    """Print station compatibility for a store index entry."""
+    if not entry:
+        return
+    profile = load_station_profile(station_profile_path)
+    family = entry.get('family', '')
+    result = check_skill_compatible(
+        profile, family,
+        payload_kg=entry.get('maxPayloadKg', 0.0),
+        requires_human_aware=entry.get('requiresHumanAware', False),
+        required_services=entry.get('requiredServices', []),
+        skill_id=entry.get('skillId', ''),
+    )
+    compat_str = click.style('COMPATIBLE', fg='green', bold=True) if result.compatible else click.style('INCOMPATIBLE', fg='red', bold=True)
+    click.echo(f'\nStation {result.station_id}: {compat_str}  ({result.reason})')
+    if result.missing_services:
+        click.echo(click.style('  Missing services: ' + ', '.join(result.missing_services), fg='red'))
+    for w in result.warnings:
+        click.echo(click.style(f'  ! {w}', fg='yellow'))
+
+
 @cli.command()
 @click.argument('package_path')
 @click.option('--runtime-context', default=str(_CTX_PATH), show_default=True)
-@click.option('--robot-class', default='humanoid', show_default=True)
+@click.option('--robot-class', default=None, help='Override robot class from context file')
 @click.option('--service', 'services', multiple=True, metavar='SVC',
               help='Available service (repeat for each)')
+@click.option('--station-profile', default=None, metavar='FILE',
+              help='Path to station profile JSON; checks skill family/payload/service compatibility')
 @click.option('--json', 'as_json', is_flag=True, help='Output raw JSON report')
-def validate(package_path: str, runtime_context: str, robot_class: str, services: tuple, as_json: bool):
+def validate(package_path: str, runtime_context: str, robot_class: str | None, services: tuple,
+             station_profile: str | None, as_json: bool):
     """Validate an ETD skill package directory."""
     ctx = _load_ctx(runtime_context, robot_class, services)
     report = ETDReferenceValidator(ctx).validate_package(package_path)
     _print_report(report, as_json)
+
+    if station_profile:
+        _check_station(package_path, station_profile, as_json)
+
     sys.exit(0 if report.valid else 1)
 
 
@@ -155,11 +216,33 @@ def info(skill_id: str):
 
 
 @cli.command()
+@click.option('--dir', 'profiles_dir', default=str(_STATION_PROFILES_DIR), show_default=True,
+              help='Directory containing station profile JSON files')
+@click.option('--json', 'as_json', is_flag=True, help='Output raw JSON')
+def stations(profiles_dir: str, as_json: bool):
+    """List all known station profiles."""
+    profiles = load_all_profiles(profiles_dir)
+    if as_json:
+        click.echo(json.dumps([p.to_dict() for p in profiles.values()], indent=2))
+        return
+    click.echo(f'\n{"STATION ID":<30} {"PLATFORM":<30} {"FAMILIES":<30} {"PAYLOAD":>8}')
+    click.echo('─' * 95)
+    for p in profiles.values():
+        families = ','.join(p.allowed_skill_families)
+        platform = p.platform or '—'
+        click.echo(f'{p.station_id:<30} {platform:<30} {families:<30} {p.max_payload_kg:>7.1f}kg')
+    click.echo(f'\n{len(profiles)} station(s) found.')
+
+
+@cli.command()
 @click.argument('skill_id')
 @click.option('--token', default=None, help='Entitlement token for commercial skills')
-@click.option('--robot-class', default='humanoid', show_default=True)
+@click.option('--robot-class', default=None, help='Override robot class from context file')
 @click.option('--runtime-context', default=str(_CTX_PATH), show_default=True)
-def install(skill_id: str, token: str | None, robot_class: str, runtime_context: str):
+@click.option('--station-profile', default=None, metavar='FILE',
+              help='Path to station profile JSON; checks station compatibility before install')
+def install(skill_id: str, token: str | None, robot_class: str | None, runtime_context: str,
+            station_profile: str | None):
     """Check install eligibility for a skill (does not copy files)."""
     store = SkillStore(ROOT)
     ctx = _load_ctx(runtime_context, robot_class, ())
@@ -174,6 +257,11 @@ def install(skill_id: str, token: str | None, robot_class: str, runtime_context:
     for k, v in d.items():
         if k != 'skillId':
             click.echo(f'  {k:<25} {v}')
+
+    if station_profile and decision.allowed:
+        entry = store.find_skill(skill_id)
+        _check_station_entry(entry, station_profile)
+
     sys.exit(0 if decision.allowed else 1)
 
 
