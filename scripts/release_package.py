@@ -47,8 +47,14 @@ def main() -> None:
     if args.runtime_context:
         ctx_path = ROOT / args.runtime_context
     elif any(kw in pkg.name for kw in ('atlas', 'humanoid')):
-        atlas_ctx = ROOT / 'runtime_context_atlas.json'
-        ctx_path = atlas_ctx if atlas_ctx.exists() else ROOT / 'runtime_context.json'
+        ctx_path = next((ROOT / f for f in ('runtime_context_atlas.json',) if (ROOT / f).exists()),
+                        ROOT / 'runtime_context.json')
+    elif any(kw in pkg.name for kw in ('wia', 'welding', 'cobot')):
+        ctx_path = next((ROOT / f for f in ('runtime_context_wia.json',) if (ROOT / f).exists()),
+                        ROOT / 'runtime_context.json')
+    elif any(kw in pkg.name for kw in ('mobed', 'transport', 'amr')):
+        ctx_path = next((ROOT / f for f in ('runtime_context_mobed.json',) if (ROOT / f).exists()),
+                        ROOT / 'runtime_context.json')
     else:
         ctx_path = ROOT / 'runtime_context.json'
     ctx = load_runtime_context(ctx_path)
