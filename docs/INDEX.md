@@ -68,7 +68,7 @@ Grouped by topic below.
 
 | File | Summary |
 |---|---|
-| [publisher-developer-guide.md](publisher-developer-guide.md) | How to create, validate, sign, and publish a skill package |
+| [publisher-developer-guide.md](publisher-developer-guide.md) | Step-by-step guide with real CLI commands: validate, acceptance tests, failure scenarios, keygen, sign, publish, verify, install, serve |
 | [skill-package-doc-template.md](skill-package-doc-template.md) | Template for per-skill documentation |
 | [documentation-guide.md](documentation-guide.md) | Documentation style guide for ETD packages and specs |
 | [documentation-system.md](documentation-system.md) | How the documentation system is structured and maintained |

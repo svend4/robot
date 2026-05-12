@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.61.0 — Publisher guide: real CLI commands, 10-step workflow (171 → 260 lines)
+
+- `docs/publisher-developer-guide.md`: 171 lines → 260 lines
+  - Added prerequisites table (etd_cli.py, etd_reference_validator.py,
+    scripts/sign_package.py, sim/acceptance_runner.py, sim/failure_scenarios.py)
+  - Added 10-step workflow with exact CLI commands for: validate, station-profile
+    check, acceptance tests, failure scenarios, keygen, publish/sign, verify,
+    install eligibility, store list/info, REST API serve
+  - Added station profiles table (7 profiles with coverage descriptions)
+  - Added failure scenario table (4 scenarios with expected results)
+  - Added REST API endpoints table (/store/list, /store/info, /store/stations,
+    /validate, /store/install)
+  - Added package author checklist (10 items with how-to-verify commands)
+  - Expanded publication stages to Q0–Q7 (Draft through Production-certified)
+  - Retained publisher obligations, required metadata JSON, listing template,
+    pricing disclosure requirements
+- `docs/INDEX.md`: updated publisher-developer-guide.md description
+
+---
+
 ## 0.60.0 — Full competitive landscape doc (34 lines → 200 lines)
 
 - `docs/competitive-landscape-unitree.md`: 34 lines → 200 lines
