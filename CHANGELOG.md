@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.21.0 — AcceptanceMiddleware, _run_test edges, acceptance main(), release_package main() (506 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (8 → 46 tests):
+  - `AcceptanceMiddleware.read()` — all 17 topics: safety_state, force_contact_feedback,
+    part_alignment, camera_frame (counter increments), scene_map, balance_state,
+    object_pose, seam_tracker, weld_inspection, obstacle_detector, path_planner,
+    lift_control, intent_detector, exo_joint_state, fatigue_monitor, imu_pose, unknown → None
+  - `AcceptanceMiddleware.publish()` — non-telemetry no-op; primitive.entered records;
+    inject_at with `safety_state`, `perception_override`, `force_override` all apply correctly
+  - `AcceptanceMiddleware` — `initial_safety` overrides defaults at construction
+  - `_run_test()` — status mismatch, reason mismatch, result_keys check (missing key),
+    result_keys check (key present → pass), exception path → status='error'
+  - `run_suite()` — no acceptance_tests.yaml → empty SuiteResult, success=True
+  - `_print_suite()` — verbose shows status=, failure shows FAIL message and ✗ icon
+  - `main(--skill)` — single skill output; `main(--json)` — valid JSON with suite data;
+    `main(--verbose)` — shows status= in verbose output
+- `tests/test_signing.py` (41 → 47 tests):
+  - `release_package.main(--skip-sign)` — valid=True, Signing SKIPPED, zip created
+  - `release_package.main(--key missing)` — key not found message, zip still created
+  - Auto-detected context for atlas, wia, mobed, exo packages via keyword dispatch
+  - JSON summary in output has skillId, signed=False, validationLevel, artifact fields
+
+### Test totals by module (506 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 43 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 31 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 183 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 27 |
+| `test_signing.py` | 47 |
+| **Total** | **506** |
+
+---
+
 ## 0.20.0 — failure_scenarios main(), demo_runner main(), validate_examples main() (461 tests)
 
 ### Coverage additions

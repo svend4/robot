@@ -176,12 +176,12 @@ tests/
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 30 — orbit event bridge severity/filter/callback/timestamp
 ├── test_sim_modules.py       # 183 — scenario_runner._pick_context, failure_scenarios main(), demo/validate_examples main()
-├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
+├── test_acceptance.py        # 46 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, main() CLI
 ├── test_ros2_bridge.py       # 27 — ETDSkillActionServer/Client, no-middleware branches, all-8 parametrized
-└── test_signing.py           # 41 — _package_digest missing files, sign/verify with partial package
+└── test_signing.py           # 47 — _package_digest missing files, sign/verify partial, release_package.main()
 ```
 
-Run: `python -m pytest` — 461 tests, all passing.
+Run: `python -m pytest` — 506 tests, all passing.
 
 ---
 

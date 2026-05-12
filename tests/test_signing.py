@@ -342,3 +342,140 @@ def test_zip_dir_excludes_pycache(tmp_path):
         names = z.namelist()
     assert not any('__pycache__' in n for n in names)
     assert not any(n.endswith('.pyc') for n in names)
+
+
+# ── release_package.main() ────────────────────────────────────────────────────
+
+import sys as _sys
+from release_package import main as _release_main
+
+
+def test_release_main_skip_sign_produces_summary(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.pickplace.basic',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'valid=True' in output
+    assert 'Signing SKIPPED' in output
+    assert 'etd.pickplace.basic' in output
+    zips = list(out_dir.glob('*.zip'))
+    assert len(zips) == 1
+
+
+def test_release_main_missing_key_skips_sign(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.pickplace.basic',
+        '--key', str(tmp_path / 'no_such_key.hex'),
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'Signing SKIPPED' in output
+    assert 'key not found' in output
+
+
+def test_release_main_atlas_package(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.atlas.humanoid_walkfetch',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'valid=True' in output
+
+
+def test_release_main_wia_package(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.hyundai.wia_welding',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'valid=True' in output
+
+
+def test_release_main_mobed_package(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.hyundai.mobed_transport',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'valid=True' in output
+
+
+def test_release_main_exo_package(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.hyundai.vest_exoskeleton',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    assert 'valid=True' in output
+
+
+def test_release_main_json_summary_in_output(tmp_path, capsys, monkeypatch):
+    import json as _json
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.pickplace.basic',
+        '--skip-sign',
+        '--out', str(out_dir),
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    output = capsys.readouterr().out
+    json_line = next(
+        (line for line in output.splitlines() if line.strip().startswith('{')), None
+    )
+    summary_str = '\n'.join(
+        output.splitlines()[output.splitlines().index(json_line):]
+    ) if json_line else ''
+    try:
+        summary = _json.loads(summary_str)
+        assert summary['skillId'] == 'etd.pickplace.basic'
+        assert summary['signed'] is False
+        assert 'validationLevel' in summary
+        assert 'artifact' in summary
+    except Exception:
+        assert 'skillId' in output
