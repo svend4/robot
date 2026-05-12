@@ -10,7 +10,12 @@ Architecture:
         └─► SkillActionServer (this node)
                 └─► ETDReferenceValidator (validate before execute)
                 └─► chs_adapter.run()    (skill execution)
-                └─► ROS 2 middleware     (publish skill_intent to OEM stack)
+                └─► ETDMiddleware adapter (via adapters.registry)
+                        ├─► HyundaiWIAAdapter    (etd.hyundai.wia_welding)
+                        ├─► HyundaiMobEDAdapter  (etd.hyundai.mobed_transport)
+                        ├─► HyundaiExoAdapter    (etd.hyundai.vest_exoskeleton)
+                        ├─► AtlasAdapter         (etd.atlas.*)
+                        └─► NullMiddleware       (all other skills)
 
 NOTE: This file is a standalone stub. It does NOT import rclpy at module level
 so it can be read and tested without a full ROS 2 installation.
@@ -66,17 +71,27 @@ class ETDSkillActionServer:
         spec.loader.exec_module(module)
         return getattr(module, func_name)
 
+    def _resolve_middleware(self, dry_run: bool = True):
+        """Return the OEM middleware adapter for this skill, via the registry."""
+        try:
+            from adapters.registry import get_adapter_for_skill
+            return get_adapter_for_skill(self.skill_id, dry_run=dry_run)
+        except Exception:
+            return None
+
     def execute_goal(self, goal: Dict[str, Any], feedback_fn=None, middleware=None) -> Dict[str, Any]:
         """Execute a skill goal. Mirrors ROS 2 action execute_callback signature.
 
         Args:
             goal:        skill goal dict (job_context from CHS layer)
             feedback_fn: callable(msg) for publishing ROS 2 feedback during execution
-            middleware:  OEM middleware bridge (optional)
+            middleware:  OEM middleware bridge; if None, auto-resolved via registry
 
         Returns:
             result dict with status, primitives_executed, etc.
         """
+        if middleware is None:
+            middleware = self._resolve_middleware(dry_run=True)
         if self._active:
             return {'status': 'aborted', 'reason': 'server_busy'}
 
@@ -122,6 +137,9 @@ class ETDSkillActionServer:
         node = Node(self.node_name)
         node.get_logger().info(f'ETD Skill Action Server: {self.skill_id}')
 
+        # Auto-resolve OEM middleware adapter for live mode
+        live_middleware = self._resolve_middleware(dry_run=False)
+
         # Action server setup — action type must be generated from ExecuteSkill.action
         # See integrations/ros2/etd_ros2_bridge/action/ExecuteSkill.action
         try:
@@ -141,7 +159,7 @@ class ETDSkillActionServer:
                 feedback_msg.current_event = data.get('event', '')
                 goal_handle.publish_feedback(feedback_msg)
 
-            result_dict = self.execute_goal(goal, feedback_fn=_fb)
+            result_dict = self.execute_goal(goal, feedback_fn=_fb, middleware=live_middleware)
             goal_handle.succeed()
             result = ExecuteSkill.Result()
             result.result_json = json.dumps(result_dict)

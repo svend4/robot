@@ -65,7 +65,10 @@ All items below were delivered in the prototype:
 - [x] **Middleware contract formalized.** `etd_middleware_contract.py` defines
   abstract base class `ETDMiddleware` with typed `read` / `publish` signatures.
   `load_middleware_adapter()` validates required_topics at load time.
-  `HyundaiWIAAdapter` subclasses it and is tested end-to-end with the WIA skill.
+  `adapters/registry.py`: `get_adapter_for_skill()` auto-selects the right
+  adapter by skill ID prefix; `ETDSkillActionServer` uses the registry so no
+  per-skill wiring is needed. `AtlasAdapter` (Orbit / `/atlas/*` topics) and
+  `NullMiddleware` complete the built-in set.
 - [x] **Telemetry pipeline.** `adapters/telemetry_sink.py`: pluggable
   `TelemetrySink` hierarchy — `NullSink`, `ConsoleSink`, `FileSink`,
   `MQTTSink` (paho-mqtt; stubs to stdout when library absent), `MultiSink`

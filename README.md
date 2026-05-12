@@ -178,7 +178,8 @@ tests/
 ├── test_api.py               # 35 — REST endpoints incl. station+nonexistent-skill branch, absolute path, available_services override, station_id compatible=True, find_skill None skips compat, decision-is-None → 404, policy-missing → 404
 ├── test_cli.py               # 68 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None, publish no-skip-sign branch, station entry missing-services + human-aware warning, check_station_entry None→early-return, serve command uvicorn.run, revoke new-file/append/idempotent, audit-log no-file/entries, validate-context valid/invalid/missing/json, rollout set-stage canary/skip-error/status-empty/status-entries
 ├── test_middleware_contract.py # 46 — ETDMiddleware ABC, load_middleware_adapter, HyundaiWIAAdapter dry_run reads/publish/inject/topic_for/telemetry sink, live-mode ROS2 stubs, NullSink/ConsoleSink/FileSink/MultiSink/MQTTSink, integration: WIA skill + adapter + FileSink
-└── test_hyundai_adapters.py   # 48 — HyundaiMobEDAdapter (18 tests + 4 integration), HyundaiExoAdapter (22 tests + 4 integration); simulate_fatigue progression, set_pose/set_fatigue/set_intent helpers, full skill runs with FileSink
+├── test_hyundai_adapters.py   # 48 — HyundaiMobEDAdapter (18 tests + 4 integration), HyundaiExoAdapter (22 tests + 4 integration); simulate_fatigue progression, set_pose/set_fatigue/set_intent helpers, full skill runs with FileSink
+└── test_atlas_adapter_registry.py # 47 — AtlasAdapter unit+integration, adapter registry prefix/exact/fallback/register, get_adapter_for_skill dry_run+sink, skill_action_server auto-wiring
 ├── test_marketplace.py       # 48 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D, revoked skill blocked, non-revoked not blocked, no-revoked-file → empty set, _load_revoked extracts ids, audit allowed/blocked entries, signature_invalid blocks install
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
@@ -188,7 +189,7 @@ tests/
 └── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ```
 
-Run: `python -m pytest` — 803 tests, all passing.
+Run: `python -m pytest` — 850 tests, all passing.
 
 ---
 

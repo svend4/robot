@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.68.0 — v0.7.0: Atlas adapter + registry + action server auto-wiring (803 → 850 tests)
+
+### Code changes
+
+- `adapters/atlas_adapter.py` (NEW): `AtlasAdapter(ETDMiddleware)` mapping 19
+  ETD topics to BD Orbit fleet (`/orbit/*`) and Atlas ROS 2 (`/atlas/*`)
+  namespaces. Mock state covers `state.safety_state`, `state.balance_state`,
+  `perception.scene_map`, `perception.object_pose`. `set_balance()` and
+  `set_object_pose()` helpers. `orbit_endpoint` param for live Orbit REST calls.
+- `adapters/registry.py` (NEW): `ETDMiddleware` adapter registry.
+  `register_adapter(prefix, cls)` for prefix-match or `exact=True` for exact
+  match. `get_adapter_class(skill_id)` resolves by longest-prefix; falls back
+  to `NullMiddleware`. `get_adapter_for_skill(skill_id, dry_run, sink)` resolves
+  and instantiates with correct kwargs via `inspect.signature`. Built-in
+  registrations for all 4 platform adapters.
+- `integrations/ros2/.../skill_action_server.py`: added `_resolve_middleware()`
+  using the registry; `execute_goal()` auto-resolves when `middleware=None`;
+  `run_ros2()` auto-instantiates live-mode adapter for the ROS 2 callback.
+
+### Tests (803 → 850)
+
+- `tests/test_atlas_adapter_registry.py` (+47, NEW):
+  - `AtlasAdapter` (20 unit + 4 integration): reads/publish/inject/set helpers,
+    telemetry sink, orbit_endpoint, live-mode stubs; Atlas walk-fetch skill
+    end-to-end + abort + FileSink
+  - Registry (14 tests): per-platform class lookup, exact vs prefix match,
+    fallback to NullMiddleware, custom registration, TypeError rejection,
+    `list_registrations`, NullMiddleware behavior
+  - `ETDSkillActionServer` wiring (5 tests): auto-selects WIA/Atlas/Null by
+    skill ID; explicit middleware overrides auto-selection; goal completes
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: expanded middleware-contract entry to note registry,
+  AtlasAdapter, and skill_action_server auto-wiring
+
+---
+
 ## 0.67.0 — v0.7.0: MobED + exoskeleton adapters + middleware developer guide (755 → 803 tests)
 
 ### Code changes
