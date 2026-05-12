@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.26.0 — generate/sign/verify script main() functions (561 tests)
+
+### Coverage additions
+- `tests/test_signing.py` (47 → 56 tests):
+  - `generate_keypair.main()` — creates key files, prints paths, uses default `keys/` dir
+  - `sign_package.main()` — creates `package.sig`, prints "Signed:" message
+  - `verify_signature.main()` — exits 0 on valid signature, exits 1 on unsigned package,
+    exits 0 with explicit `--pub-key` flag, prints "OK" on success
+
+### Test totals by module (561 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 33 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 204 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **561** |
+
+---
+
 ## 0.25.0 — visualizer.main(), ascii_timeline edges, _plot_gantt ImportError (552 tests)
 
 ### Coverage additions

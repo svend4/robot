@@ -479,3 +479,117 @@ def test_release_main_json_summary_in_output(tmp_path, capsys, monkeypatch):
         assert 'artifact' in summary
     except Exception:
         assert 'skillId' in output
+
+
+# ── generate_keypair.main() ────────────────────────────────────────────────────
+
+import sys as _sys
+from generate_keypair import main as _gkp_main
+
+
+def test_generate_main_creates_key_files(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'keys'
+    monkeypatch.setattr(_sys, 'argv', ['generate_keypair.py', '--out-dir', str(out_dir)])
+    _gkp_main()
+    assert (out_dir / 'etd_signing_key.hex').exists()
+    assert (out_dir / 'etd_verify_key.hex').exists()
+
+
+def test_generate_main_prints_paths(tmp_path, capsys, monkeypatch):
+    out_dir = tmp_path / 'gk_out'
+    monkeypatch.setattr(_sys, 'argv', ['generate_keypair.py', '--out-dir', str(out_dir)])
+    _gkp_main()
+    out = capsys.readouterr().out
+    assert 'etd_signing_key.hex' in out
+    assert 'etd_verify_key.hex' in out
+
+
+def test_generate_main_default_out_dir(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_sys, 'argv', ['generate_keypair.py'])
+    _gkp_main()
+    assert (tmp_path / 'keys' / 'etd_signing_key.hex').exists()
+
+
+# ── sign_package.main() ────────────────────────────────────────────────────────
+
+from sign_package import main as _sp_main
+
+
+def test_sign_main_creates_sig_file(tmp_path, capsys, monkeypatch, keypair):
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    monkeypatch.setattr(_sys, 'argv', [
+        'sign_package.py', str(dst), '--key', str(sk_path),
+    ])
+    _sp_main()
+    assert (dst / 'package.sig').exists()
+
+
+def test_sign_main_prints_signed_message(tmp_path, capsys, monkeypatch, keypair):
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    monkeypatch.setattr(_sys, 'argv', [
+        'sign_package.py', str(dst), '--key', str(sk_path),
+    ])
+    _sp_main()
+    out = capsys.readouterr().out
+    assert 'Signed' in out
+
+
+# ── verify_signature.main() ────────────────────────────────────────────────────
+
+from verify_signature import main as _vs_main
+
+
+def test_verify_main_exits_zero_on_valid(tmp_path, monkeypatch, keypair):
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    monkeypatch.setattr(_sys, 'argv', ['verify_signature.py', str(dst)])
+    with pytest.raises(SystemExit) as exc_info:
+        _vs_main()
+    assert exc_info.value.code == 0
+
+
+def test_verify_main_exits_one_on_unsigned(tmp_path, monkeypatch):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    monkeypatch.setattr(_sys, 'argv', ['verify_signature.py', str(dst)])
+    with pytest.raises(SystemExit) as exc_info:
+        _vs_main()
+    assert exc_info.value.code == 1
+
+
+def test_verify_main_with_explicit_pub_key(tmp_path, monkeypatch, keypair):
+    sk_path, vk_path = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    monkeypatch.setattr(_sys, 'argv', [
+        'verify_signature.py', str(dst), '--pub-key', str(vk_path),
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _vs_main()
+    assert exc_info.value.code == 0
+
+
+def test_verify_main_prints_ok_on_valid(tmp_path, capsys, monkeypatch, keypair):
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    monkeypatch.setattr(_sys, 'argv', ['verify_signature.py', str(dst)])
+    with pytest.raises(SystemExit):
+        _vs_main()
+    out = capsys.readouterr().out
+    assert 'OK' in out

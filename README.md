@@ -178,10 +178,10 @@ tests/
 ├── test_sim_modules.py       # 204 — visualizer.main(), ascii_timeline edges, _plot_gantt ImportError, FakeMiddleware
 ├── test_acceptance.py        # 46 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, main() CLI
 ├── test_ros2_bridge.py       # 34 — server/client main(--dry-run), no-middleware branches, all-8 parametrized
-└── test_signing.py           # 47 — _package_digest missing files, sign/verify partial, release_package.main()
+└── test_signing.py           # 56 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip
 ```
 
-Run: `python -m pytest` — 552 tests, all passing.
+Run: `python -m pytest` — 561 tests, all passing.
 
 ---
 
