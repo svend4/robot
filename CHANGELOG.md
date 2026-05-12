@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.5.0 — Sim/adapters integration polish
+
+### Visualizer
+- `sim/visualizer.py` — all 8 skill packages now covered in `_SKILL_PROFILES`
+  (added `etd.atlas.humanoid_walkfetch` / `sequencing_carry` and
+  `etd.hyundai.vest_exoskeleton` / `overhead_assembly`)
+- `TracingMiddleware.read()` — added exo topic handlers:
+  `state.exo_joint_state`, `perception.intent_detector`, `state.fatigue_monitor`,
+  `perception.imu_pose`; all return safe nominal values
+- Seeded `random.seed(42)` in `run_traced()` so `etd.inspect.vision` classify_result
+  is deterministic — no more intermittent aborts in the visualizer
+
+### Package exports
+- `adapters/__init__.py` — now exports `OrbitEventBridge`, `to_enterprise_event`,
+  `replay_skill_log`, `StationProfile`, `StationCompatibilityResult`,
+  `check_skill_compatible`, `load_all_profiles`, `load_station_profile`,
+  `is_skill_allowed`
+- `sim/__init__.py` — now exports `replay`, `replay_execution`, `nominal_lifecycle`,
+  `aborted_lifecycle`, `RobotStateGenerator`, `mock_state`, `FakeMiddleware`,
+  `run_all_scenarios`, `run_all_failure_scenarios`
+
+### Sample data & middleware
+- `sim/sample_event_sequence.json` — replaced 4-event stub with a 32-event
+  multi-robot execution log: nominal pickplace (robot-01 / assembly_station_a),
+  aborted wia_welding at torch_align (cobot-02 / weld_station_a, human_in_forbidden_zone),
+  nominal mobed_transport (mobed-03 / logistics_cell_a)
+- `sim/fake_middleware_endpoint.py` — added `exo_assembly_a` to `_KNOWN_STATIONS`
+
+---
+
+## 0.4.0 — Exoskeleton skill package + sim module expansion
+
+### New skill package — etd.hyundai.vest_exoskeleton (8th package)
+- `examples/etd.hyundai.vest_exoskeleton/` — Hyundai VEX/H-MEX wearable assist;
+  family `assist`, 6 primitives: calibrate_fit → detect_intent → engage_assist →
+  monitor_fatigue → adapt_gain → disengage_assist
+- CHS profiles: `overhead_assembly` (120 N, 70 % fatigue gate),
+  `heavy_carry` (150 N, 60 %), `lumbar_support` (80 N, 80 %)
+- Intent confidence gate at `detect_intent` (aborts below profile threshold);
+  torque-zero on `operator_panic_release`; adaptive gain when fatigue exceeds threshold
+- 5 acceptance test scenarios (nominal, low confidence abort, panic release, human zone, fatigue)
+- Schema extensions: `assist` added to family enum; `exoskeleton`/`wearable` added to
+  robotClass enum; `ASSIST` added to taskType enum (3 schema files modified)
+- `runtime_context_exo.json` — 11-service exoskeleton runtime
+  (`state.exo_joint_state`, `perception.intent_detector`, `force_control.torque_assist`, …)
+- `station_profiles/exo_assembly_a.json` — Hyundai VEX/H-MEX assembly station,
+  30 kg limit, families: assist/cobot/assembly
+- `sim/acceptance_runner.py` — added read handlers for `perception.intent_detector`,
+  `state.exo_joint_state`, `state.fatigue_monitor`, `perception.imu_pose`
+- `marketplace/skill_store_index.json` — expanded from 7 to 8 entries
+  (vest_exoskeleton: commercial subscription, requiresEntitlement)
+- `release_out/etd.hyundai.vest_exoskeleton-0.1.0.zip` — signed release artifact
+
+### Sim module expansion (5 stubs → full implementations)
+- `sim/event_replay.py` — full replay engine replacing 4-line stub:
+  `replay()` with severity filter (debug/info/warn/error/critical);
+  `replay_execution()` for raw dict logs; `nominal_lifecycle()` and
+  `aborted_lifecycle()` lifecycle constructors
+- `sim/mock_robot_state_generator.py` — `RobotStateGenerator` dataclass with
+  per-family state tables (pickplace / weld / transport / humanoid);
+  `at()`, `walk()`, `step()`, `reset()`, `primitives()` methods;
+  `_PICKPLACE/_WELD/_TRANSPORT/_HUMANOID` as `ClassVar` to avoid dataclass mutable-default error;
+  legacy `mock_state()` helper preserved
+- `sim/fake_middleware_endpoint.py` — `FakeMiddleware` dataclass: full execution lifecycle
+  (`send_request`, `complete`, `get_result`, `cancel`, `active_count`);
+  forbidden-command gate (`servo_torque`, `collision_disable`, `emergency_stop_override`);
+  `_KNOWN_STATIONS` set; unique execution IDs; legacy module-level `send_request()` preserved
+- `sim/failure_scenarios.py` — four deterministic failure scenarios:
+  `scenario_missing_service_level_d()`, `scenario_human_in_forbidden_zone()`,
+  `scenario_payload_out_of_range()`, `scenario_station_family_mismatch()`;
+  `run_all()` runner
+- `sim/scenario_runner.py` — rewritten from single-context to 5-tier dispatch
+  (base / atlas / wia / mobed / exo); runs all 8 packages with correct runtime context;
+  returns structured results with `package`, `valid`, `level`, `score`, `ctx` fields
+- `tests/test_sim_modules.py` — 42 new tests covering all five modules (160 total)
+
+### Demo and reporting
+- `etd_demo_runner.py` — extended `_CTX_MAP` to include exo context dispatch
+- `scripts/release_package.py` — extended auto-detection to include exo keywords
+  (`vest`, `exoskeleton`, `exo`)
+
+---
+
 ## 0.3.0 — Hyundai platform expansion, station profiles, test suite
 
 ### New skill packages

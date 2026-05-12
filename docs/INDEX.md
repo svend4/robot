@@ -88,6 +88,35 @@ Grouped by topic below.
 
 ---
 
+## 7. Implementation Status (v0.5.0)
+
+Current prototype state — what is built and runnable:
+
+| Component | Status | Notes |
+|---|---|---|
+| ETD reference validator | ✓ complete | JSON Schema Draft 2020-12, 4-level A–D compat, `etd_reference_validator.py` |
+| CLI (`etd_cli.py`) | ✓ complete | validate, install, stations, info commands; `--station-profile` flag |
+| REST API (`api/app.py`) | ✓ complete | FastAPI; `/store/*`, `/store/stations`, `/validate` |
+| Skill marketplace | ✓ complete | `marketplace/skill_store.py`, 8-entry index, entitlement gating |
+| Signing & release | ✓ complete | `scripts/sign_package.py`, `scripts/release_package.py`, 8 `.zip` artifacts |
+| **Skill packages (8 total)** | ✓ all level A | |
+| &nbsp; etd.pickplace.basic | ✓ | manipulator pick-and-place |
+| &nbsp; etd.assembly.precision | ✓ | force-controlled peg-in-hole |
+| &nbsp; etd.inspect.vision | ✓ | camera QA / defect scan |
+| &nbsp; etd.cobot.safeassist | ✓ | human-collaborative handover |
+| &nbsp; etd.atlas.humanoid_walkfetch | ✓ | Boston Dynamics Atlas walk-and-fetch |
+| &nbsp; etd.hyundai.wia_welding | ✓ | Hyundai WIA H-Motion arc-welding |
+| &nbsp; etd.hyundai.mobed_transport | ✓ | Hyundai MobED AMR logistics |
+| &nbsp; etd.hyundai.vest_exoskeleton | ✓ | Hyundai VEX/H-MEX wearable assist |
+| Station profiles (6 total) | ✓ complete | assembly, cobot, weld, mobed, humanoid, exo |
+| Orbit event bridge | ✓ complete | severity filter, critical bypass, flush callback |
+| Sim modules (5) | ✓ complete | event_replay, state_generator, fake_middleware, failure/scenario runners |
+| Visualizer | ✓ complete | ASCII + matplotlib Gantt; all 8 packages |
+| Test suite | ✓ 160 tests | validator, API, CLI, marketplace, orbit, station, sim modules |
+| Acceptance tests | ✓ 39 scenarios | per-package YAML; `sim/acceptance_runner.py` |
+
+---
+
 ## Usage note
 
 Every document in `docs/` is intentionally kept — including versions, drafts, and working notes.
