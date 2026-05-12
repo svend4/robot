@@ -85,7 +85,7 @@ Grouped by topic below.
 | [unitree-skill-store-business-analysis.md](unitree-skill-store-business-analysis.md) | Business analysis of Unitree's approach vs ETD's approach |
 | [unitree-open-vs-commercial-analysis.md](unitree-open-vs-commercial-analysis.md) | Detailed open vs commercial analysis for Unitree context |
 | [unitree-open-vs-commercial-notes.md](unitree-open-vs-commercial-notes.md) | Working notes on Unitree open/commercial split |
-| [competitive-landscape-unitree.md](competitive-landscape-unitree.md) | Broader competitive landscape including Unitree |
+| [competitive-landscape-unitree.md](competitive-landscape-unitree.md) | Full 2026 competitive landscape: Unitree, Boston Dynamics/Orbit, Hyundai Edge Brain, Agility/Amazon, Figure/OpenAI, 1X, Apptronik, Tesla Optimus, ROS 2 — ETD position against each |
 
 ---
 

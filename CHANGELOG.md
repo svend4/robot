@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.60.0 — Full competitive landscape doc (34 lines → 200 lines)
+
+- `docs/competitive-landscape-unitree.md`: 34 lines → 200 lines
+  - Added 9 competitor sections: Unitree, Boston Dynamics/Hyundai, Hyundai Robotics LAB,
+    Agility Robotics (Amazon/Digit), Figure/OpenAI (BMW), 1X Technologies, Apptronik
+    (Mercedes-Benz/Apollo), Tesla Optimus, ROS 2 ecosystem
+  - Each section: platform specs, key partnerships, software model, ETD differentiation
+  - Closing summary table (7 competitors vs ETD across 5 dimensions)
+  - Strategic conclusion: ETD has no direct competitor as a neutral multi-OEM safety-enforced
+    skill distribution standard
+- `docs/INDEX.md`: updated description for competitive-landscape-unitree.md
+
+---
+
 ## 0.59.0 — Expand Unitree marketplace analysis with UniPwn security case and licensing model
 
 - `docs/unitree-skill-marketplace-analysis.md`: 21 lines → 120 lines
