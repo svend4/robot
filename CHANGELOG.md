@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.50.0 — assembly.precision no-middleware defaults + seat_verify failure (680 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (99 → 100 tests):
+  - **assembly.precision `_read_perception` else-branch (line 92)**: `run(middleware=None)` → `hasattr(None, 'read')` False → returns hardcoded `{'confidence': 0.95, 'offset_mm': 0.2, 'aligned': True}`
+  - **assembly.precision `_publish` no-op (line 96->exit)**: same call → `hasattr(None, 'publish')` False
+  - **assembly.precision `insertion_push` direct-publish skip (lines 174->194)**: `hasattr(None, 'publish')` False → `command.skill_intent` not published
+  - **`seat_verify` insufficient-seating-force abort**: `normal_force_n` defaults to 0.0 (not in default dict) → `0.0 < seat_force_n*0.8=12.0` → abort with `insufficient_seating_force`
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `examples/etd.assembly.precision/policies/chs_adapter.py` | 93% | 97% |
+
+### Test totals by module (680 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 52 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 227 |
+| `test_acceptance.py` | 100 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 62 |
+
+---
+
 ## 0.49.0 — CLI _check_station_entry None early-return + serve uvicorn, verify_signature no-sig error (679 tests)
 
 ### Coverage additions

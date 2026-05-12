@@ -1345,3 +1345,15 @@ def test_inspect_run_with_no_middleware_uses_defaults():
     with patch.object(_time_mod, 'sleep', lambda s: None):
         result = _inspect_run({'chsProfile': 'barcode_qa'}, middleware=None)
     assert result['status'] == 'completed'
+
+
+# ── assembly.precision adapter: no-middleware defaults ───────────────────────
+
+def test_assembly_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _read_perception returns hardcoded defaults (line 92);
+    _publish is a no-op (line 96->exit); insertion_push publish skipped (lines 174->194).
+    seat_verify: normal_force_n defaults to 0.0 < seat_force_n*0.8 → aborted."""
+    _assembly_run = _load_run('etd.assembly.precision')
+    result = _assembly_run({'chsProfile': 'peg_in_hole'}, middleware=None)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'insufficient_seating_force'
