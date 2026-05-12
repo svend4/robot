@@ -29,7 +29,7 @@ def test_health():
     assert r.status_code == 200
     body = r.json()
     assert body['status'] == 'ok'
-    assert 'version' in body
+    assert body['version'] == '0.5.0'
 
 
 # ── Store — list skills ───────────────────────────────────────────────────────
@@ -90,6 +90,15 @@ def test_get_atlas_skill():
     body = r.json()
     assert body['family'] == 'humanoid'
     assert body['platformTarget'] == 'boston_dynamics_atlas'
+
+
+def test_get_vest_exoskeleton_skill():
+    r = client.get('/store/skills/etd.hyundai.vest_exoskeleton')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['skillId'] == 'etd.hyundai.vest_exoskeleton'
+    assert body['family'] == 'assist'
+    assert body['requiresEntitlement'] is True
 
 
 # ── Store — install decision ──────────────────────────────────────────────────

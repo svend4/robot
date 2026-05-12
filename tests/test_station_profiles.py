@@ -22,6 +22,15 @@ _PROFILES_DIR = ROOT / 'station_profiles'
 
 # ── Load helpers ──────────────────────────────────────────────────────────────
 
+def test_load_exo_station_profile():
+    p = load_station_profile(_PROFILES_DIR / 'exo_assembly_a.json')
+    assert p.station_id == 'exo_assembly_a'
+    assert 'assist' in p.allowed_skill_families
+    assert p.max_payload_kg == 30.0
+    assert p.requires_human_aware is True
+    assert p.platform == 'hyundai_vex_hmex'
+
+
 def test_load_weld_station_profile():
     p = load_station_profile(_PROFILES_DIR / 'weld_station_a.json')
     assert p.station_id == 'weld_station_a'
@@ -114,6 +123,21 @@ def test_compatible_transport_at_mobed_station():
         skill_id='etd.hyundai.mobed_transport',
     )
     assert result.compatible is True
+
+
+def test_compatible_assist_at_exo_station():
+    p = load_station_profile(_PROFILES_DIR / 'exo_assembly_a.json')
+    result = check_skill_compatible(
+        p,
+        skill_family='assist',
+        payload_kg=20.0,
+        requires_human_aware=True,
+        required_services=['state.exo_joint_state', 'perception.intent_detector',
+                           'force_control.torque_assist'],
+        skill_id='etd.hyundai.vest_exoskeleton',
+    )
+    assert result.compatible is True
+    assert result.reason == 'station_compatible'
 
 
 def test_compatible_humanoid_at_atlas_station():
@@ -236,6 +260,19 @@ def test_api_list_stations():
     assert 'weld_station_a' in ids
     assert 'mobed_logistics_a' in ids
     assert 'humanoid_hmgma_a' in ids
+    assert 'exo_assembly_a' in ids
+
+
+def test_api_get_exo_station():
+    from fastapi.testclient import TestClient
+    from api.app import app
+    client = TestClient(app)
+    r = client.get('/store/stations/exo_assembly_a')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['station_id'] == 'exo_assembly_a'
+    assert 'assist' in body['allowed_skill_families']
+    assert body['max_payload_kg'] == 30.0
 
 
 def test_api_get_station_found():

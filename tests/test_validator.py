@@ -75,6 +75,33 @@ def test_atlas_package_level_a():
     assert report.compatibility['level'] == 'A'
 
 
+def test_wia_welding_package_level_a():
+    ctx = load_runtime_context(ROOT / 'runtime_context_wia.json')
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.hyundai.wia_welding'
+    )
+    assert report.valid, report.errors
+    assert report.compatibility['level'] == 'A'
+
+
+def test_mobed_transport_package_level_a():
+    ctx = load_runtime_context(ROOT / 'runtime_context_mobed.json')
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.hyundai.mobed_transport'
+    )
+    assert report.valid, report.errors
+    assert report.compatibility['level'] == 'A'
+
+
+def test_vest_exoskeleton_package_level_a():
+    ctx = load_runtime_context(ROOT / 'runtime_context_exo.json')
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.hyundai.vest_exoskeleton'
+    )
+    assert report.valid, report.errors
+    assert report.compatibility['level'] == 'A'
+
+
 # ── Missing services → level D ───────────────────────────────────────────────
 
 def test_missing_services_yield_level_d():

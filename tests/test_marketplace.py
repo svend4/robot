@@ -40,7 +40,7 @@ def atlas_ctx():
 
 # ── list_entries / list_skills ────────────────────────────────────────────────
 
-def test_store_lists_seven_skills(store):
+def test_store_lists_eight_skills(store):
     entries = store.list_entries()
     assert len(entries) == 8
 
