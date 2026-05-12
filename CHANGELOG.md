@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.51.0 — ROS2 bridge full mock: server callback capture + client timeout/reject/happy-path (686 tests)
+
+### Coverage additions
+- `tests/test_ros2_bridge.py` (35 → 41 tests):
+  - **Server `_execute_callback` body + `rclpy.spin`/`shutdown` (lines 136-156)**: inject both `rclpy` and `etd_ros2_bridge.action` fakes; `_FakeActionServer` captures the callback; `rclpy.spin` raises `KeyboardInterrupt` → `finally: rclpy.shutdown()` executed; callback invoked manually with fake goal handle → lines 136-148 covered
+  - **Client timeout path (lines 84-86)**: full rclpy mock with `wait_for_server` returning False → `rclpy.shutdown()` called + `TimeoutError` raised
+  - **Client goal-rejected path (lines 100-102)**: `goal_handle.accepted=False` → returns `{'status': 'rejected', 'reason': 'goal_rejected_by_server'}`
+  - **Client happy path (lines 103-109)**: `goal_handle.accepted=True`, chained `get_result_async()` mock with JSON result → `json.loads(...)` produces result dict, `rclpy.shutdown()` called
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `skill_action_server.py` | 74% | 98% |
+| `skill_action_client.py` | 55% | 93% |
+
+### Test totals by module (686 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 52 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 227 |
+| `test_acceptance.py` | 100 |
+| `test_ros2_bridge.py` | 41 |
+| `test_signing.py` | 62 |
+
+---
+
 ## 0.50.0 — assembly.precision no-middleware defaults + seat_verify failure (680 tests)
 
 ### Coverage additions
