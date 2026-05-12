@@ -1399,3 +1399,69 @@ def test_validate_examples_main_all_pass(capsys):
     out = capsys.readouterr().out
     assert 'etd.pickplace.basic' in out
     assert 'valid=True' in out
+
+
+# ── sim/marketplace_demo.main() ───────────────────────────────────────────────
+
+import sim.marketplace_demo as _mdemo_mod
+
+
+def test_marketplace_demo_main_exits_zero(capsys):
+    try:
+        _mdemo_mod.main()
+    except SystemExit as e:
+        assert e.code == 0
+
+
+def test_marketplace_demo_main_json_has_eight_decisions(capsys):
+    try:
+        _mdemo_mod.main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert 'marketplace_demo' in parsed
+    decisions = parsed['marketplace_demo']
+    assert len(decisions) == 8
+
+
+def test_marketplace_demo_main_all_allowed(capsys):
+    try:
+        _mdemo_mod.main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert all(d['allowed'] for d in parsed['marketplace_demo'])
+
+
+# ── sim/report_runner.main() ──────────────────────────────────────────────────
+
+import sim.report_runner as _rr_mod
+
+
+def test_report_runner_main_exits_zero(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(ROOT)
+    with pytest.raises(SystemExit) as exc_info:
+        _rr_mod.main()
+    assert exc_info.value.code == 0
+
+
+def test_report_runner_main_prints_summary(capsys, monkeypatch):
+    monkeypatch.chdir(ROOT)
+    with pytest.raises(SystemExit):
+        _rr_mod.main()
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert parsed['overall_pass'] is True
+    assert 'validation_summary' in parsed
+    assert len(parsed['validation_summary']) == 8
+
+
+def test_report_runner_main_writes_files(monkeypatch, capsys):
+    monkeypatch.chdir(ROOT)
+    with pytest.raises(SystemExit):
+        _rr_mod.main()
+    capsys.readouterr()
+    assert (ROOT / 'reports' / 'report_summary.json').exists()
+    assert (ROOT / 'reports' / 'report_summary.md').exists()

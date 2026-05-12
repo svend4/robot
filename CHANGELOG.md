@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.22.0 — validator main(), marketplace_demo main(), report_runner main(), orbit severities (523 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (43 → 47 tests):
+  - `etd_reference_validator.main()` pretty mode — prints `ETD validation: PASS`, exits 0
+  - `etd_reference_validator.main(--output json)` — valid JSON with `valid=True`
+  - `etd_reference_validator.main()` with missing runtime context → falls back to empty
+    `RuntimeContext`, still prints `ETD validation:` output
+  - `etd_reference_validator.main()` on a broken package → exits non-zero, prints `FAIL`
+- `tests/test_sim_modules.py` (183 → 196 tests):
+  - `sim/marketplace_demo.main()` — returns normally when all installs allowed; JSON output
+    has `marketplace_demo` key with 8 decisions; all `allowed=True`
+  - `sim/report_runner.main()` — exits 0 on success; JSON summary has `overall_pass=True`
+    and 8-entry `validation_summary`; writes `reports/report_summary.json` and `.md`
+- `tests/test_orbit_bridge.py` (30 → 37 tests):
+  - Severity mappings for `primitive.exited` (debug), `telemetry.heartbeat` (debug),
+    `telemetry.metrics` (info), `safety.warning` (warn)
+  - `primitive.exited` and `telemetry.heartbeat` filtered at `min_severity='info'`
+  - `telemetry.metrics` passes at `min_severity='info'`
+
+### Test totals by module (523 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 31 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 196 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 27 |
+| `test_signing.py` | 47 |
+| **Total** | **523** |
+
+---
+
 ## 0.21.0 — AcceptanceMiddleware, _run_test edges, acceptance main(), release_package main() (506 tests)
 
 ### Coverage additions

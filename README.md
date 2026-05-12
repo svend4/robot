@@ -169,19 +169,19 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 43 — semantic check failures, missing files, schema None, score degradation
+├── test_validator.py         # 47 — semantic checks, main() pretty/json/fallback ctx, score degradation
 ├── test_api.py               # 27 — REST endpoints incl. absolute path, family filters, station install
 ├── test_cli.py               # 33 — _load_ctx fallback, robot-class override, station JSON, pretty errors
 ├── test_marketplace.py       # 31 — level-B install allowed, validate_listing level-B, SkillStore edges
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
-├── test_orbit_bridge.py      # 30 — orbit event bridge severity/filter/callback/timestamp
-├── test_sim_modules.py       # 183 — scenario_runner._pick_context, failure_scenarios main(), demo/validate_examples main()
+├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
+├── test_sim_modules.py       # 196 — failure_scenarios/demo_runner/validate_examples/marketplace_demo/report_runner main()
 ├── test_acceptance.py        # 46 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, main() CLI
 ├── test_ros2_bridge.py       # 27 — ETDSkillActionServer/Client, no-middleware branches, all-8 parametrized
 └── test_signing.py           # 47 — _package_digest missing files, sign/verify partial, release_package.main()
 ```
 
-Run: `python -m pytest` — 506 tests, all passing.
+Run: `python -m pytest` — 523 tests, all passing.
 
 ---
 

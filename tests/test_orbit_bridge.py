@@ -244,3 +244,45 @@ def test_bridge_ingest_with_explicit_timestamp():
     env = b.ingest('skill.started', 'etd.x', timestamp_ms=42_000)
     assert env is not None
     assert env['timestamp_ms'] == 42_000
+
+
+# ── Remaining severity mappings ────────────────────────────────────────────────
+
+def test_envelope_primitive_exited_is_debug():
+    e = to_enterprise_event('primitive.exited', 'etd.x')
+    assert e['severity'] == 'debug'
+
+
+def test_envelope_telemetry_heartbeat_is_debug():
+    e = to_enterprise_event('telemetry.heartbeat', 'etd.x')
+    assert e['severity'] == 'debug'
+
+
+def test_envelope_telemetry_metrics_is_info():
+    e = to_enterprise_event('telemetry.metrics', 'etd.x')
+    assert e['severity'] == 'info'
+
+
+def test_envelope_safety_warning_is_warn():
+    e = to_enterprise_event('safety.warning', 'etd.x')
+    assert e['severity'] == 'warn'
+
+
+def test_bridge_primitive_exited_filtered_at_info():
+    b = OrbitEventBridge(min_severity='info')
+    env = b.ingest('primitive.exited', 'etd.x')
+    assert env is None
+    assert b.pending() == 0
+
+
+def test_bridge_telemetry_heartbeat_filtered_at_info():
+    b = OrbitEventBridge(min_severity='info')
+    env = b.ingest('telemetry.heartbeat', 'etd.x')
+    assert env is None
+
+
+def test_bridge_telemetry_metrics_passes_at_info():
+    b = OrbitEventBridge(min_severity='info')
+    env = b.ingest('telemetry.metrics', 'etd.x')
+    assert env is not None
+    assert env['event'] == 'telemetry.metrics'

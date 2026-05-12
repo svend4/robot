@@ -468,3 +468,67 @@ def test_compat_score_decreases_with_multiple_errors():
     assert report.compatibility['level'] == 'D'
     assert report.compatibility['score'] < 0.5
     assert len(report.compatibility['errors']) >= 3
+
+
+# ── etd_reference_validator.main() ───────────────────────────────────────────
+
+import sys as _sys
+import etd_reference_validator as _val_mod
+
+
+def test_validator_main_pretty_valid_package(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', [
+        'etd_reference_validator.py',
+        'examples/etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--output', 'pretty',
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _val_mod.main()
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    assert 'PASS' in out
+
+
+def test_validator_main_json_output(capsys, monkeypatch):
+    import json as _json
+    monkeypatch.setattr(_sys, 'argv', [
+        'etd_reference_validator.py',
+        'examples/etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--output', 'json',
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _val_mod.main()
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    parsed = _json.loads(out)
+    assert parsed['valid'] is True
+    assert 'compatibility' in parsed
+
+
+def test_validator_main_missing_context_falls_back(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', [
+        'etd_reference_validator.py',
+        'examples/etd.pickplace.basic',
+        '--runtime-context', 'no_such_context.json',
+        '--output', 'pretty',
+    ])
+    with pytest.raises(SystemExit):
+        _val_mod.main()
+    out = capsys.readouterr().out
+    assert 'ETD validation' in out
+
+
+def test_validator_main_exits_nonzero_on_invalid(tmp_path, monkeypatch, capsys):
+    (tmp_path / 'manifest.yaml').write_text('metadata: {name: bad, version: "0.1.0"}\n')
+    monkeypatch.setattr(_sys, 'argv', [
+        'etd_reference_validator.py',
+        str(tmp_path),
+        '--output', 'pretty',
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _val_mod.main()
+    assert exc_info.value.code != 0
+    out = capsys.readouterr().out
+    assert 'FAIL' in out
