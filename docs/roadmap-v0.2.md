@@ -31,13 +31,17 @@ All items below were delivered in the prototype:
   Revoked skill IDs cannot be installed or executed regardless of entitlement.
   `SkillStore._revoked` set loaded at init; `validate_for_install` returns
   `skill_revoked` before any validation for blocked IDs.
-- [ ] **Fleet rollout policy.** Staged rollout: `canary` (1 station) →
-  `pilot` (N stations) → `production`. Rollout state tracked per skill version.
+- [x] **Fleet rollout policy.** Staged rollout: `draft` → `canary` (1 station) →
+  `pilot` (N stations) → `production`. State per skill@version in
+  `marketplace/rollout_state.json`. `RolloutPolicy` enforces one-stage-at-a-time;
+  `rollout set-stage` / `rollout status` CLI commands.
 - [x] **Signature verification at install time.** `verify_package()` called
   silently by `validate_for_install` when `requiresSignature=True`. Missing or
   invalid signature returns `reason="signature_invalid"` before schema validation.
-- [ ] **Runtime context schema.** Formal JSON Schema for `runtime_context.json`
+- [x] **Runtime context schema.** Formal JSON Schema for `runtime_context.json`
   so OEM integrators can validate their context files before use.
+  `schemas/runtime_context.schema.json` (Draft 2020-12); `validate-context` CLI
+  command; `validate_runtime_context()` in `etd_reference_validator.py`.
 - [x] **Health check endpoint.** `GET /health` returning validator version,
   loaded packages, station profile count, and revoked skill count.
 - [x] **CLI `revoke` command.** Adds a skill ID to the revocation list with

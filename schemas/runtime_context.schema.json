@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etd.robotics/schemas/runtime_context.schema.json",
+  "title": "ETD Runtime Context",
+  "description": "Describes the robot's runtime environment for skill package compatibility checks.",
+  "type": "object",
+  "required": ["runtime_version", "robot_class", "available_services"],
+  "additionalProperties": false,
+  "properties": {
+    "runtime_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "ETD runtime version (semver: major.minor.patch)",
+      "examples": ["0.1.0", "0.5.0", "1.0.0"]
+    },
+    "robot_class": {
+      "type": "string",
+      "enum": [
+        "humanoid",
+        "mobile_manipulator",
+        "fixed_manipulator",
+        "dual_arm",
+        "amr",
+        "exoskeleton",
+        "cobot"
+      ],
+      "description": "Robot platform class — must match the robotClass list in skill manifest compatibility"
+    },
+    "available_services": {
+      "type": "array",
+      "description": "Services available on this robot/station (used for compatibility checking)",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z_][a-z0-9_.]*$",
+        "description": "Service identifier in dot-notation (e.g. perception.object_pose)"
+      },
+      "uniqueItems": true
+    },
+    "platform_profile": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional OEM platform profile identifier",
+      "examples": [
+        "atlas_style_humanoid_v1",
+        "hyundai_mobed_v1",
+        "generic"
+      ]
+    }
+  }
+}

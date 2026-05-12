@@ -261,6 +261,23 @@ def load_runtime_context(path: str | Path) -> RuntimeContext:
     return RuntimeContext(**d)
 
 
+_CONTEXT_SCHEMA_PATH = Path(__file__).resolve().parent / 'schemas' / 'runtime_context.schema.json'
+
+
+def validate_runtime_context(path: str | Path) -> tuple[bool, list[str]]:
+    """Validate a runtime_context.json file against the ETD context schema.
+
+    Returns (valid: bool, errors: list[str]).
+    """
+    data = json.loads(Path(path).read_text(encoding='utf-8'))
+    if not _JSONSCHEMA_AVAILABLE:
+        return True, []
+    schema = json.loads(_CONTEXT_SCHEMA_PATH.read_text(encoding='utf-8'))
+    validator = Draft202012Validator(schema)
+    errors = [e.message for e in validator.iter_errors(data)]
+    return len(errors) == 0, errors
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description='Validate an ETD skill package')
     ap.add_argument('package', help='Path to the skill package directory')

@@ -757,3 +757,80 @@ def test_audit_log_shows_entries(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert 'etd.pickplace.basic' in result.output
     assert 'etd.bad.skill' in result.output
+
+
+# ── validate-context command (v0.6.0) ─────────────────────────────────────────
+
+def test_validate_context_valid_file():
+    """validate-context exits 0 and prints 'valid' for the repo runtime_context.json."""
+    result = runner.invoke(cli, ['validate-context', 'runtime_context.json'])
+    assert result.exit_code == 0
+    assert 'valid' in result.output.lower()
+
+
+def test_validate_context_invalid_file(tmp_path):
+    """validate-context exits 1 and reports errors for a bad context file."""
+    bad = tmp_path / 'bad_context.json'
+    bad.write_text('{"runtime_version": "not-semver", "robot_class": "unknown_class", "available_services": []}')
+    result = runner.invoke(cli, ['validate-context', str(bad)])
+    assert result.exit_code == 1
+    assert 'INVALID' in result.output
+
+
+def test_validate_context_missing_file(tmp_path):
+    """validate-context exits 1 when the file does not exist."""
+    result = runner.invoke(cli, ['validate-context', str(tmp_path / 'nope.json')])
+    assert result.exit_code == 1
+
+
+def test_validate_context_json_output():
+    """validate-context --json emits a parseable JSON report."""
+    result = runner.invoke(cli, ['validate-context', 'runtime_context.json', '--json'])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data['valid'] is True
+    assert data['errors'] == []
+
+
+# ── rollout command group (v0.6.0) ────────────────────────────────────────────
+
+def test_rollout_set_stage_canary(tmp_path, monkeypatch):
+    """rollout set-stage canary writes state and exits 0."""
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    result = runner.invoke(cli, [
+        'rollout', 'set-stage', 'etd.pickplace.basic', 'canary',
+        '--version', '0.5.0', '--station', 'assembly_a',
+    ])
+    assert result.exit_code == 0
+    assert 'canary' in result.output
+
+
+def test_rollout_set_stage_skipping_raises(tmp_path, monkeypatch):
+    """rollout set-stage exits 1 when trying to skip a stage."""
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    result = runner.invoke(cli, [
+        'rollout', 'set-stage', 'etd.pickplace.basic', 'production',
+        '--version', '0.5.0',
+    ])
+    assert result.exit_code == 1
+    assert 'skip' in result.output.lower() or 'Cannot' in result.output
+
+
+def test_rollout_status_empty(tmp_path, monkeypatch):
+    """rollout status prints helpful message when no entries exist."""
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    result = runner.invoke(cli, ['rollout', 'status'])
+    assert result.exit_code == 0
+    assert 'No rollout' in result.output
+
+
+def test_rollout_status_shows_entries(tmp_path, monkeypatch):
+    """rollout status shows the skill after set-stage."""
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    runner.invoke(cli, [
+        'rollout', 'set-stage', 'etd.test.skill', 'canary',
+        '--version', '0.1.0', '--station', 'sta',
+    ])
+    result = runner.invoke(cli, ['rollout', 'status'])
+    assert result.exit_code == 0
+    assert 'etd.test.skill' in result.output

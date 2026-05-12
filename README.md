@@ -42,7 +42,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
-├── etd_cli.py                          # CLI: validate, install, stations, info
+├── etd_cli.py                          # CLI: validate, install, stations, info, revoke, audit-log, validate-context, rollout
 ├── etd_demo_runner.py                  # validates all 8 packages with correct contexts
 ├── runtime_context.json                # base runtime context
 ├── runtime_context_atlas.json          # Boston Dynamics Atlas context
@@ -66,6 +66,11 @@ python etd_cli.py validate examples/etd.pickplace.basic
 python etd_cli.py stations
 python etd_cli.py install etd.hyundai.wia_welding \
     --station-profile station_profiles/weld_station_a.json
+python etd_cli.py revoke etd.bad.skill --reason "critical CVE"
+python etd_cli.py audit-log
+python etd_cli.py validate-context runtime_context.json
+python etd_cli.py rollout set-stage etd.pickplace.basic canary --station workcell-01
+python etd_cli.py rollout status
 
 # REST API
 uvicorn api.app:app --reload
@@ -171,7 +176,7 @@ A package that requests any forbidden capability is blocked at validation.
 tests/
 ├── test_validator.py         # 59 — _JSONSCHEMA_AVAILABLE=False branches (incl. non-dict doc → False), engine exception, .yml load, missing telemetry key, non-dict manifest → empty meta
 ├── test_api.py               # 35 — REST endpoints incl. station+nonexistent-skill branch, absolute path, available_services override, station_id compatible=True, find_skill None skips compat, decision-is-None → 404, policy-missing → 404
-├── test_cli.py               # 60 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None, publish no-skip-sign branch, station entry missing-services + human-aware warning, check_station_entry None→early-return, serve command uvicorn.run, revoke new-file/append/idempotent, audit-log no-file/entries
+├── test_cli.py               # 68 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None, publish no-skip-sign branch, station entry missing-services + human-aware warning, check_station_entry None→early-return, serve command uvicorn.run, revoke new-file/append/idempotent, audit-log no-file/entries, validate-context valid/invalid/missing/json, rollout set-stage canary/skip-error/status-empty/status-entries
 ├── test_marketplace.py       # 48 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D, revoked skill blocked, non-revoked not blocked, no-revoked-file → empty set, _load_revoked extracts ids, audit allowed/blocked entries, signature_invalid blocks install
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
@@ -181,7 +186,7 @@ tests/
 └── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ```
 
-Run: `python -m pytest` — 701 tests, all passing.
+Run: `python -m pytest` — 709 tests, all passing.
 
 ---
 

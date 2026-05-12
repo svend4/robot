@@ -265,6 +265,81 @@ def install(skill_id: str, token: str | None, robot_class: str | None, runtime_c
     sys.exit(0 if decision.allowed else 1)
 
 
+@cli.group()
+def rollout():
+    """Manage staged fleet rollout of skill packages (draft→canary→pilot→production)."""
+
+
+@rollout.command('set-stage')
+@click.argument('skill_id')
+@click.argument('stage', type=click.Choice(['draft', 'canary', 'pilot', 'production']))
+@click.option('--version', default='0.5.0', show_default=True)
+@click.option('--station', 'stations', multiple=True, metavar='STATION_ID',
+              help='Approved station(s) for canary/pilot stage (repeat for each)')
+@click.option('--operator', default='etd-cli', show_default=True)
+def rollout_set_stage(skill_id: str, stage: str, version: str,
+                      stations: tuple, operator: str):
+    """Set the rollout stage for a skill package version."""
+    from marketplace.rollout_policy import RolloutPolicy
+    policy = RolloutPolicy(ROOT / 'marketplace' / 'rollout_state.json')
+    try:
+        policy.set_stage(skill_id, version, stage,
+                         stations=list(stations) or None,
+                         operator_id=operator)
+        click.echo(click.style(f'{skill_id}@{version}  →  {stage}', fg='green', bold=True))
+        if stations:
+            for s in stations:
+                click.echo(f'  approved station: {s}')
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'), err=True)
+        sys.exit(1)
+
+
+@rollout.command('status')
+@click.option('--skill', default=None, help='Filter by skill_id')
+@click.option('--json', 'as_json', is_flag=True)
+def rollout_status(skill: str | None, as_json: bool):
+    """Show current rollout stages for all (or a specific) skill."""
+    from marketplace.rollout_policy import RolloutPolicy
+    policy = RolloutPolicy(ROOT / 'marketplace' / 'rollout_state.json')
+    entries = policy.status(skill_id=skill)
+    if as_json:
+        click.echo(json.dumps(entries, indent=2))
+        return
+    if not entries:
+        click.echo('No rollout entries found.')
+        return
+    for e in entries:
+        stage = e.get('stage', 'draft')
+        colour = {'draft': 'white', 'canary': 'yellow', 'pilot': 'cyan',
+                  'production': 'green'}.get(stage, 'white')
+        stage_str = click.style(f'{stage:<12}', fg=colour, bold=(stage == 'production'))
+        stations = ', '.join(e.get('approvedStations', [])) or '—'
+        click.echo(f"{e.get('skillId','?'):<42} {e.get('version','?'):<10} {stage_str} {stations}")
+
+
+@cli.command('validate-context')
+@click.argument('context_path', default=str(_CTX_PATH))
+@click.option('--json', 'as_json', is_flag=True, help='Output raw JSON report')
+def validate_context(context_path: str, as_json: bool):
+    """Validate a runtime_context.json file against the ETD context schema."""
+    from etd_reference_validator import validate_runtime_context
+    path = Path(context_path)
+    if not path.exists():
+        click.echo(click.style(f'File not found: {path}', fg='red'), err=True)
+        sys.exit(1)
+    valid, errors = validate_runtime_context(path)
+    if as_json:
+        click.echo(json.dumps({'file': str(path), 'valid': valid, 'errors': errors}, indent=2))
+    elif valid:
+        click.echo(click.style(f'Context valid: {path}', fg='green', bold=True))
+    else:
+        click.echo(click.style(f'Context INVALID: {path}', fg='red', bold=True))
+        for e in errors:
+            click.echo(f'  • {e}')
+    sys.exit(0 if valid else 1)
+
+
 @cli.command('audit-log')
 @click.option('--n', 'last_n', default=20, show_default=True,
               help='Show last N entries')

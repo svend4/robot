@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.65.0 — v0.6.0 complete: fleet rollout policy + runtime context schema (701 → 709 tests)
+
+### Code changes
+
+- `marketplace/rollout_policy.py` (NEW): `RolloutPolicy` class persisting staged
+  rollout state to `marketplace/rollout_state.json`. Stages: `draft` → `canary`
+  (exactly 1 station) → `pilot` (≥1 station) → `production`. Enforces
+  one-stage-at-a-time advancement; `is_approved_for_station()` gates deployment.
+- `schemas/runtime_context.schema.json` (NEW): JSON Schema Draft 2020-12 for
+  `runtime_context.json`. Validates `runtime_version` (semver pattern), `robot_class`
+  (enum: humanoid, mobile_manipulator, fixed_manipulator, dual_arm, amr,
+  exoskeleton, cobot), `available_services` (dot-notation array), `platform_profile`.
+- `etd_reference_validator.py`: added `validate_runtime_context(path)` function
+  returning `(valid: bool, errors: list[str])`; uses `_CONTEXT_SCHEMA_PATH`.
+- `etd_cli.py`:
+  - `validate-context` command: validates a `runtime_context.json` file against
+    the schema; exits 0/1; supports `--json` flag for machine-readable output
+  - `rollout` command group with two subcommands:
+    - `rollout set-stage SKILL_ID STAGE --version --station --operator`
+    - `rollout status [SKILL_ID]`
+
+### Tests (701 → 709)
+
+- `tests/test_cli.py` (+8):
+  - `validate-context` valid file (exit 0), invalid file (exit 1), missing file
+    (exit 2), `--json` output parseable
+  - `rollout set-stage` canary succeeds, stage-skip raises error (exit 1),
+    `rollout status` on empty state, `rollout status` after set-stage shows entry
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for fleet rollout policy and runtime context
+  schema — **all 7 v0.6.0 items now complete**
+
+---
+
 ## 0.64.0 — v0.6.0: audit logging + signature verification at install time (696 → 701 tests)
 
 ### Code changes

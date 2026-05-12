@@ -9,3 +9,4 @@ keys/etd_signing_key.hex
 .coverage
 htmlcov/
 logs/
+marketplace/rollout_state.json
