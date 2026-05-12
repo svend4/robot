@@ -15,6 +15,7 @@ from sim.acceptance_runner import (
     TestResult,
     SuiteResult,
     _run_test,
+    _load_run,
     _print_suite,
     run_suite,
     main as _acc_main,
@@ -388,3 +389,56 @@ def test_acc_main_verbose(capsys, monkeypatch):
         pass
     out = capsys.readouterr().out
     assert 'status=' in out
+
+
+# ── _run_test() legacy inject format + chsProfile auto-injection ──────────────
+
+def test_run_test_legacy_inject_without_at_primitive_sets_initial_safety():
+    """inject dict without 'at_primitive' applies safety globally before any primitive."""
+    run_fn = _load_run('etd.pickplace.basic')
+    test_spec = {
+        'id': 'test_legacy_inject',
+        'description': 'legacy inject format',
+        'inject': {'safety_state': {'human_in_forbidden_zone': True}},
+        'expect': {'status': 'aborted', 'reason': 'human_in_forbidden_zone'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.passed is True
+
+
+def test_run_test_job_context_without_chs_profile_gets_profile_injected(monkeypatch):
+    """When input.job_context lacks chsProfile, the profile field is auto-inserted."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    test_spec = {
+        'id': 'test_no_profile',
+        'description': 'no chsProfile in job_context',
+        'profile': 'small_box',
+        'input': {'job_context': {'priority': 'normal'}},
+        'expect': {'status': 'completed'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.passed is True
+
+
+# ── pickplace adapter: fragility='high' and unknown-profile branches ──────────
+
+def test_pickplace_fragility_high_uses_slow_speed(monkeypatch):
+    """fragility='high' forces speed_factor=0.5 regardless of profile."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    result = run_fn({'chsProfile': 'small_box', 'fragility': 'high', 'priority': 'normal'})
+    assert result['status'] == 'completed'
+    assert result['speed_factor'] == 0.5
+
+
+def test_pickplace_unknown_profile_falls_back_to_small_box_defaults(monkeypatch):
+    """Unknown chsProfile falls back to small_box defaults (payloadKg=1.5)."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    result = run_fn({'chsProfile': 'nonexistent_profile', 'priority': 'normal'})
+    assert result['status'] == 'completed'
+    assert result['payload_kg'] == 1.5

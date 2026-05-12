@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.29.0 — acceptance runner legacy inject, chsProfile injection, pickplace adapter branches (574 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (46 → 50 tests):
+  - `_run_test()` legacy inject format: `inject` dict without `at_primitive` key applies
+    `safety_state` globally as `initial_safety` — pickplace aborts on first primitive
+  - `_run_test()` `chsProfile` auto-injection: `input.job_context` without `chsProfile`
+    gets the `profile` field inserted before calling the adapter
+  - `etd.pickplace.basic` adapter `fragility='high'` branch: forces `speed_factor=0.5`,
+    `body_mode='micro_stable'`, `arm_mode='slow_arc'`, `wrist_mode='minimal_force'`
+  - `etd.pickplace.basic` adapter unknown `chsProfile` fallback: unknown profile name
+    resolves to `small_box` defaults (`payloadKg=1.5`)
+
+### Test totals by module (574 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 205 |
+| `test_acceptance.py` | 50 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **574** |
+
+---
+
 ## 0.28.0 — validator _JSONSCHEMA_AVAILABLE=False and engine-exception branches (570 tests)
 
 ### Coverage additions
