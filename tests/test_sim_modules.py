@@ -1354,6 +1354,57 @@ def test_failure_human_zone_detail_message():
     assert 'human detected' in r['detail']
 
 
+# ── failure_scenarios: detail else-branches (passed=False paths) ──────────────
+
+import sim.failure_scenarios as _fs_mod
+from adapters.station_profile_loader import StationCompatibilityResult
+
+
+def test_failure_missing_service_detail_else_branch(monkeypatch):
+    """Force scenario_missing_service_level_d to fail → detail uses else branch."""
+    from etd_reference_validator import ValidationReport
+
+    _fake_report = ValidationReport(
+        valid=True, package_path='', schema={}, schema_errors={},
+        semantic_checks={}, warnings=[], errors=[],
+        compatibility={'level': 'A', 'score': 1.0, 'warnings': [], 'errors': []},
+    )
+
+    class _FakeValidator:
+        def __init__(self, ctx):
+            pass
+        def validate_package(self, path):
+            return _fake_report
+
+    monkeypatch.setattr(_fs_mod, 'ETDReferenceValidator', _FakeValidator)
+    r = _fs_mod.scenario_missing_service_level_d()
+    assert r['passed'] is False
+    assert 'expected level D' in r['detail']
+    assert 'got A' in r['detail']
+
+
+def test_failure_payload_detail_else_branch(monkeypatch):
+    """Force scenario_payload_out_of_range to fail → detail uses else branch."""
+    _always_ok = StationCompatibilityResult(
+        station_id='x', skill_id='', compatible=True, reason='station_compatible',
+    )
+    monkeypatch.setattr(_fs_mod, 'check_skill_compatible', lambda *a, **kw: _always_ok)
+    r = _fs_mod.scenario_payload_out_of_range()
+    assert r['passed'] is False
+    assert 'unexpected compat' in r['detail']
+
+
+def test_failure_station_mismatch_detail_else_branch(monkeypatch):
+    """Force scenario_station_family_mismatch to fail → detail uses else branch."""
+    _always_ok = StationCompatibilityResult(
+        station_id='x', skill_id='', compatible=True, reason='station_compatible',
+    )
+    monkeypatch.setattr(_fs_mod, 'check_skill_compatible', lambda *a, **kw: _always_ok)
+    r = _fs_mod.scenario_station_family_mismatch()
+    assert r['passed'] is False
+    assert 'unexpected result' in r['detail']
+
+
 # ── failure_scenarios.main() ──────────────────────────────────────────────────
 
 import sys as _sys

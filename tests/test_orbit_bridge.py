@@ -286,3 +286,13 @@ def test_bridge_telemetry_metrics_passes_at_info():
     env = b.ingest('telemetry.metrics', 'etd.x')
     assert env is not None
     assert env['event'] == 'telemetry.metrics'
+
+
+# ── to_enterprise_event: timestamp_ms=0 preserved (is not None check) ─────────
+
+def test_envelope_timestamp_zero_is_preserved():
+    """timestamp_ms=0 is falsy but not None — the 'is not None' guard must preserve it."""
+    e = to_enterprise_event('skill.started', 'etd.x', timestamp_ms=0)
+    # If the code used `if timestamp_ms:` instead of `if timestamp_ms is not None:`,
+    # 0 would be overwritten by the current time. This test asserts 0 is kept.
+    assert e['timestamp_ms'] == 0

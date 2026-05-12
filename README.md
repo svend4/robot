@@ -174,14 +174,14 @@ tests/
 ├── test_cli.py               # 45 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output
 ├── test_marketplace.py       # 37 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
-├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
-├── test_sim_modules.py       # 216 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1
+├── test_orbit_bridge.py      # 38 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved
+├── test_sim_modules.py       # 219 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch+detail else-branches, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1
 ├── test_acceptance.py        # 82 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state
 ├── test_ros2_bridge.py       # 35 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2()
 └── test_signing.py           # 58 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1
 ```
 
-Run: `python -m pytest` — 638 tests, all passing.
+Run: `python -m pytest` — 642 tests, all passing.
 
 ---
 

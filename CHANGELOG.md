@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.41.0 — timestamp zero preserved, failure-scenario detail else-branches (642 tests)
+
+### Coverage additions
+- `tests/test_orbit_bridge.py` (37 → 38 tests):
+  - **`timestamp_ms=0` is not None → value preserved**: `to_enterprise_event` uses
+    `timestamp_ms is not None` guard; passing 0 (falsy but not None) must NOT be overwritten
+    by `int(time.time() * 1000)` — verifies the correct `is not None` pattern
+- `tests/test_sim_modules.py` (216 → 219 tests):
+  - **`scenario_missing_service_level_d` detail else-branch**: monkeypatched validator returns
+    level='A' → `passed=False` → `detail = 'expected level D, got A'`
+  - **`scenario_payload_out_of_range` detail else-branch**: monkeypatched `check_skill_compatible`
+    always returns `compatible=True` → `passed=False` → `detail = 'unexpected compat: ...'`
+  - **`scenario_station_family_mismatch` detail else-branch**: same monkeypatch →
+    `passed=False` → `detail = 'unexpected result: ...'`
+
+### Test totals by module (642 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 45 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 38 |
+| `test_sim_modules.py` | 219 |
+| `test_acceptance.py` | 82 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 58 |
+
+---
+
 ## 0.40.0 — non-dict manifest meta fallback, inject-no-safety-state, all-required-services-present, CLI missing-services text (638 tests)
 
 ### Coverage additions
