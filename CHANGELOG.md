@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.11.0 — Validator edge case coverage (268 tests)
+
+### Coverage additions in `tests/test_validator.py` (17 → 29 tests)
+- `load_runtime_context()` for remaining contexts: `test_load_wia_runtime_context`,
+  `test_load_mobed_runtime_context`, `test_load_exo_runtime_context`
+- Compatibility level B: `test_compat_level_b_optional_services_missing` — all
+  required services present but optional services absent → level B, valid=True
+- Compatibility errors:
+  - `test_compat_runtime_too_old` — `runtime_version='0.0.1'` below `>=0.1.0`
+  - `test_compat_robot_class_mismatch` — unsupported robot_class → level D
+- Parse error path: `test_parse_error_returns_invalid_report` — malformed YAML
+  → `valid=False`, `'parse error'` in errors (lines 144-150)
+- Helper functions `_version_tuple` and `_min_runtime`:
+  - `test_version_tuple_normal`, `test_version_tuple_malformed_returns_zero` (exception branch)
+  - `test_min_runtime_none_returns_none`, `test_min_runtime_empty_returns_none`,
+    `test_min_runtime_with_spec`
+
+### Test totals by module (268 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 52 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 37 |
+
+---
+
 ## 0.10.0 — Sim, client, and release pipeline coverage (256 tests)
 
 ### Coverage additions

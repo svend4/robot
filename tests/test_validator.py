@@ -13,7 +13,10 @@ import sys
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from etd_reference_validator import ETDReferenceValidator, RuntimeContext, load_runtime_context
+from etd_reference_validator import (
+    ETDReferenceValidator, RuntimeContext, load_runtime_context,
+    _version_tuple, _min_runtime,
+)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -204,3 +207,96 @@ def test_load_atlas_runtime_context():
     ctx = load_runtime_context(ROOT / 'runtime_context_atlas.json')
     assert 'locomotion.walk_planner' in ctx.available_services
     assert 'state.balance_state' in ctx.available_services
+
+
+def test_load_wia_runtime_context():
+    ctx = load_runtime_context(ROOT / 'runtime_context_wia.json')
+    assert any('welding' in s or 'seam' in s for s in ctx.available_services)
+
+
+def test_load_mobed_runtime_context():
+    ctx = load_runtime_context(ROOT / 'runtime_context_mobed.json')
+    assert any('navigation' in s for s in ctx.available_services)
+
+
+def test_load_exo_runtime_context():
+    ctx = load_runtime_context(ROOT / 'runtime_context_exo.json')
+    assert any('exo' in s for s in ctx.available_services)
+
+
+# ── Compatibility level B (optional services missing) ─────────────────────────
+
+def test_compat_level_b_optional_services_missing():
+    ctx = RuntimeContext(
+        runtime_version='0.1.0',
+        robot_class='humanoid',
+        available_services=[
+            'perception.object_pose', 'manipulation.arm_control',
+            'workflow.job_context', 'state.robot_pose', 'state.arm_state',
+            'state.wrist_state', 'state.safety_state', 'safety.zone_monitor',
+            # intentionally omit optional: perception.part_alignment, telemetry.metrics
+        ],
+    )
+    report = ETDReferenceValidator(ctx).validate_package(ROOT / 'examples' / 'etd.pickplace.basic')
+    assert report.compatibility['level'] == 'B'
+    assert report.valid is True
+    assert any('missing_optional_service' in w for w in report.compatibility['warnings'])
+
+
+# ── Compatibility errors: runtime_too_old and robot_class_mismatch ────────────
+
+def test_compat_runtime_too_old():
+    ctx = RuntimeContext(
+        runtime_version='0.0.1',
+        robot_class='humanoid',
+        available_services=_FULL_SERVICES,
+    )
+    report = ETDReferenceValidator(ctx).validate_package(ROOT / 'examples' / 'etd.pickplace.basic')
+    assert 'runtime_too_old' in report.compatibility['errors']
+    assert report.compatibility['level'] == 'D'
+
+
+def test_compat_robot_class_mismatch():
+    ctx = RuntimeContext(
+        runtime_version='0.1.0',
+        robot_class='exoskeleton',
+        available_services=_FULL_SERVICES,
+    )
+    report = ETDReferenceValidator(ctx).validate_package(ROOT / 'examples' / 'etd.pickplace.basic')
+    assert 'robot_class_mismatch' in report.compatibility['errors']
+    assert report.compatibility['level'] == 'D'
+
+
+# ── Parse error ───────────────────────────────────────────────────────────────
+
+def test_parse_error_returns_invalid_report(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'bad_parse_pkg'
+    shutil.copytree(src, dst)
+    (dst / 'manifest.yaml').write_text(': broken: [yaml\n!!invalid')
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    assert report.valid is False
+    assert any('parse error' in e for e in report.errors)
+
+
+# ── _version_tuple and _min_runtime helpers ───────────────────────────────────
+
+def test_version_tuple_normal():
+    assert _version_tuple('1.2.3') == (1, 2, 3)
+
+
+def test_version_tuple_malformed_returns_zero():
+    assert _version_tuple('not.a.version') == (0, 0, 0)
+
+
+def test_min_runtime_none_returns_none():
+    assert _min_runtime(None) is None
+
+
+def test_min_runtime_empty_returns_none():
+    assert _min_runtime('') is None
+
+
+def test_min_runtime_with_spec():
+    assert _min_runtime('>=0.5.0') == '0.5.0'

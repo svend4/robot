@@ -169,7 +169,7 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 17 — schema validation, compat levels, all 8 packages
+├── test_validator.py         # 29 — schema, compat levels A/B/D, parse errors, helper fns
 ├── test_api.py               # 18 — REST endpoints incl. vest_exo and version check
 ├── test_cli.py               # 20 — CLI commands incl. all 4 Hyundai packages
 ├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 37 — Ed25519 sign/verify, keypair gen, _zip_dir, OEM gate
 ```
 
-Run: `python -m pytest` — 256 tests, all passing.
+Run: `python -m pytest` — 268 tests, all passing.
 
 ---
 
