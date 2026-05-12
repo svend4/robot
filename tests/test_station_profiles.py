@@ -490,3 +490,26 @@ def test_compatible_empty_required_services_with_nonempty_available_passes():
     assert result.compatible is True
     assert result.missing_services == []
     assert result.reason == 'station_compatible'
+
+
+# ── check_skill_compatible: non-empty available_services, all required present ─
+
+def test_compatible_required_services_all_present_in_station_passes():
+    """Station has services, skill requires a subset → all found → missing_services=[] → compatible."""
+    p = StationProfile(
+        station_id='weld_rich', allowed_skill_families=['weld'],
+        max_payload_kg=30.0, requires_human_aware=False,
+        available_services=['perception.seam_tracker', 'force_control.contact_feedback', 'manipulation.arm_control'],
+    )
+    result = check_skill_compatible(
+        p,
+        skill_family='weld',
+        payload_kg=10.0,
+        requires_human_aware=False,
+        required_services=['perception.seam_tracker', 'force_control.contact_feedback'],
+    )
+    # available_services non-empty → inner check runs; all required found → missing_services=[]
+    # if missing_services: False → falls through to compatible=True
+    assert result.compatible is True
+    assert result.missing_services == []
+    assert result.reason == 'station_compatible'

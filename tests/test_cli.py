@@ -527,3 +527,38 @@ def test_validate_station_human_aware_warning_in_text_output(tmp_path):
     ])
     # _check_station text branch: 'for w in result.warnings: click.echo(f"  ! {w}")'
     assert 'skill_requires_human_aware_but_station_does_not_enforce_it' in result.output
+
+
+# ── _check_station: text output shows missing services when incompatible ──────
+
+def test_validate_station_text_output_shows_missing_services(tmp_path):
+    """_check_station text branch: 'if result.missing_services: click.echo(Missing services: ...)'."""
+    # Skill whose family is allowed at the station but requires a service the station lacks
+    (tmp_path / 'manifest.yaml').write_text(
+        'skillId: etd.test.ms\nversion: 0.1.0\nsafety:\n  humanAware: false\n'
+    )
+    (tmp_path / 'skill.json').write_text(
+        json.dumps({
+            'skillId': 'etd.test.ms',
+            'family': 'weld',
+            'maxPayloadKg': 5.0,
+            'requiredServices': [{'name': 'some.missing.service'}],
+        })
+    )
+    # Station allows 'weld', has available_services that does NOT include 'some.missing.service'
+    station_file = tmp_path / 'station.json'
+    station_file.write_text(json.dumps({
+        'station_id': 'partial_weld_station',
+        'allowed_skill_families': ['weld'],
+        'max_payload_kg': 25.0,
+        'requires_human_aware': False,
+        'available_services': ['perception.seam_tracker'],
+    }))
+    result = runner.invoke(cli, [
+        'validate', str(tmp_path),
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', str(station_file),
+    ])
+    # _check_station text branch: 'if result.missing_services: click.echo(Missing services: ...)'
+    assert 'Missing services' in result.output
+    assert 'some.missing.service' in result.output

@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.40.0 — non-dict manifest meta fallback, inject-no-safety-state, all-required-services-present, CLI missing-services text (638 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (58 → 59 tests):
+  - **`isinstance(manifest, dict)` False branch → `meta = {}`**: patched `_load` to return a
+    non-dict object with `.get()` for `manifest.yaml` → `isinstance` guard at line 181 takes
+    else branch → `meta = {}` → `semantic['name_matches_skill_id'] = False`
+- `tests/test_acceptance.py` (81 → 82 tests):
+  - **`inject` dict without `at_primitive` AND without `safety_state`**: `inject_spec` truthy,
+    `'at_primitive' not in inject_spec` → line 186 branch taken; `inject_spec.get('safety_state')`
+    returns None → `initial_safety=None` → middleware uses defaults → skill completes
+- `tests/test_station_profiles.py` (38 → 39 tests):
+  - **`available_services` non-empty, all required services present → `missing_services=[]` → compatible**:
+    exercises the inner `if missing_services:` False path when station has services
+    but none are missing; confirms compatible=True without early return
+- `tests/test_cli.py` (44 → 45 tests):
+  - **`_check_station` text output: `if result.missing_services:` prints "Missing services"**:
+    custom package with `requiredServices` containing a service absent from station's
+    `available_services` → text output shows `Missing services: some.missing.service`
+
+### Test totals by module (638 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 45 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 216 |
+| `test_acceptance.py` | 82 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 58 |
+
+---
+
 ## 0.39.0 — release validation failure, station human-aware warning, non-dict schema fallback (634 tests)
 
 ### Coverage additions

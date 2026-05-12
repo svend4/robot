@@ -406,6 +406,26 @@ def test_run_test_legacy_inject_without_at_primitive_sets_initial_safety():
     assert r.passed is True
 
 
+# ── _run_test: inject without at_primitive AND without safety_state ───────────
+
+def test_run_test_inject_without_at_primitive_and_no_safety_state(monkeypatch):
+    """inject dict with no 'at_primitive' and no 'safety_state' → initial_safety=None, skill completes."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    # inject_spec has no 'at_primitive' → line 186 branch taken
+    # inject_spec.get('safety_state') → None (key absent) → initial_safety=None
+    test_spec = {
+        'id': 'inject_no_safety_state',
+        'description': 'inject without at_primitive and without safety_state gives initial_safety=None',
+        'inject': {'custom_key': 'some_value'},
+        'input': {'job_context': {'chsProfile': 'small_box'}},
+        'expect': {'status': 'completed'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.passed is True
+
+
 def test_run_test_job_context_without_chs_profile_gets_profile_injected(monkeypatch):
     """When input.job_context lacks chsProfile, the profile field is auto-inserted."""
     import time as _time

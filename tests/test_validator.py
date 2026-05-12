@@ -691,3 +691,35 @@ def test_jsonschema_unavailable_non_dict_doc_gives_false_schema_result(tmp_path,
     report = _val.ETDReferenceValidator(ctx).validate_package(dst)
     # execution_contract: isinstance([], dict) = False → schema_results['execution_contract'] = False
     assert report.schema.get('execution_contract') is False
+
+
+# ── Semantic: manifest loaded as non-dict → isinstance(manifest, dict) False ──
+
+def test_semantic_non_dict_manifest_gives_empty_meta(tmp_path, monkeypatch):
+    """manifest that is not a dict → isinstance branch False → meta={} → name check fails."""
+    import etd_reference_validator as _val
+
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'non_dict_manifest'
+    shutil.copytree(src, dst)
+
+    # Patch _load so manifest.yaml returns a non-dict object that still has .get()
+    # (a plain list would crash at line 193 where manifest.get('telemetry') is called)
+    _orig_load = _val._load
+
+    class _NonDictManifest:
+        def get(self, key, default=None):
+            return default
+
+    def _patched_load(path):
+        if path.name == 'manifest.yaml':
+            return _NonDictManifest()
+        return _orig_load(path)
+
+    monkeypatch.setattr(_val, '_load', _patched_load)
+
+    ctx = _base_ctx()
+    report = _val.ETDReferenceValidator(ctx).validate_package(dst)
+    # isinstance(manifest, dict) is False → meta = {} → meta.get('name') is None
+    # None != skill.get('skillId') → name_matches_skill_id = False
+    assert report.semantic_checks.get('name_matches_skill_id') is False
