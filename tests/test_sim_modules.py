@@ -255,6 +255,48 @@ def test_middleware_unique_execution_ids():
     assert len(ids) == 10
 
 
+def test_middleware_complete_nonexistent_returns_false():
+    mw = FakeMiddleware()
+    assert mw.complete('no-such-id') is False
+
+
+def test_middleware_cancel_already_cancelled_returns_false():
+    mw = FakeMiddleware()
+    r = mw.send_request({'bounded': True, 'payload': {}})
+    exec_id = r['execution_id']
+    assert mw.cancel(exec_id) is True      # first cancel: was running
+    assert mw.cancel(exec_id) is False     # second cancel: already cancelled
+
+
+def test_middleware_fail_rate_produces_faults():
+    import random
+    random.seed(0)
+    mw = FakeMiddleware(fail_rate=1.0)   # always fail
+    r = mw.send_request({'bounded': True, 'payload': {}})
+    assert r['accepted'] is False
+    assert r['reason'] == 'simulated_fault'
+
+
+def test_middleware_fail_rate_zero_always_accepts():
+    mw = FakeMiddleware(fail_rate=0.0)
+    for _ in range(5):
+        r = mw.send_request({'bounded': True, 'payload': {}})
+        assert r['accepted'] is True
+
+
+def test_middleware_explicit_station_id_in_request():
+    mw = FakeMiddleware(station_id='unknown')   # default instance station
+    r = mw.send_request({'bounded': True, 'station_id': 'assembly_station_a', 'payload': {}})
+    assert r['accepted'] is True
+
+
+def test_middleware_explicit_unknown_station_in_request():
+    mw = FakeMiddleware()
+    r = mw.send_request({'bounded': True, 'station_id': 'neptune_base', 'payload': {}})
+    assert r['accepted'] is False
+    assert r['reason'] == 'unknown_station'
+
+
 def test_legacy_send_request():
     r = send_request({'bounded': True, 'request_type': 'skill_intent', 'payload': {}})
     assert r['accepted'] is True

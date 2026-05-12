@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.18.0 — FakeMiddleware edge cases, ROS2 bridge no-middleware paths (428 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (148 → 156 tests):
+  - `FakeMiddleware.complete()` with nonexistent id → False
+  - `FakeMiddleware.cancel()` on already-cancelled execution → False (idempotent guard)
+  - `FakeMiddleware(fail_rate=1.0).send_request()` → `simulated_fault` rejection
+  - `FakeMiddleware(fail_rate=0.0)` always accepts (zero guard)
+  - `send_request` with explicit `station_id` in request (overrides instance station)
+  - `send_request` with unknown station in request payload
+- `tests/test_ros2_bridge.py` (19 → 27 tests):
+  - `execute_goal(middleware=None)` — `_FeedbackMiddleware.inner=None` path: publish does
+    nothing, read returns None; skill still completes (read returns None gracefully)
+  - `execute_goal(middleware=None, feedback_fn=some_fn)` — callbacks still fire for
+    `telemetry.events` even when inner middleware absent
+  - `execute_goal(feedback_fn=None, middleware=None)` — both None, completes cleanly
+  - All-8 packages parametrized via `server.execute_goal(goal, middleware=_MW)` —
+    verifies every skill reaches `status=completed` with a full `_NominalMiddleware`
+
+### Test totals by module (428 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 43 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 156 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 27 |
+| `test_signing.py` | 38 |
+
+---
+
 ## 0.17.0 — Validator semantic failures, CLI branches, full suite (411 tests)
 
 ### Coverage additions

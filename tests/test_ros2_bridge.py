@@ -172,3 +172,44 @@ def test_server_run_ros2_raises_without_rclpy():
     server = ETDSkillActionServer('etd.pickplace.basic')
     with pytest.raises(RuntimeError, match='rclpy not available'):
         server.run_ros2()
+
+
+# ── _FeedbackMiddleware with no inner middleware ──────────────────────────────
+
+def test_execute_goal_no_middleware_completes():
+    random.seed(42)
+    server = ETDSkillActionServer('etd.pickplace.basic')
+    result = server.execute_goal({'chsProfile': 'fragile_item'}, middleware=None)
+    assert result.get('status') == 'completed'
+
+
+def test_execute_goal_no_middleware_with_feedback_fn():
+    random.seed(42)
+    events = []
+    server = ETDSkillActionServer('etd.pickplace.basic')
+    server.execute_goal(
+        {'chsProfile': 'fragile_item'},
+        feedback_fn=lambda msg: events.append(msg.get('event', '')),
+        middleware=None,
+    )
+    assert 'skill.started' in events
+
+
+def test_execute_goal_no_feedback_no_middleware():
+    random.seed(42)
+    server = ETDSkillActionServer('etd.pickplace.basic')
+    result = server.execute_goal({'chsProfile': 'fragile_item'},
+                                 feedback_fn=None, middleware=None)
+    assert result.get('status') == 'completed'
+
+
+# ── ETDSkillActionClient — all-8 via server.execute_goal + _MW ───────────────
+
+@pytest.mark.parametrize('skill_id,goal', _ALL_SKILLS)
+def test_client_execute_via_server_with_middleware(skill_id, goal):
+    """Verify every skill completes when given a complete middleware."""
+    random.seed(42)
+    server = ETDSkillActionServer(skill_id)
+    result = server.execute_goal(goal, middleware=_MW)
+    assert result.get('status') == 'completed', \
+        f'{skill_id}: {result.get("reason")!r}'
