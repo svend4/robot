@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.44.0 — replay no-data key, acceptance main() no-skill scan, whitespace pub-key, signing else-branch, manifest-parse exception (654 tests)
+
+### Coverage additions
+- `tests/test_orbit_bridge.py` (38 → 39 tests):
+  - **`replay_skill_log` event without 'data' key**: `e.get('data')` returns None →
+    `to_enterprise_event(data=None)` → `data or {}` → envelope `'data': {}`
+- `tests/test_acceptance.py` (85 → 86 tests):
+  - **`acceptance_runner.main()` no-`--skill` arg else-branch**: directory scan of
+    `examples/` → all 8 packages discovered and passed to `run_suite`; verified via
+    monkeypatched `run_suite` tracking calls
+- `tests/test_signing.py` (58 → 61 tests):
+  - **`verify_package` whitespace-only pub-key file**: `pub_key_path.exists()` True but
+    content is `'   \n\t\n   '` → `strip()` → `''` → `if not verify_hex:` → False
+  - **`release_package.main()` signing else-branch**: key file exists + `--skip-sign` not
+    set → `else:` block at step 2 → `sign_package(pkg, key_path)` called → `package.sig`
+    written; verified by `str(sk_path)` as absolute `--key` arg (`ROOT / abs` = `abs`)
+  - **`release_package.main()` manifest-parse `except Exception: pass`**: mock validator
+    returns `valid=True`, manifest.yaml contains invalid YAML → `yaml.safe_load` raises
+    `yaml.YAMLError` → caught → `version` stays `'0.1.0'` → zip filename contains `0.1.0`
+
+### Test totals by module (654 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 45 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 224 |
+| `test_acceptance.py` | 86 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 61 |
+
+---
+
 ## 0.43.0 — ascii_timeline empty-result/no-summary-keys/zero-duration, run_traced open-primitive cleanup (649 tests)
 
 ### Coverage additions

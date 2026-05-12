@@ -296,3 +296,14 @@ def test_envelope_timestamp_zero_is_preserved():
     # If the code used `if timestamp_ms:` instead of `if timestamp_ms is not None:`,
     # 0 would be overwritten by the current time. This test asserts 0 is kept.
     assert e['timestamp_ms'] == 0
+
+
+# ── replay_skill_log: event without 'data' key → data or {} ─────────────────
+
+def test_replay_skill_log_event_without_data_key():
+    """Event dict with no 'data' key → e.get('data') returns None → data or {} → envelope data={}."""
+    log = [{'event': 'skill.started', 'skill_id': 'etd.x'}]  # no 'data' key
+    b = OrbitEventBridge()
+    msgs = replay_skill_log(log, b)
+    assert len(msgs) == 1
+    assert msgs[0]['data'] == {}

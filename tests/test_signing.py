@@ -636,3 +636,85 @@ def test_release_main_validation_failure_exits_1(tmp_path, capsys, monkeypatch):
     assert exc_info.value.code == 1
     out = capsys.readouterr().out
     assert 'Validation FAILED' in out
+
+
+# ── verify_package: pub_key_path exists but contains only whitespace → False ──
+
+def test_verify_whitespace_pub_key_returns_false(tmp_path, keypair):
+    """pub_key_path exists but content is all whitespace → strip() = '' → return False."""
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_ws'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    # Write a key file containing only whitespace
+    ws_key = tmp_path / 'whitespace.hex'
+    ws_key.write_text('   \n\t\n   ')
+    assert verify_package(dst, pub_key_path=ws_key) is False
+
+
+# ── release_package.main(): key exists + no --skip-sign → signing else-branch ─
+
+def test_release_main_with_actual_signing_key(tmp_path, capsys, monkeypatch, keypair):
+    """Key file exists and --skip-sign not set → else-branch at step 2 → sign_package called."""
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    out_dir = tmp_path / 'out'
+    # Pass sk_path as absolute string: ROOT / abs_path = abs_path in Python
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        str(dst),
+        '--key', str(sk_path),
+        '--out', str(out_dir),
+        '--runtime-context', 'runtime_context.json',
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert 'Signing with key' in out
+    assert (dst / 'package.sig').exists()
+    assert len(list(out_dir.glob('*.zip'))) == 1
+
+
+# ── release_package.main(): manifest.yaml parse exception → version stays default
+
+def test_release_main_manifest_parse_exception_uses_default_version(tmp_path, capsys, monkeypatch):
+    """Invalid YAML in manifest.yaml at step 3 → except Exception: pass → version='0.1.0'."""
+    import release_package as _rp_mod
+
+    pkg = tmp_path / 'etd.test.badmanifest'
+    pkg.mkdir()
+    # Invalid YAML: unclosed sequence prevents yaml.safe_load from returning a dict
+    (pkg / 'manifest.yaml').write_text(': bad: yaml: [unclosed\n')
+    out_dir = tmp_path / 'out'
+
+    class _FakeReport:
+        valid = True
+        compatibility = {'level': 'A', 'score': 100}
+
+    class _FakeValidator:
+        def __init__(self, ctx):
+            pass
+        def validate_package(self, p):
+            return _FakeReport()
+
+    monkeypatch.setattr(_rp_mod, 'ETDReferenceValidator', _FakeValidator)
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        str(pkg),
+        '--skip-sign',
+        '--out', str(out_dir),
+        '--runtime-context', 'runtime_context.json',
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+
+    zips = list(out_dir.glob('*.zip'))
+    assert len(zips) == 1
+    assert '0.1.0' in zips[0].name

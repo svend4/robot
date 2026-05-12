@@ -1053,3 +1053,29 @@ def test_load_run_default_entrypoint_when_absent(tmp_path, monkeypatch):
     monkeypatch.setattr(_ar, 'ROOT', tmp_path)
     run_fn = _ar._load_run('etd.test.noentrypoint')
     assert callable(run_fn)
+
+
+# ── acceptance_runner.main(): no --skill arg → directory scan else-branch ─────
+
+def test_acc_main_no_skill_arg_iterates_all_packages(monkeypatch):
+    """main() without --skill triggers the else branch: directory scan of examples/."""
+    import sim.acceptance_runner as _acc_mod
+
+    ran_skills = []
+
+    def _fake_run_suite(skill_id):
+        ran_skills.append(skill_id)
+        return SuiteResult(skill_id=skill_id, suite='fake', total=1, passed=1, failed=0,
+                           results=[])
+
+    monkeypatch.setattr(_acc_mod, 'run_suite', _fake_run_suite)
+    monkeypatch.setattr(sys, 'argv', ['acceptance_runner.py', '--json'])
+
+    try:
+        _acc_main()
+    except SystemExit:
+        pass
+
+    assert len(ran_skills) == 8
+    assert 'etd.pickplace.basic' in ran_skills
+    assert 'etd.hyundai.vest_exoskeleton' in ran_skills
