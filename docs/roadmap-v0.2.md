@@ -60,6 +60,8 @@ All items below were delivered in the prototype:
   maps all ETD service topics to H-Motion ROS 2 topic names; `dry_run=True` mode
   with injectable mock state enables full sim/test without hardware; `dry_run=False`
   path stubs `_ros2_read` / `_ros2_publish` for real rclpy integration.
+  `HyundaiMobEDAdapter` (H-Rise AMR, `/hrise/*`) and `HyundaiExoAdapter`
+  (H-MEX exoskeleton, `/hmex/*`) complete the three-platform Hyundai family.
 - [x] **Middleware contract formalized.** `etd_middleware_contract.py` defines
   abstract base class `ETDMiddleware` with typed `read` / `publish` signatures.
   `load_middleware_adapter()` validates required_topics at load time.

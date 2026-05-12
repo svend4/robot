@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.67.0 — v0.7.0: MobED + exoskeleton adapters + middleware developer guide (755 → 803 tests)
+
+### Code changes
+
+- `adapters/hyundai_mobed_adapter.py` (NEW): `HyundaiMobEDAdapter(ETDMiddleware)`
+  mapping 17 ETD service topics to H-Rise AMR ROS 2 namespace (`/hrise/*`).
+  `initial_pose` constructor arg, `set_pose()` convenience helper. Dry-run mock
+  includes `state.robot_pose`, `state.safety_state`, `state.battery`.
+- `adapters/hyundai_exo_adapter.py` (NEW): `HyundaiExoAdapter(ETDMiddleware)`
+  mapping 18 ETD service topics to H-MEX exoskeleton ROS 2 namespace (`/hmex/*`).
+  `simulate_fatigue=True` mode increments `fatigue_pct` +5 per read (max 100).
+  `set_fatigue()` and `set_intent()` helpers for direct state injection.
+  Mock covers `state.exo_joint_state`, `state.fatigue_monitor`,
+  `perception.intent_detector`.
+
+### Documentation
+
+- `docs/middleware-developer-guide.md` (NEW): Complete OEM adapter authoring
+  guide — ETDMiddleware subclassing, topic mapping, telemetry sink wiring,
+  dry-run/inject test pattern, safety boundary contract, 7-item checklist.
+  Includes minimal adapter code example and full reference to all three Hyundai
+  adapters.
+
+### Tests (755 → 803)
+
+- `tests/test_hyundai_adapters.py` (+48, NEW):
+  - `HyundaiMobEDAdapter` (18 unit + 4 integration): safety/pose reads, publish
+    recording, inject/set_pose, topic mapping, telemetry sink, live-mode stubs;
+    end-to-end transport skill run + abort + FileSink
+  - `HyundaiExoAdapter` (22 unit + 4 integration): safety/joint/fatigue/intent
+    reads, simulate_fatigue progression + cap at 100, set_fatigue/set_intent,
+    topic mapping, telemetry sink; end-to-end exo skill run + abort + FileSink
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: expanded Hyundai WIA adapter entry to note MobED and
+  exoskeleton adapters completing the three-platform family
+
+---
+
 ## 0.66.0 — v0.7.0 start: middleware contract + Hyundai WIA adapter + telemetry pipeline (709 → 755 tests)
 
 ### Code changes
