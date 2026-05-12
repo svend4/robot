@@ -174,14 +174,14 @@ tests/
 ├── test_cli.py               # 26 — CLI commands incl. verify, keygen, publish, all Hyundai
 ├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
 ├── test_station_profiles.py  # 33 — compatibility checker, exo_assembly_a, API, CLI
-├── test_orbit_bridge.py      # 28 — orbit event bridge severity/filter/callback
-├── test_sim_modules.py       # 52 — event_replay, state_generator, middleware, scenarios, print_results
+├── test_orbit_bridge.py      # 30 — orbit event bridge severity/filter/callback/timestamp
+├── test_sim_modules.py       # 67 — event_replay, state_generator, acceptance runner, validate_examples
 ├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
 ├── test_ros2_bridge.py       # 19 — ETDSkillActionServer/Client, dry-run, no-rclpy error paths
 └── test_signing.py           # 37 — Ed25519 sign/verify, keypair gen, _zip_dir, OEM gate
 ```
 
-Run: `python -m pytest` — 276 tests, all passing.
+Run: `python -m pytest` — 292 tests, all passing.
 
 ---
 

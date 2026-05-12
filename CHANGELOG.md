@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.13.0 — Acceptance runner, orbit bridge, and validate_examples coverage (292 tests)
+
+### Coverage additions
+- `tests/test_orbit_bridge.py` (28 → 30 tests):
+  - `test_bridge_safety_warning_bypasses_filter` — `safety.warning` is in
+    `_CRITICAL_EVENTS`; passes `min_severity='error'` filter regardless
+  - `test_bridge_ingest_with_explicit_timestamp` — `timestamp_ms` forwarded through ingest
+- `tests/test_sim_modules.py` (52 → 67 tests):
+  - `AcceptanceMiddleware.publish()`: records telemetry events, ignores non-telemetry,
+    tracks `primitives_entered`, applies `inject_at` state patch, `initial_safety` override
+  - `SuiteResult.success` property: True when `failed==0`, False otherwise
+  - `_run_test()` exception path: adapter raising `RuntimeError` → `status='error'`,
+    `passed=False`, `failure_message` contains `'Exception'`
+  - `validate_examples._load_contexts()`: returns all 5 context keys
+  - `validate_examples._pick_context()`: all 5 branches (atlas, wia, mobed, exo, base)
+
+### Test totals by module (292 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 21 |
+| `test_cli.py` | 26 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 67 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 37 |
+
+---
+
 ## 0.12.0 — API sign endpoint and CLI command coverage (276 tests)
 
 ### Coverage additions

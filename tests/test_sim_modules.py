@@ -400,3 +400,104 @@ def test_print_results_mixed_pass_fail(capsys):
     print_results(results)
     out = capsys.readouterr().out
     assert '1/2' in out
+
+
+# ── sim.acceptance_runner — AcceptanceMiddleware and SuiteResult ──────────────
+
+from sim.acceptance_runner import AcceptanceMiddleware, SuiteResult, _run_test
+
+
+def test_acceptance_middleware_publish_records_telemetry():
+    mw = AcceptanceMiddleware()
+    mw.publish('telemetry.events', {'event': 'skill.started'})
+    assert len(mw.events) == 1
+    assert mw.events[0]['event'] == 'skill.started'
+
+
+def test_acceptance_middleware_publish_non_telemetry_ignored():
+    mw = AcceptanceMiddleware()
+    mw.publish('command.skill_intent', {'primitive': 'approach'})
+    assert len(mw.events) == 0
+
+
+def test_acceptance_middleware_publish_tracks_primitives_entered():
+    mw = AcceptanceMiddleware()
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'grasp'})
+    assert 'grasp' in mw.primitives_entered
+
+
+def test_acceptance_middleware_inject_updates_safety_at_primitive():
+    inject_at = {'grasp': {'safety_state': {'human_in_forbidden_zone': True}}}
+    mw = AcceptanceMiddleware(inject_at=inject_at)
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'grasp'})
+    state = mw.read('state.safety_state')
+    assert state['human_in_forbidden_zone'] is True
+
+
+def test_acceptance_middleware_initial_safety_override():
+    mw = AcceptanceMiddleware(initial_safety={'human_in_forbidden_zone': True})
+    state = mw.read('state.safety_state')
+    assert state['human_in_forbidden_zone'] is True
+
+
+def test_suite_result_success_true():
+    suite = SuiteResult(skill_id='etd.x', suite='test', total=3, passed=3, failed=0)
+    assert suite.success is True
+
+
+def test_suite_result_success_false():
+    suite = SuiteResult(skill_id='etd.x', suite='test', total=3, passed=2, failed=1)
+    assert suite.success is False
+
+
+def test_run_test_exception_path():
+    def _failing_run(job_ctx, middleware):
+        raise RuntimeError('adapter crashed')
+
+    test_spec = {'id': 'crash_test', 'description': 'triggers exception',
+                 'profile': 'small_box', 'expect': {'status': 'completed'}}
+    result = _run_test(_failing_run, test_spec, 'etd.pickplace.basic')
+    assert result.passed is False
+    assert result.status == 'error'
+    assert 'Exception' in result.failure_message
+
+
+# ── validate_examples — _load_contexts and _pick_context ─────────────────────
+
+import sys as _sys
+_VEXAMP_DIR = ROOT
+if str(_VEXAMP_DIR) not in _sys.path:
+    _sys.path.insert(0, str(_VEXAMP_DIR))
+
+from validate_examples import _load_contexts, _pick_context
+
+
+def test_load_contexts_returns_all_keys():
+    contexts = _load_contexts(ROOT)
+    for key in ('base', 'atlas', 'wia', 'mobed', 'exo'):
+        assert key in contexts
+
+
+def test_pick_context_atlas():
+    contexts = _load_contexts(ROOT)
+    assert _pick_context('etd.atlas.humanoid_walkfetch', contexts) is contexts['atlas']
+
+
+def test_pick_context_wia():
+    contexts = _load_contexts(ROOT)
+    assert _pick_context('etd.hyundai.wia_welding', contexts) is contexts['wia']
+
+
+def test_pick_context_mobed():
+    contexts = _load_contexts(ROOT)
+    assert _pick_context('etd.hyundai.mobed_transport', contexts) is contexts['mobed']
+
+
+def test_pick_context_exo():
+    contexts = _load_contexts(ROOT)
+    assert _pick_context('etd.hyundai.vest_exoskeleton', contexts) is contexts['exo']
+
+
+def test_pick_context_base_fallback():
+    contexts = _load_contexts(ROOT)
+    assert _pick_context('etd.pickplace.basic', contexts) is contexts['base']

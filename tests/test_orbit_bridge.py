@@ -227,3 +227,20 @@ def test_replay_missing_skill_id_defaults():
     b = OrbitEventBridge()
     msgs = replay_skill_log(log, b)
     assert msgs[0]['skill_id'] == 'unknown'
+
+
+# ── Additional severity and timestamp coverage ─────────────────────────────────
+
+def test_bridge_safety_warning_bypasses_filter():
+    b = OrbitEventBridge(min_severity='error')
+    # 'safety.warning' is in _CRITICAL_EVENTS → always passes regardless of filter
+    env = b.ingest('safety.warning', 'etd.x')
+    assert env is not None
+    assert b.pending() == 1
+
+
+def test_bridge_ingest_with_explicit_timestamp():
+    b = OrbitEventBridge()
+    env = b.ingest('skill.started', 'etd.x', timestamp_ms=42_000)
+    assert env is not None
+    assert env['timestamp_ms'] == 42_000
