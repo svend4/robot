@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.15.0 — Visualizer, TracingMiddleware, and station profile edge cases (346 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (80 → 111 tests):
+  - `PrimitiveTrace.duration` — normal and negative-clamped cases
+  - `SkillTrace.total_duration` — normal and negative-clamped cases
+  - `_bar()` — full, empty, half, overflow, underflow
+  - `ascii_timeline()` — skill_id present, primitive name, ✓/✗ status icons,
+    result summary keys, multiple traces
+  - `TracingMiddleware.publish()` — non-telemetry ignored, telemetry recorded,
+    `primitive.entered` creates PrimitiveTrace, `primitive.exited` sets end+status,
+    `skill.aborted`/`skill.failed` closes current primitive with correct status
+  - `TracingMiddleware.read()` — all 16 topic branches including Atlas, WIA, MobED,
+    exoskeleton, and unknown-topic → None
+  - `run_traced()` — full round-trip for `etd.pickplace.basic` and
+    `etd.hyundai.wia_welding`; verifies status, primitives, total_duration, result dict
+- `tests/test_station_profiles.py` (33 → 37 tests):
+  - `StationProfile.from_dict()` with optional `notes` and `platform` fields
+  - `StationProfile.from_dict()` without optional fields → None defaults
+  - `StationProfile.to_dict()` includes `platform` and `notes`
+  - `check_skill_compatible()` when `profile.available_services` is empty →
+    service check skipped, `compatible=True` even with unmet required services
+
+### Test totals by module (346 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 21 |
+| `test_cli.py` | 26 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 111 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 38 |
+
+---
+
 ## 0.14.0 — _run_test branches, _print_suite, and verify_signature coverage (301 tests)
 
 ### Coverage additions

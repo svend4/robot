@@ -409,3 +409,63 @@ def test_cli_install_with_station_profile():
     assert result.exit_code == 0, result.output
     assert 'ALLOWED' in result.output
     assert 'cobot_zone_a' in result.output
+
+
+# ── StationProfile.from_dict optional fields ──────────────────────────────────
+
+def test_from_dict_with_notes():
+    d = {
+        'station_id': 'test_station',
+        'allowed_skill_families': ['manipulator'],
+        'max_payload_kg': 10.0,
+        'requires_human_aware': False,
+        'available_services': [],
+        'platform': 'generic_cobot',
+        'notes': 'for testing only',
+    }
+    p = StationProfile.from_dict(d)
+    assert p.notes == 'for testing only'
+    assert p.platform == 'generic_cobot'
+
+
+def test_from_dict_without_optional_fields():
+    d = {
+        'station_id': 'minimal_station',
+        'allowed_skill_families': ['weld'],
+        'max_payload_kg': 5.0,
+        'requires_human_aware': True,
+    }
+    p = StationProfile.from_dict(d)
+    assert p.platform is None
+    assert p.notes is None
+    assert p.available_services == []
+
+
+def test_to_dict_includes_platform_and_notes():
+    p = StationProfile(
+        station_id='s', allowed_skill_families=['weld'],
+        max_payload_kg=5.0, requires_human_aware=False,
+        platform='my_platform', notes='test note',
+    )
+    d = p.to_dict()
+    assert d['platform'] == 'my_platform'
+    assert d['notes'] == 'test note'
+
+
+# ── check_skill_compatible with no available_services ─────────────────────────
+
+def test_compatible_skips_service_check_when_station_has_no_services():
+    p = StationProfile(
+        station_id='bare_station', allowed_skill_families=['manipulator'],
+        max_payload_kg=10.0, requires_human_aware=False,
+        available_services=[],
+    )
+    result = check_skill_compatible(
+        p,
+        skill_family='manipulator',
+        payload_kg=5.0,
+        requires_human_aware=False,
+        required_services=['some.service', 'another.service'],
+    )
+    assert result.compatible is True
+    assert result.missing_services == []

@@ -605,3 +605,279 @@ def test_print_suite_verbose_shows_status(capsys):
     out = capsys.readouterr().out
     assert 'status=' in out
     assert 'reason=' in out
+
+
+# ── sim.visualizer ────────────────────────────────────────────────────────────
+
+from sim.visualizer import (
+    PrimitiveTrace, SkillTrace, TracingMiddleware, _bar, ascii_timeline, run_traced,
+)
+
+
+def test_primitive_trace_duration():
+    p = PrimitiveTrace(name='grasp', start=1.0, end=1.5)
+    assert abs(p.duration - 0.5) < 1e-9
+
+
+def test_primitive_trace_duration_clamps_to_zero():
+    p = PrimitiveTrace(name='grasp', start=2.0, end=1.0)
+    assert p.duration == 0.0
+
+
+def test_skill_trace_total_duration():
+    t = SkillTrace(skill_id='etd.x', profile='p', start=0.0, end=0.25)
+    assert abs(t.total_duration - 0.25) < 1e-9
+
+
+def test_skill_trace_total_duration_clamps_to_zero():
+    t = SkillTrace(skill_id='etd.x', profile='p', start=5.0, end=4.0)
+    assert t.total_duration == 0.0
+
+
+def test_bar_full():
+    assert _bar(1.0, width=10) == '██████████'
+
+
+def test_bar_empty():
+    assert _bar(0.0, width=10) == '░░░░░░░░░░'
+
+
+def test_bar_half():
+    b = _bar(0.5, width=10)
+    assert b == '█████░░░░░'
+
+
+def test_bar_overflow_clamps():
+    b = _bar(2.0, width=5)
+    assert b == '█████'
+
+
+def test_bar_underflow_clamps():
+    b = _bar(-1.0, width=5)
+    assert b == '░░░░░'
+
+
+def _make_trace(skill_id='etd.x', profile='p', status='completed'):
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id=skill_id, profile=profile, start=t0, end=t0 + 0.1,
+                       status=status)
+    trace.primitives.append(PrimitiveTrace(name='init', start=t0, end=t0 + 0.05, status='ok'))
+    trace.events = [{'event': 'skill.started'}, {'event': 'skill.completed'}]
+    trace.result = {'pass_qc': True, 'payload_kg': 3.0}
+    return trace
+
+
+def test_ascii_timeline_contains_skill_id():
+    out = ascii_timeline([_make_trace()])
+    assert 'etd.x' in out
+
+
+def test_ascii_timeline_contains_primitive_name():
+    out = ascii_timeline([_make_trace()])
+    assert 'init' in out
+
+
+def test_ascii_timeline_shows_checkmark_for_completed():
+    out = ascii_timeline([_make_trace(status='completed')])
+    assert '✓' in out
+
+
+def test_ascii_timeline_shows_cross_for_aborted():
+    out = ascii_timeline([_make_trace(status='aborted')])
+    assert '✗' in out
+
+
+def test_ascii_timeline_shows_result_summary_keys():
+    out = ascii_timeline([_make_trace()])
+    assert 'pass_qc' in out
+    assert 'payload_kg' in out
+
+
+def test_ascii_timeline_multiple_traces():
+    traces = [_make_trace('etd.a'), _make_trace('etd.b')]
+    out = ascii_timeline(traces)
+    assert 'etd.a' in out
+    assert 'etd.b' in out
+
+
+# ── TracingMiddleware.publish ─────────────────────────────────────────────────
+
+def _make_mw():
+    import time
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=time.time())
+    return TracingMiddleware(trace), trace
+
+
+def test_tracing_middleware_publish_non_telemetry_ignored():
+    mw, trace = _make_mw()
+    mw.publish('some.other.topic', {'value': 1})
+    assert trace.events == []
+    assert trace.primitives == []
+
+
+def test_tracing_middleware_publish_records_event():
+    mw, trace = _make_mw()
+    mw.publish('telemetry.events', {'event': 'skill.started'})
+    assert len(trace.events) == 1
+    assert trace.events[0]['event'] == 'skill.started'
+
+
+def test_tracing_middleware_primitive_entered_creates_primitive():
+    mw, trace = _make_mw()
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'grasp'})
+    assert len(trace.primitives) == 1
+    assert trace.primitives[0].name == 'grasp'
+
+
+def test_tracing_middleware_primitive_exited_sets_end():
+    mw, trace = _make_mw()
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'grasp'})
+    mw.publish('telemetry.events', {'event': 'primitive.exited'})
+    assert trace.primitives[0].end > 0
+    assert trace.primitives[0].status == 'ok'
+    assert mw._current_primitive is None
+
+
+def test_tracing_middleware_skill_aborted_closes_primitive():
+    mw, trace = _make_mw()
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'move'})
+    mw.publish('telemetry.events', {'event': 'skill.aborted'})
+    assert trace.primitives[0].status == 'aborted'
+    assert trace.primitives[0].end > 0
+
+
+def test_tracing_middleware_skill_failed_closes_primitive():
+    mw, trace = _make_mw()
+    mw.publish('telemetry.events', {'event': 'primitive.entered', 'primitive': 'move'})
+    mw.publish('telemetry.events', {'event': 'skill.failed'})
+    assert trace.primitives[0].status == 'failed'
+
+
+# ── TracingMiddleware.read ────────────────────────────────────────────────────
+
+def test_tracing_middleware_read_safety_state():
+    mw, _ = _make_mw()
+    s = mw.read('state.safety_state')
+    assert 'human_in_forbidden_zone' in s
+    assert s['human_in_forbidden_zone'] is False
+
+
+def test_tracing_middleware_read_contact_feedback():
+    mw, _ = _make_mw()
+    r = mw.read('force_control.contact_feedback')
+    assert 'normal_force_n' in r
+
+
+def test_tracing_middleware_read_part_alignment():
+    mw, _ = _make_mw()
+    r = mw.read('perception.part_alignment')
+    assert r['aligned'] is True
+
+
+def test_tracing_middleware_read_camera_frame_increments():
+    mw, _ = _make_mw()
+    f1 = mw.read('perception.camera_frame')
+    f2 = mw.read('perception.camera_frame')
+    assert f2['frame_id'] == f1['frame_id'] + 1
+
+
+def test_tracing_middleware_read_scene_map():
+    mw, _ = _make_mw()
+    r = mw.read('perception.scene_map')
+    assert r['map_ready'] is True
+
+
+def test_tracing_middleware_read_balance_state():
+    mw, _ = _make_mw()
+    r = mw.read('state.balance_state')
+    assert r['stable'] is True
+
+
+def test_tracing_middleware_read_object_pose():
+    mw, _ = _make_mw()
+    r = mw.read('perception.object_pose')
+    assert 'confidence' in r
+    assert r['object_class'] == 'automotive_part'
+
+
+def test_tracing_middleware_read_seam_tracker():
+    mw, _ = _make_mw()
+    r = mw.read('perception.seam_tracker')
+    assert r['seam_found'] is True
+
+
+def test_tracing_middleware_read_weld_inspection():
+    mw, _ = _make_mw()
+    r = mw.read('vision.weld_inspection')
+    assert r['pass'] is True
+
+
+def test_tracing_middleware_read_obstacle_detector():
+    mw, _ = _make_mw()
+    r = mw.read('perception.obstacle_detector')
+    assert r['clear'] is True
+
+
+def test_tracing_middleware_read_path_planner():
+    mw, _ = _make_mw()
+    r = mw.read('navigation.path_planner')
+    assert r['path_ready'] is True
+
+
+def test_tracing_middleware_read_lift_control():
+    mw, _ = _make_mw()
+    r = mw.read('manipulation.lift_control')
+    assert r['lift_ready'] is True
+
+
+def test_tracing_middleware_read_exo_joint_state():
+    mw, _ = _make_mw()
+    r = mw.read('state.exo_joint_state')
+    assert r['calibrated'] is True
+
+
+def test_tracing_middleware_read_intent_detector():
+    mw, _ = _make_mw()
+    r = mw.read('perception.intent_detector')
+    assert 'confidence' in r
+    assert r['mode'] == 'overhead'
+
+
+def test_tracing_middleware_read_fatigue_monitor():
+    mw, _ = _make_mw()
+    r = mw.read('state.fatigue_monitor')
+    assert 'fatigue_pct' in r
+
+
+def test_tracing_middleware_read_imu_pose():
+    mw, _ = _make_mw()
+    r = mw.read('perception.imu_pose')
+    assert r['valid'] is True
+
+
+def test_tracing_middleware_read_unknown_topic_returns_none():
+    mw, _ = _make_mw()
+    assert mw.read('nonexistent.topic') is None
+
+
+# ── run_traced — full execution round-trip ────────────────────────────────────
+
+def test_run_traced_pickplace():
+    trace = run_traced('etd.pickplace.basic', 'fragile_item')
+    assert trace.skill_id == 'etd.pickplace.basic'
+    assert trace.status == 'completed'
+    assert len(trace.primitives) > 0
+    assert trace.total_duration > 0
+
+
+def test_run_traced_wia_welding():
+    trace = run_traced('etd.hyundai.wia_welding', 'standard_seam')
+    assert trace.status == 'completed'
+    assert trace.total_duration > 0
+
+
+def test_run_traced_sets_result():
+    trace = run_traced('etd.pickplace.basic', 'fragile_item')
+    assert isinstance(trace.result, dict)
+    assert 'status' in trace.result
