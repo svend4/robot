@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.33.0 — sim/cli branch coverage: fail_fast break, non-dir skip, missing requiredServices (603 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (211 → 215 tests):
+  - **`etd_demo_runner.run_all(fail_fast=True)` break**: monkeypatched
+    `ETDReferenceValidator` to return level D for every package; called
+    `run_all(fail_fast=True)` and asserted only 1 result (early exit via `break`)
+  - **`scenario_runner.run_all_scenarios()` non-dir skip**: created `tmp_path/examples/`
+    with one real package + one `README.txt` file; monkeypatched `ROOT`;
+    asserted only 1 result (the file was skipped via `if not pkg.is_dir(): continue`)
+  - **`report_runner.main()` non-dir skip**: same approach — 1 package + README.txt;
+    asserted `validation_summary` has exactly 1 entry
+- `tests/test_cli.py` (41 → 42 tests):
+  - **`_check_station` missing `requiredServices` → `else []`**: created minimal
+    `manifest.yaml` + `skill.json` with no `requiredServices` key; verified station
+    check ran (not skipped) and produced COMPATIBLE/INCOMPATIBLE output, proving the
+    `else []` fallback branch was taken without error
+
+### Test totals by module (603 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 42 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 215 |
+| `test_acceptance.py` | 69 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+
+---
+
 ## 0.32.0 — sim/cli branch coverage: _pick_context fallback, report_runner release_out, failure exception, chained filter (599 tests)
 
 ### Coverage additions

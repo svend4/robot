@@ -1714,3 +1714,62 @@ def test_report_runner_missing_oem_contexts_fall_back_to_base(tmp_path, monkeypa
     parsed = json.loads(out)
     assert 'validation_summary' in parsed
     assert len(parsed['validation_summary']) == 8
+
+
+# ── etd_demo_runner.run_all: fail_fast break when level D ────────────────────
+
+def test_demo_run_all_fail_fast_breaks_on_level_d(monkeypatch):
+    import etd_demo_runner as _demo_mod
+
+    class _FakeReport:
+        valid = False
+        compatibility = {'level': 'D', 'score': 0.0, 'errors': []}
+        errors = []
+        warnings = []
+
+    class _FakeValidator:
+        def __init__(self, ctx):
+            pass
+        def validate_package(self, pkg):
+            return _FakeReport()
+
+    monkeypatch.setattr(_demo_mod, 'ETDReferenceValidator', _FakeValidator)
+    results = demo_run_all(fail_fast=True)
+    assert len(results) == 1
+    assert results[0]['level'] == 'D'
+
+
+# ── scenario_runner.run_all_scenarios: non-directory entries skipped ──────────
+
+def test_scenario_runner_skips_non_directory_entries(tmp_path, monkeypatch):
+    import shutil
+    import sim.scenario_runner as _sr_mod
+    examples = tmp_path / 'examples'
+    examples.mkdir()
+    shutil.copytree(ROOT / 'examples' / 'etd.pickplace.basic',
+                    examples / 'etd.pickplace.basic')
+    (examples / 'README.txt').write_text('not a directory')
+    shutil.copy(ROOT / 'runtime_context.json', tmp_path / 'runtime_context.json')
+    monkeypatch.setattr(_sr_mod, 'ROOT', tmp_path)
+    results = run_all_scenarios()
+    assert len(results) == 1
+    assert results[0]['package'] == 'etd.pickplace.basic'
+
+
+# ── report_runner.main(): non-directory entries skipped ──────────────────────
+
+def test_report_runner_skips_non_directory_entries(tmp_path, monkeypatch, capsys):
+    import shutil
+    examples = tmp_path / 'examples'
+    examples.mkdir()
+    shutil.copytree(ROOT / 'examples' / 'etd.pickplace.basic',
+                    examples / 'etd.pickplace.basic')
+    (examples / 'README.txt').write_text('not a directory')
+    shutil.copy(ROOT / 'runtime_context.json', tmp_path / 'runtime_context.json')
+    monkeypatch.setattr(_rr_mod, 'ROOT', tmp_path)
+    with pytest.raises(SystemExit):
+        _rr_mod.main()
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert len(parsed['validation_summary']) == 1
+    assert parsed['validation_summary'][0]['package'] == 'etd.pickplace.basic'

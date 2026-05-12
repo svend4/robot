@@ -457,3 +457,24 @@ def test_list_filter_family_and_free_chained():
     result2 = runner.invoke(cli, ['list', '--family', 'transport', '--free'])
     assert result2.exit_code == 0
     assert 'etd.hyundai.mobed_transport' in result2.output
+
+
+# ── _check_station: skill.json missing requiredServices key → else [] branch ──
+
+def test_validate_station_no_required_services_field(tmp_path):
+    # Write minimal manifest.yaml and skill.json with NO requiredServices key.
+    # This exercises the `else []` branch in _check_station (line 91 of etd_cli.py).
+    (tmp_path / 'manifest.yaml').write_text(
+        'skillId: etd.test.minimal\nversion: 0.1.0\nsafety:\n  humanAware: false\n'
+    )
+    (tmp_path / 'skill.json').write_text(
+        json.dumps({'skillId': 'etd.test.minimal', 'family': 'cobot', 'maxPayloadKg': 5.0})
+    )
+    result = runner.invoke(cli, [
+        'validate', str(tmp_path),
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/assembly_station_a.json',
+    ])
+    # Station check ran (not skipped) — manifest.yaml and skill.json both exist
+    assert 'Station check skipped' not in result.output
+    assert 'COMPATIBLE' in result.output or 'INCOMPATIBLE' in result.output
