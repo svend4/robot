@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.42.0 — test_id name/unknown fallback, _load_run default entrypoint, pick_context path-not-exists (646 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (82 → 85 tests):
+  - **`test_id` 'name' fallback**: `test.get('id', test.get('name', 'unknown'))` — 'name'
+    key used when 'id' is absent → `r.test_id == 'my_named_test'`
+  - **`test_id` 'unknown' fallback**: neither 'id' nor 'name' key present →
+    `r.test_id == 'unknown'`
+  - **`_load_run` default entrypoint**: `skill.json` without 'entrypoint' key →
+    `skill_json.get('entrypoint', 'policies/chs_adapter.py:run')` default branch →
+    loads `policies/chs_adapter.py:run`; returned function is callable
+- `tests/test_sim_modules.py` (219 → 220 tests):
+  - **`marketplace_demo._pick_context` `path.exists()` False branch**: keyword matches
+    ('humanoid') but context file patched to nonexistent path → `path.exists()` → False
+    → loop falls through → `default_runtime_context()` returned
+
+### Test totals by module (646 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 45 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 38 |
+| `test_sim_modules.py` | 220 |
+| `test_acceptance.py` | 85 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 58 |
+
+---
+
 ## 0.41.0 — timestamp zero preserved, failure-scenario detail else-branches (642 tests)
 
 ### Coverage additions

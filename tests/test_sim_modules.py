@@ -1159,6 +1159,22 @@ def test_md_pick_context_default():
     assert ctx.robot_class == default.robot_class
 
 
+def test_md_pick_context_path_not_exists_falls_back_to_default(tmp_path, monkeypatch):
+    """_pick_context: keyword matches but context file missing → path.exists() False → fallback."""
+    import sim.marketplace_demo as _mdemo_mod
+    from marketplace.skill_store import default_runtime_context
+
+    # Patch _CTX_FILES so 'humanoid' maps to a nonexistent file
+    monkeypatch.setattr(_mdemo_mod, '_CTX_FILES', {
+        'humanoid': tmp_path / 'does_not_exist.json',
+    })
+    ctx = _mdemo_mod._pick_context('humanoid')
+    # keyword 'humanoid' in 'humanoid' → True, but path.exists() → False
+    # → falls through loop → default_runtime_context()
+    default = default_runtime_context()
+    assert ctx.robot_class == default.robot_class
+
+
 # ── report_runner._pick_context ───────────────────────────────────────────────
 
 from sim.report_runner import _pick_context as _rr_pick_context

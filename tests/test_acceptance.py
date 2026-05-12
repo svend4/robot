@@ -1000,3 +1000,56 @@ def test_run_test_expected_key_used_as_fallback_for_expect(monkeypatch):
     }
     r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
     assert r.passed is True
+
+
+# ── _run_test: test_id fallback to 'name' then 'unknown' ─────────────────────
+
+def test_run_test_uses_name_key_when_id_absent(monkeypatch):
+    """test.get('id', test.get('name', 'unknown')) — 'name' used when 'id' absent."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    test_spec = {
+        'name': 'my_named_test',   # no 'id' key → falls back to 'name'
+        'description': 'name fallback test',
+        'input': {'job_context': {'chsProfile': 'small_box'}},
+        'expect': {'status': 'completed'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.test_id == 'my_named_test'
+    assert r.passed is True
+
+
+def test_run_test_uses_unknown_when_no_id_or_name(monkeypatch):
+    """test.get('id', test.get('name', 'unknown')) — 'unknown' when neither key present."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    test_spec = {
+        # neither 'id' nor 'name' key present
+        'description': 'anonymous test',
+        'input': {'job_context': {'chsProfile': 'small_box'}},
+        'expect': {'status': 'completed'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.test_id == 'unknown'
+    assert r.passed is True
+
+
+# ── _load_run: default entrypoint when 'entrypoint' key absent from skill.json ─
+
+def test_load_run_default_entrypoint_when_absent(tmp_path, monkeypatch):
+    """skill.json without 'entrypoint' key → default 'policies/chs_adapter.py:run' is used."""
+    import shutil, json as _json
+    import sim.acceptance_runner as _ar
+
+    examples = tmp_path / 'examples' / 'etd.test.noentrypoint'
+    shutil.copytree(ROOT / 'examples' / 'etd.pickplace.basic', examples)
+
+    skill = _json.loads((examples / 'skill.json').read_text())
+    skill.pop('entrypoint', None)   # remove key → default applied in _load_run
+    (examples / 'skill.json').write_text(_json.dumps(skill))
+
+    monkeypatch.setattr(_ar, 'ROOT', tmp_path)
+    run_fn = _ar._load_run('etd.test.noentrypoint')
+    assert callable(run_fn)
