@@ -939,3 +939,44 @@ def test_wia_unknown_profile_falls_back_to_standard_seam(monkeypatch):
     # standard_seam defaults: amperage=160, seam_length=150
     assert result['amperage_a'] == wia_mod._PROFILE_DEFAULTS['standard_seam']['amperageA']
     assert result['seam_length_mm'] == wia_mod._PROFILE_DEFAULTS['standard_seam']['seamLengthMm']
+
+
+# ── _run_test: inject with at_primitive but no nested keys → empty patch dict ─
+
+def test_run_test_inject_at_primitive_no_nested_keys_empty_patch(monkeypatch):
+    """inject_spec has at_primitive key but no nested safety/perception/force keys.
+
+    inject_at[at_prim] = {} (empty dict comprehension) — primitive fires with
+    no state changes, skill completes normally.
+    """
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    test_spec = {
+        'id': 'empty_patch',
+        'description': 'inject with no nested keys produces empty patch',
+        'inject': {'at_primitive': 'approach'},  # no safety_state, no perception_override
+        'input': {'job_context': {'chsProfile': 'small_box'}},
+        'expect': {'status': 'completed'},
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.passed is True
+    assert r.status == 'completed'
+
+
+# ── _run_test: legacy 'expected' key fallback (test.get('expected', {})) ──────
+
+def test_run_test_expected_key_used_as_fallback_for_expect(monkeypatch):
+    """expect = test.get('expect', test.get('expected', {})) — 'expected' key works."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.pickplace.basic')
+    # Use legacy 'expected' key instead of 'expect'
+    test_spec = {
+        'id': 'legacy_expected',
+        'description': 'legacy expected key works as fallback',
+        'input': {'job_context': {'chsProfile': 'small_box'}},
+        'expected': {'status': 'completed'},  # legacy key — no 'expect' key present
+    }
+    r = _run_test(run_fn, test_spec, 'etd.pickplace.basic')
+    assert r.passed is True

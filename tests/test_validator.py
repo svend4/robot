@@ -643,3 +643,31 @@ def test_compat_missing_compatibility_key_or_fallback(tmp_path):
     report = ETDReferenceValidator(ctx).validate_package(dst)
     # compat = {} → compat.get('robotClass', []) = [] → robot_class_mismatch
     assert 'robot_class_mismatch' in report.compatibility['errors']
+
+
+# ── Missing 'telemetry' key → or {} fallback → manifest_events = set() ───────
+
+def test_semantic_missing_telemetry_key_falls_back_to_empty_events(tmp_path):
+    """(manifest.get('telemetry') or {}).get('events', []) doesn't crash when key absent.
+
+    With telemetry key removed from manifest AND events cleared from events.json,
+    telemetry_has_lifecycle_event = False (no crash from the or {} guard).
+    """
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'no_telemetry'
+    shutil.copytree(src, dst)
+
+    # Remove 'telemetry' key entirely from manifest
+    manifest = yaml.safe_load((dst / 'manifest.yaml').read_text())
+    manifest.pop('telemetry', None)
+    (dst / 'manifest.yaml').write_text(yaml.dump(manifest))
+
+    # Clear lifecycle events from events.json so both sources are empty
+    events_doc = json.loads((dst / 'telemetry' / 'events.json').read_text())
+    events_doc['events'] = ['custom.no_lifecycle_event']
+    (dst / 'telemetry' / 'events.json').write_text(json.dumps(events_doc))
+
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    # or {} guard prevents AttributeError; lifecycle check returns False
+    assert report.semantic_checks.get('telemetry_has_lifecycle_event') is False

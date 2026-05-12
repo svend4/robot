@@ -419,3 +419,23 @@ def test_install_with_valid_station_id_returns_station_compatible_true():
     assert body['station_compatible'] is True
     assert body['station_reason'] == 'station_compatible'
     assert body['station_missing_services'] == []
+
+
+# ── POST /store/install: station_id + find_skill returns None → compat skipped
+
+def test_install_station_id_find_skill_none_omits_station_compat():
+    """When find_skill returns None inside the station_id branch, station_compatible
+    is NOT added to the response (if entry: guard skips the check).
+    """
+    from unittest.mock import patch
+    import api.app as _app_mod
+    with patch.object(_app_mod._store, 'find_skill', return_value=None):
+        r = client.post('/store/install', json={
+            'skill_id': 'etd.pickplace.basic',
+            'robot_class': 'humanoid',
+            'runtime_version': '0.1.0',
+            'station_id': 'assembly_station_a',
+        })
+    assert r.status_code == 200
+    body = r.json()
+    assert 'station_compatible' not in body

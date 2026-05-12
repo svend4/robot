@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.38.0 — inject empty patch, legacy expected key, missing telemetry key, marketplace exit-1, API find_skill None (631 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (79 → 81 tests):
+  - **`inject` with `at_primitive` but no nested keys**: `inject_at[at_prim] = {}`
+    (empty dict comprehension) — middleware receives an empty patch at the primitive,
+    state unchanged, skill completes normally
+  - **Legacy `expected` key fallback**: `expect = test.get('expect', test.get('expected', {}))`
+    exercises the second `.get('expected', {})` branch when `expect` key is absent
+- `tests/test_validator.py` (56 → 57 tests):
+  - **Missing `telemetry` key in manifest → `or {}` fallback**: `(manifest.get('telemetry') or {}).get('events', [])` — removes `telemetry` key entirely → `None or {}` → no crash; with events.json also cleared, `telemetry_has_lifecycle_event=False`
+- `tests/test_sim_modules.py` (215 → 216 tests):
+  - **`marketplace_demo.main()` exit-1 path**: monkeypatched `validate_for_install` returns
+    `allowed=False` → `if not all(item['allowed'] ...)` → `raise SystemExit(1)`
+- `tests/test_api.py` (32 → 33 tests):
+  - **`/store/install` `station_id` + `find_skill` returns None**: patches `_store.find_skill`
+    to return `None` → `if entry:` False → station_compatible NOT added to response
+
+### Test totals by module (631 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 57 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 43 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 38 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 216 |
+| `test_acceptance.py` | 81 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 57 |
+
+---
+
 ## 0.37.0 — inspect barcode_qa path, legacy YAML key, API station compatible, WIA profile fallback (626 tests)
 
 ### Coverage additions

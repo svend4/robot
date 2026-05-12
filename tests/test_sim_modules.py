@@ -1492,6 +1492,35 @@ def test_marketplace_demo_main_all_allowed(capsys):
     assert all(d['allowed'] for d in parsed['marketplace_demo'])
 
 
+# ── sim/marketplace_demo.main(): not-all-allowed → SystemExit(1) ──────────────
+
+def test_marketplace_demo_raises_exit_one_when_skill_blocked(monkeypatch):
+    """if not all(item['allowed'] ...): raise SystemExit(1) when a decision is blocked."""
+    from dataclasses import asdict
+    from marketplace.skill_store import InstallDecision
+
+    _blocked = InstallDecision(
+        skillId='etd.test.blocked', allowed=False, reason='validation_failed',
+        validationLevel='D', licenseModel='open_source', pricingModel='free',
+        requiresEntitlement=False,
+    )
+
+    original_list = _mdemo_mod.SkillStore.list_entries
+
+    def _fake_list_entries(self):
+        return [original_list(self)[0]]  # return only first entry
+
+    def _fake_validate(self, skill_id, ctx, entitlement_token=None):
+        return _blocked
+
+    monkeypatch.setattr(_mdemo_mod.SkillStore, 'list_entries', _fake_list_entries)
+    monkeypatch.setattr(_mdemo_mod.SkillStore, 'validate_for_install', _fake_validate)
+
+    with pytest.raises(SystemExit) as exc_info:
+        _mdemo_mod.main()
+    assert exc_info.value.code == 1
+
+
 # ── sim/report_runner.main() ──────────────────────────────────────────────────
 
 import sim.report_runner as _rr_mod
