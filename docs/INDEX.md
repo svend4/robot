@@ -12,6 +12,7 @@ Grouped by topic below.
 | [architecture.md](architecture.md) | Layered architecture: ETD sits above OEM middleware, below enterprise workflow |
 | [package-format.md](package-format.md) | Skill package file layout, required files, naming conventions |
 | [atlas-integration-notes.md](atlas-integration-notes.md) | Boston Dynamics / Atlas integration boundary — what ETD can and cannot touch |
+| [hyundai-integration-notes.md](hyundai-integration-notes.md) | Hyundai WIA welding cobot, MobED AMR, and VEX/H-MEX exoskeleton integration boundaries |
 | [use-cases-automotive.md](use-cases-automotive.md) | Automotive production line use cases: sequencing, assembly, inspection |
 
 ---
@@ -112,8 +113,8 @@ Current prototype state — what is built and runnable:
 | Orbit event bridge | ✓ complete | severity filter, critical bypass, flush callback |
 | Sim modules (5) | ✓ complete | event_replay, state_generator, fake_middleware, failure/scenario runners |
 | Visualizer | ✓ complete | ASCII + matplotlib Gantt; all 8 packages |
-| Test suite | ✓ 160 tests | validator, API, CLI, marketplace, orbit, station, sim modules |
-| Acceptance tests | ✓ 39 scenarios | per-package YAML; `sim/acceptance_runner.py` |
+| Test suite | ✓ 689 tests | validator, API, CLI, marketplace, orbit, station, sim modules, ROS 2 bridge, signing |
+| Acceptance tests | ✓ 98 tests (39 YAML scenarios) | per-package YAML; `sim/acceptance_runner.py` |
 
 ---
 

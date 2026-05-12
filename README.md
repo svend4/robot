@@ -197,6 +197,7 @@ GitHub Actions runs `validate_examples.py` + `sim/report_runner.py` + pytest + a
 - [`docs/architecture.md`](docs/architecture.md) — layered architecture
 - [`docs/package-format.md`](docs/package-format.md) — skill package file layout
 - [`docs/atlas-integration-notes.md`](docs/atlas-integration-notes.md) — Boston Dynamics / Atlas integration boundary
+- [`docs/hyundai-integration-notes.md`](docs/hyundai-integration-notes.md) — Hyundai WIA welding, MobED AMR, and VEX exoskeleton integration boundaries
 - [`docs/licensing-and-commercialization.md`](docs/licensing-and-commercialization.md) — open/commercial models
 - [`docs/marketplace-commercial-policy.md`](docs/marketplace-commercial-policy.md) — marketplace policy
 - [`docs/use-cases-automotive.md`](docs/use-cases-automotive.md) — automotive production use cases
