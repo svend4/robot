@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.23.0 — stations CLI, install blocked+station skip, FakeMiddleware edges, sim demos (533 tests)
+
+### Coverage additions
+- `tests/test_cli.py` (33 → 38 tests):
+  - `stations` table output — station IDs and count present
+  - `stations --json` — list of ≥6 profiles with expected IDs
+  - `install --station-profile` when entitlement blocked → station check skipped (no COMPATIBLE)
+  - `install --station-profile` when station incompatible → INCOMPATIBLE shown
+  - `validate --station-profile` on empty package → "Station check skipped" or non-zero exit
+- `tests/test_sim_modules.py` (196 → 194 — corrected count; net new tests):
+  - `FakeMiddleware.get_status()` with unknown ID → None
+  - `FakeMiddleware.latency_ms` forwarded in accepted response
+  - `FakeMiddleware.complete()` with default args → `result='success'`, `result_data={}`
+  - `sim/run_sim_demo.main()` → exits 0
+  - `sim/run_assembly_demo.main()` → exits 0
+- `tests/test_ros2_bridge.py` count corrected to 30 (was 27 in prior changelog)
+
+### Test totals by module (533 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 38 |
+| `test_marketplace.py` | 30 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 194 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 30 |
+| `test_signing.py` | 47 |
+| **Total** | **533** |
+
+---
+
 ## 0.22.0 — validator main(), marketplace_demo main(), report_runner main(), orbit severities (523 tests)
 
 ### Coverage additions

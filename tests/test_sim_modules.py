@@ -303,6 +303,49 @@ def test_legacy_send_request():
     assert r['accepted'] is True
 
 
+def test_middleware_get_status_unknown_id_returns_none():
+    mw = FakeMiddleware()
+    assert mw.get_status('no-such-id') is None
+
+
+def test_middleware_latency_ms_forwarded_in_response():
+    mw = FakeMiddleware(latency_ms=50)
+    r = mw.send_request({'bounded': True, 'payload': {}})
+    assert r['accepted'] is True
+    assert r['latency_ms'] == 50
+
+
+def test_middleware_complete_with_default_result():
+    mw = FakeMiddleware()
+    r = mw.send_request({'bounded': True, 'payload': {}})
+    mw.complete(r['execution_id'])  # default result='success'
+    rec = mw.get_result(r['execution_id'])
+    assert rec['status'] == 'success'
+    assert rec['result_data'] == {}
+
+
+# ── sim/run_sim_demo.main() ───────────────────────────────────────────────────
+
+import sim.run_sim_demo as _rsd_mod
+
+
+def test_run_sim_demo_exits_zero():
+    with pytest.raises(SystemExit) as exc_info:
+        _rsd_mod.main()
+    assert exc_info.value.code == 0
+
+
+# ── sim/run_assembly_demo.main() ──────────────────────────────────────────────
+
+import sim.run_assembly_demo as _rad_mod
+
+
+def test_run_assembly_demo_exits_zero():
+    with pytest.raises(SystemExit) as exc_info:
+        _rad_mod.main()
+    assert exc_info.value.code == 0
+
+
 # ── sim.scenario_runner ───────────────────────────────────────────────────────
 
 from sim.scenario_runner import run_all_scenarios

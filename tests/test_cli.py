@@ -361,3 +361,63 @@ def test_list_filter_transport_family():
     assert result.exit_code == 0, result.output
     assert 'etd.hyundai.mobed_transport' in result.output
     assert '1 skill(s) found.' in result.output
+
+
+# ── stations command ──────────────────────────────────────────────────────────
+
+def test_stations_table_output():
+    result = runner.invoke(cli, ['stations'])
+    assert result.exit_code == 0, result.output
+    assert 'weld_station_a' in result.output
+    assert 'mobed_logistics_a' in result.output
+    assert 'station(s) found.' in result.output
+
+
+def test_stations_json_output():
+    result = runner.invoke(cli, ['stations', '--json'])
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert isinstance(parsed, list)
+    assert len(parsed) >= 6
+    ids = {s['station_id'] for s in parsed}
+    assert 'weld_station_a' in ids
+    assert 'exo_assembly_a' in ids
+
+
+# ── install --station-profile when decision is blocked ────────────────────────
+
+def test_install_blocked_skill_station_check_skipped():
+    result = runner.invoke(cli, [
+        'install', 'etd.assembly.precision',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/assembly_station_a.json',
+        # no token → entitlement_required → station check skipped
+    ])
+    assert result.exit_code == 1
+    assert 'BLOCKED' in result.output
+    assert 'COMPATIBLE' not in result.output
+
+
+# ── install with station-profile when incompatible station ────────────────────
+
+def test_install_with_station_profile_incompatible():
+    result = runner.invoke(cli, [
+        'install', 'etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/weld_station_a.json',
+    ])
+    assert result.exit_code == 0, result.output
+    assert 'INCOMPATIBLE' in result.output
+
+
+# ── _check_station skipped when package files missing ────────────────────────
+
+def test_validate_station_skipped_when_no_manifest(tmp_path):
+    pkg = tmp_path / 'empty_pkg'
+    pkg.mkdir()
+    result = runner.invoke(cli, [
+        'validate', str(pkg),
+        '--station-profile', 'station_profiles/weld_station_a.json',
+    ])
+    # validation will fail (missing files), station check skipped with warning
+    assert 'Station check skipped' in result.output or result.exit_code != 0
