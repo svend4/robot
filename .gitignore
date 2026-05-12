@@ -8,3 +8,4 @@ keys/etd_signing_key.hex
 *.egg-info/
 .coverage
 htmlcov/
+logs/
