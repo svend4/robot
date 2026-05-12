@@ -169,9 +169,9 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 29 — schema, compat levels A/B/D, parse errors, helper fns
+├── test_validator.py         # 43 — semantic check failures, missing files, schema None, score degradation
 ├── test_api.py               # 27 — REST endpoints incl. absolute path, family filters, station install
-├── test_cli.py               # 26 — CLI commands incl. verify, keygen, publish, all Hyundai
+├── test_cli.py               # 33 — _load_ctx fallback, robot-class override, station JSON, pretty errors
 ├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 30 — orbit event bridge severity/filter/callback/timestamp
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 38 — Ed25519 sign/verify, no-key branch, keypair gen, _zip_dir
 ```
 
-Run: `python -m pytest` — 389 tests, all passing.
+Run: `python -m pytest` — 411 tests, all passing.
 
 ---
 

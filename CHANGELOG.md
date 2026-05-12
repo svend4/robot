@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.17.0 — Validator semantic failures, CLI branches, full suite (411 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (29 → 43 tests):
+  - Missing required files: `capabilities.json` deleted → error + `required_files_present=False`
+  - `tests/acceptance_tests.yaml` deleted → `required_files_present=False`
+  - Semantic check failures: `name_matches_skill_id`, `version_matches_skill_version`,
+    `profile_uniqueness` (duplicate profile), `default_chs_profile_exists`,
+    `telemetry_has_lifecycle_event` (no lifecycle events in either manifest or events.json),
+    `primitive_order_nonempty` (empty list), `force_windows_valid` (max < min),
+    `payload_within_constraints` (999 kg >> 8 kg limit),
+    `capability_safe` (forbidden cap in write list),
+    `capability_safe` (missing `command.skill_intent`)
+  - `_load_schema()` returning None via monkeypatched `_SCHEMA_MAP` → warning printed
+  - Compat score degrades with multiple simultaneous errors (runtime_too_old +
+    robot_class_mismatch + all services missing)
+- `tests/test_cli.py` (26 → 33 tests):
+  - `_load_ctx()` falls back to `default_runtime_context()` when context file missing
+  - `--robot-class exoskeleton` override → wrong class → FAIL (level D)
+  - `_print_report()` pretty-print shows `✗` errors when required file deleted
+  - `_print_report()` shows "All checks passed" when report is valid
+  - `validate` + `--station-profile` + `--json` → two JSON blocks, `station_check` present
+  - `validate` + incompatible `--station-profile` + `--json` → "compatible" in output
+  - `install` + `--station-profile` when allowed → `_check_station_entry` called, COMPATIBLE shown
+  - `list --family transport` → single MobED entry in table
+
+### Test totals by module (411 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 43 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 148 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 38 |
+
+---
+
 ## 0.16.0 — Demo runner, marketplace_demo, report_runner, and API coverage (389 tests)
 
 ### Coverage additions

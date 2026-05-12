@@ -253,3 +253,111 @@ def test_validate_json_output_failure():
     parsed = json.loads(result.output)
     assert parsed['valid'] is False
     assert parsed['compatibility']['level'] == 'D'
+
+
+# ── _load_ctx fallback when context file does not exist ──────────────────────
+
+def test_validate_nonexistent_ctx_falls_back_to_default():
+    extra = []
+    for s in [
+        'perception.object_pose', 'perception.part_alignment',
+        'manipulation.arm_control', 'force_control.contact_feedback',
+        'workflow.job_context', 'state.robot_pose', 'state.arm_state',
+        'state.wrist_state', 'state.safety_state', 'safety.zone_monitor',
+        'vision.barcode_scan', 'quality.photo_capture', 'telemetry.metrics',
+    ]:
+        extra += ['--service', s]
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.pickplace.basic',
+        '--runtime-context', 'does_not_exist.json',
+    ] + extra)
+    assert result.exit_code == 0, result.output
+    assert 'PASS' in result.output
+
+
+def test_validate_robot_class_override():
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--robot-class', 'exoskeleton',   # wrong class → level D
+    ])
+    assert result.exit_code == 1
+    assert 'FAIL' in result.output
+
+
+# ── _print_report pretty-print shows errors and warnings ─────────────────────
+
+def test_validate_pretty_print_shows_errors(tmp_path):
+    # Remove a required file to trigger schema/semantic errors shown as ✗
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_nofile'
+    shutil.copytree(src, dst)
+    (dst / 'capabilities.json').unlink()
+    result = runner.invoke(cli, [
+        'validate', str(dst),
+        '--runtime-context', 'runtime_context.json',
+    ])
+    assert result.exit_code == 1
+    assert '✗' in result.output
+
+
+def test_validate_pretty_print_shows_all_checks_passed_when_valid():
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+    ])
+    assert result.exit_code == 0
+    assert 'All checks passed' in result.output
+
+
+# ── validate with --station-profile --json ────────────────────────────────────
+
+def test_validate_station_profile_json_output():
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.hyundai.wia_welding',
+        '--runtime-context', 'runtime_context_wia.json',
+        '--station-profile', 'station_profiles/weld_station_a.json',
+        '--json',
+    ])
+    assert result.exit_code == 0, result.output
+    # Output is two JSON objects: validation report then station check
+    parts = [p.strip() for p in result.output.strip().split('\n}\n{') if p.strip()]
+    first_json = parts[0] if parts[0].startswith('{') else '{' + parts[0]
+    if not first_json.endswith('}'):
+        first_json += '}'
+    parsed = json.loads(result.output.strip().split('\n}\n')[0] + '\n}')
+    assert parsed['valid'] is True
+    assert 'station_check' in result.output
+    assert 'weld_station_a' in result.output
+
+
+def test_validate_station_json_incompatible():
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.hyundai.wia_welding',
+        '--runtime-context', 'runtime_context_wia.json',
+        '--station-profile', 'station_profiles/mobed_logistics_a.json',
+        '--json',
+    ])
+    assert 'compatible' in result.output.lower()
+
+
+# ── install with --station-profile (decision allowed) ────────────────────────
+
+def test_install_with_station_profile_compatible():
+    result = runner.invoke(cli, [
+        'install', 'etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/cobot_zone_a.json',
+    ])
+    assert result.exit_code == 0, result.output
+    assert 'COMPATIBLE' in result.output
+    assert 'cobot_zone_a' in result.output
+
+
+# ── list with --family filter (table output) ──────────────────────────────────
+
+def test_list_filter_transport_family():
+    result = runner.invoke(cli, ['list', '--family', 'transport'])
+    assert result.exit_code == 0, result.output
+    assert 'etd.hyundai.mobed_transport' in result.output
+    assert '1 skill(s) found.' in result.output

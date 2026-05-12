@@ -300,3 +300,171 @@ def test_min_runtime_empty_returns_none():
 
 def test_min_runtime_with_spec():
     assert _min_runtime('>=0.5.0') == '0.5.0'
+
+
+# ── Missing required files ────────────────────────────────────────────────────
+
+def test_missing_required_file_returns_invalid(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_missing'
+    shutil.copytree(src, dst)
+    (dst / 'capabilities.json').unlink()
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.valid is False
+    assert any('missing required file' in e and 'capabilities.json' in e for e in report.errors)
+
+
+def test_missing_required_file_semantic_false(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_missing2'
+    shutil.copytree(src, dst)
+    (dst / 'tests' / 'acceptance_tests.yaml').unlink()
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('required_files_present') is False
+
+
+# ── Semantic check failures ────────────────────────────────────────────────────
+
+def test_semantic_name_mismatch(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_name'
+    shutil.copytree(src, dst)
+    skill = json.loads((dst / 'skill.json').read_text())
+    skill['skillId'] = 'etd.wrong.name'
+    (dst / 'skill.json').write_text(json.dumps(skill))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('name_matches_skill_id') is False
+    assert any('name_matches_skill_id' in e for e in report.errors)
+
+
+def test_semantic_version_mismatch(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_ver'
+    shutil.copytree(src, dst)
+    skill = json.loads((dst / 'skill.json').read_text())
+    skill['version'] = '9.9.9'
+    (dst / 'skill.json').write_text(json.dumps(skill))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('version_matches_skill_version') is False
+
+
+def test_semantic_duplicate_profile_names(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_dup'
+    shutil.copytree(src, dst)
+    profiles = json.loads((dst / 'chs_profiles.json').read_text())
+    dup = dict(profiles['profiles'][0])
+    profiles['profiles'].append(dup)
+    (dst / 'chs_profiles.json').write_text(json.dumps(profiles))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('profile_uniqueness') is False
+
+
+def test_semantic_default_profile_missing(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_defprof'
+    shutil.copytree(src, dst)
+    skill = json.loads((dst / 'skill.json').read_text())
+    skill['defaultChsProfile'] = 'nonexistent_profile'
+    (dst / 'skill.json').write_text(json.dumps(skill))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('default_chs_profile_exists') is False
+
+
+def test_semantic_no_lifecycle_events(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_noev'
+    shutil.copytree(src, dst)
+    events_doc = json.loads((dst / 'telemetry' / 'events.json').read_text())
+    events_doc['events'] = ['custom.event.only']
+    (dst / 'telemetry' / 'events.json').write_text(json.dumps(events_doc))
+    manifest = yaml.safe_load((dst / 'manifest.yaml').read_text())
+    manifest['telemetry']['events'] = ['custom.event.only']
+    (dst / 'manifest.yaml').write_text(yaml.dump(manifest))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('telemetry_has_lifecycle_event') is False
+
+
+def test_semantic_primitive_order_empty(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_noprim'
+    shutil.copytree(src, dst)
+    skill = json.loads((dst / 'skill.json').read_text())
+    skill['primitiveOrder'] = []
+    (dst / 'skill.json').write_text(json.dumps(skill))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('primitive_order_nonempty') is False
+
+
+def test_semantic_invalid_force_window(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_fw'
+    shutil.copytree(src, dst)
+    profiles = json.loads((dst / 'chs_profiles.json').read_text())
+    profiles['profiles'][0]['forceWindowN'] = [50.0, 10.0]  # max < min → invalid
+    (dst / 'chs_profiles.json').write_text(json.dumps(profiles))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('force_windows_valid') is False
+
+
+def test_semantic_payload_exceeds_constraint(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_payload'
+    shutil.copytree(src, dst)
+    profiles = json.loads((dst / 'chs_profiles.json').read_text())
+    profiles['profiles'][0]['payloadKg'] = 999.0   # >> payloadKgMax=8
+    (dst / 'chs_profiles.json').write_text(json.dumps(profiles))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('payload_within_constraints') is False
+
+
+def test_semantic_capability_unsafe(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_unsafe'
+    shutil.copytree(src, dst)
+    caps = json.loads((dst / 'capabilities.json').read_text())
+    caps['write'].append('command.servo_torque')
+    (dst / 'capabilities.json').write_text(json.dumps(caps))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('capability_safe') is False
+
+
+def test_semantic_missing_skill_intent_in_write(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_nointent'
+    shutil.copytree(src, dst)
+    caps = json.loads((dst / 'capabilities.json').read_text())
+    caps['write'] = [c for c in caps['write'] if c != 'command.skill_intent']
+    (dst / 'capabilities.json').write_text(json.dumps(caps))
+    report = ETDReferenceValidator(_base_ctx()).validate_package(dst)
+    assert report.semantic_checks.get('capability_safe') is False
+
+
+# ── _load_schema returns None when schema file absent ─────────────────────────
+
+def test_schema_warning_when_schema_file_missing(tmp_path, monkeypatch):
+    import etd_reference_validator as _mod
+    original_map = _mod._SCHEMA_MAP.copy()
+    monkeypatch.setattr(_mod, '_SCHEMA_MAP', {
+        **original_map,
+        'manifest.yaml': 'does_not_exist.schema.json',
+    })
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    report = _mod.ETDReferenceValidator(_base_ctx()).validate_package(src)
+    assert any('schema file not found' in w for w in report.warnings)
+
+
+# ── Compat score degrades with multiple errors ─────────────────────────────────
+
+def test_compat_score_decreases_with_multiple_errors():
+    ctx = RuntimeContext(
+        runtime_version='0.0.1',        # runtime_too_old
+        robot_class='exoskeleton',      # robot_class_mismatch
+        available_services=[],          # all services missing
+    )
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.pickplace.basic'
+    )
+    assert report.compatibility['level'] == 'D'
+    assert report.compatibility['score'] < 0.5
+    assert len(report.compatibility['errors']) >= 3
