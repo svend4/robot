@@ -481,6 +481,28 @@ def test_release_main_json_summary_in_output(tmp_path, capsys, monkeypatch):
         assert 'skillId' in output
 
 
+# ── release_package.main(): generic package name → else ctx fallback ─────────
+
+def test_release_main_generic_name_uses_default_context(tmp_path, capsys, monkeypatch):
+    # etd.pickplace.basic matches no OEM keyword → else: ctx_path = ROOT/'runtime_context.json'
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        'examples/etd.pickplace.basic',
+        '--skip-sign',
+        '--out', str(out_dir),
+        # No --runtime-context: triggers the else branch
+    ])
+    try:
+        _release_main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'Signing SKIPPED' in out
+    assert 'valid=True' in out
+
+
 # ── generate_keypair.main() ────────────────────────────────────────────────────
 
 import sys as _sys

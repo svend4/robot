@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.34.0 — cross-module branch coverage: validator fallbacks, marketplace, API, signing, ROS 2 (611 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (52 → 55 tests):
+  - **Missing `metadata` key** → `(manifest.get('metadata') or {})` returns `{}`; `meta = {}`
+    and `name_matches_skill_id` fails — exercises the `or {}` fallback on line 181
+  - **Missing `profiles` key in `chs_profiles.json`** → `profiles.get('profiles')` returns None →
+    `or []` → `profile_names = []`; `default_chs_profile_exists` fails — exercises line 186
+  - **Missing `constraints` key** → `(manifest.get('constraints') or {}).get('payloadKgMax')` →
+    None → `payload_within_constraints = True`; no spurious error — exercises line 215
+- `tests/test_marketplace.py` (35 → 36 tests):
+  - **`licensing_policy.json` missing** → `SkillStore.__init__` `else {}` fallback at line 64;
+    verified `store.licensing_policy == {}`
+- `tests/test_api.py` (28 → 30 tests):
+  - **All three `/store/skills` filters combined** (`family`, `license_model`, `free_only`) in
+    one request; returns exactly `etd.pickplace.basic` — exercises the chained filter chain
+  - **`sign_package` raises → HTTP 500** — monkeypatched `scripts.sign_package.sign_package`
+    with `side_effect=RuntimeError`; verified 500 response with error detail
+- `tests/test_signing.py` (56 → 57 tests):
+  - **Generic package name → `else` branch in `release_package.py:61`** — `etd.pickplace.basic`
+    matches no OEM keyword; `ctx_path = ROOT / 'runtime_context.json'` taken without
+    `--runtime-context` flag; `valid=True, Signing SKIPPED` confirmed in output
+- `tests/test_ros2_bridge.py` (34 → 35 tests):
+  - **`main()` without `--dry-run`** → calls `server.run_ros2()` → `RuntimeError('rclpy not
+    available')` raised — exercises the `else` branch at line 168
+
+### Test totals by module (611 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 55 |
+| `test_api.py` | 30 |
+| `test_cli.py` | 42 |
+| `test_marketplace.py` | 36 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 215 |
+| `test_acceptance.py` | 69 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 57 |
+
+---
+
 ## 0.33.0 — sim/cli branch coverage: fail_fast break, non-dir skip, missing requiredServices (603 tests)
 
 ### Coverage additions

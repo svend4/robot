@@ -386,3 +386,16 @@ def test_skill_store_module_main_all_have_allowed_field(capsys):
     for d in decisions:
         assert 'skillId' in d
         assert 'allowed' in d
+
+
+# ── SkillStore.__init__: licensing_policy.json missing → {} fallback ──────────
+
+def test_store_missing_licensing_policy_falls_back_to_empty_dict(tmp_path):
+    import shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    # Deliberately do NOT copy licensing_policy.json
+    store = SkillStore(tmp_path)
+    assert store.licensing_policy == {}

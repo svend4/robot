@@ -272,3 +272,13 @@ def test_client_main_dry_run_output(capsys, monkeypatch):
     out = capsys.readouterr().out
     assert 'ETD Client' in out
     assert 'etd.pickplace.basic' in out
+
+
+# ── main() else branch: no --dry-run → calls run_ros2() → RuntimeError ───────
+
+def test_server_main_no_dry_run_calls_run_ros2(monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', [
+        'skill_action_server.py', '--skill', 'etd.pickplace.basic',
+    ])
+    with pytest.raises(RuntimeError, match='rclpy not available'):
+        _server_main()

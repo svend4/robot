@@ -581,3 +581,50 @@ def test_load_yml_extension(tmp_path):
     p.write_text('key: value\ncount: 3\n')
     result = _val_load(p)
     assert result == {'key': 'value', 'count': 3}
+
+
+# ── manifest missing 'metadata' key → or {} fallback → meta = {} (line 181) ──
+
+def test_semantic_missing_metadata_key_uses_empty_meta(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'no_metadata'
+    shutil.copytree(src, dst)
+    # Remove the 'metadata' key → manifest.get('metadata') returns None
+    # → (None or {}) → meta = {} → name/version checks fail
+    manifest = yaml.safe_load((dst / 'manifest.yaml').read_text())
+    manifest.pop('metadata', None)
+    (dst / 'manifest.yaml').write_text(yaml.dump(manifest))
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    assert report.valid is False
+    assert any('name_matches_skill_id' in e for e in report.errors)
+
+
+# ── Missing 'profiles' key in chs_profiles.json → or [] fallback (line 186) ──
+
+def test_semantic_missing_profiles_key_falls_back_to_empty(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'no_profiles_key'
+    shutil.copytree(src, dst)
+    (dst / 'chs_profiles.json').write_text('{}')
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    # profiles.get('profiles') → None → or [] → profile_names = []
+    # default_chs_profile_exists fails → invalid
+    assert report.valid is False
+    assert any('default_chs_profile_exists' in e for e in report.errors)
+
+
+# ── Missing 'constraints' key → or {} fallback → payload_max = None (line 215)
+
+def test_semantic_missing_constraints_key_payload_valid(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'no_constraints'
+    shutil.copytree(src, dst)
+    manifest = yaml.safe_load((dst / 'manifest.yaml').read_text())
+    manifest.pop('constraints', None)
+    (dst / 'manifest.yaml').write_text(yaml.dump(manifest))
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    # payload_max is None → payload_within_constraints = True → not an error source
+    assert not any('payload_within_constraints' in e for e in report.errors)

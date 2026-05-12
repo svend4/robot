@@ -339,3 +339,32 @@ def test_install_nonexistent_skill_with_valid_station():
     assert body['allowed'] is False
     assert body['reason'] == 'skill_not_found'
     assert 'station_compatible' not in body
+
+
+# ── /store/skills: all three query filters combined ───────────────────────────
+
+def test_list_skills_all_three_filters():
+    # etd.pickplace.basic: family=pickplace, licenseModel=open_source, pricingModel=free
+    r = client.get('/store/skills?family=pickplace&license_model=open_source&free_only=true')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['count'] == 1
+    assert body['skills'][0]['skillId'] == 'etd.pickplace.basic'
+
+
+# ── POST /store/sign: sign_package raises → 500 ───────────────────────────────
+
+def test_sign_package_exception_returns_500(tmp_path):
+    from unittest.mock import patch
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    fake_key = tmp_path / 'fake_key.hex'
+    fake_key.write_text('00' * 32)
+    with patch('scripts.sign_package.sign_package', side_effect=RuntimeError('signing failed')):
+        r = client.post('/store/sign', params={
+            'package_path': str(dst),
+            'key_path': str(fake_key),
+        })
+    assert r.status_code == 500
+    assert 'signing failed' in r.json()['detail']
