@@ -1,4 +1,5 @@
 """Tests for the ETD Skill Store REST API (FastAPI)."""
+import shutil
 import sys
 from pathlib import Path
 
@@ -212,3 +213,40 @@ def test_openapi_schema():
     assert '/store/skills' in paths
     assert '/store/install' in paths
     assert '/validate' in paths
+
+
+# ── POST /store/sign ──────────────────────────────────────────────────────────
+
+def test_sign_package_not_found():
+    r = client.post('/store/sign', params={
+        'package_path': 'examples/etd.does.not.exist',
+    })
+    assert r.status_code == 404
+
+
+def test_sign_key_not_found():
+    r = client.post('/store/sign', params={
+        'package_path': 'examples/etd.pickplace.basic',
+        'key_path': 'keys/no_such_key.hex',
+    })
+    assert r.status_code == 400
+
+
+def test_sign_valid_package(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+
+    from scripts.generate_keypair import generate
+    key_dir = tmp_path / 'keys'
+    generate(key_dir)
+
+    r = client.post('/store/sign', params={
+        'package_path': str(dst),
+        'key_path': str(key_dir / 'etd_signing_key.hex'),
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['signed'] is True
+    assert 'signature_file' in body
+    assert (dst / 'package.sig').exists()

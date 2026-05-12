@@ -170,8 +170,8 @@ A package that requests any forbidden capability is blocked at validation.
 ```
 tests/
 ├── test_validator.py         # 29 — schema, compat levels A/B/D, parse errors, helper fns
-├── test_api.py               # 18 — REST endpoints incl. vest_exo and version check
-├── test_cli.py               # 20 — CLI commands incl. all 4 Hyundai packages
+├── test_api.py               # 21 — REST endpoints incl. POST /store/sign all paths
+├── test_cli.py               # 26 — CLI commands incl. verify, keygen, publish, all Hyundai
 ├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
 ├── test_station_profiles.py  # 33 — compatibility checker, exo_assembly_a, API, CLI
 ├── test_orbit_bridge.py      # 28 — orbit event bridge severity/filter/callback
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 37 — Ed25519 sign/verify, keypair gen, _zip_dir, OEM gate
 ```
 
-Run: `python -m pytest` — 268 tests, all passing.
+Run: `python -m pytest` — 276 tests, all passing.
 
 ---
 

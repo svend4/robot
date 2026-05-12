@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.12.0 — API sign endpoint and CLI command coverage (276 tests)
+
+### Coverage additions
+- `tests/test_api.py` (18 → 21 tests):
+  - `POST /store/sign` endpoint (previously untested):
+    - `test_sign_package_not_found` → 404 when package path absent
+    - `test_sign_key_not_found` → 400 when key file absent
+    - `test_sign_valid_package` → 200 with `signed=True`; package.sig written
+- `tests/test_cli.py` (20 → 26 tests):
+  - `keygen` command: `test_keygen_creates_key_files` — both hex key files created
+  - `verify` command:
+    - `test_verify_signed_package_succeeds` — sign then verify → exit 0
+    - `test_verify_unsigned_package_fails` — unsigned package → exit 1
+  - `publish` command: `test_publish_skip_sign` — `--skip-sign` → zip artifact created
+  - `validate --json` failure: `test_validate_json_output_failure` — missing services
+    → exit 1, JSON output with `valid=false`, `level=D`
+
+### Test totals by module (276 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 21 |
+| `test_cli.py` | 26 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 52 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 37 |
+
+---
+
 ## 0.11.0 — Validator edge case coverage (268 tests)
 
 ### Coverage additions in `tests/test_validator.py` (17 → 29 tests)

@@ -1,5 +1,6 @@
 """Tests for the ETD CLI (etd_cli.py) using Click's test runner."""
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -190,3 +191,65 @@ def test_install_with_token():
                                  '--token', 'valid-token',
                                  '--runtime-context', 'runtime_context.json'])
     assert result.exit_code == 0, result.output
+
+
+# ── keygen command ────────────────────────────────────────────────────────────
+
+def test_keygen_creates_key_files(tmp_path):
+    result = runner.invoke(cli, ['keygen', '--out-dir', str(tmp_path / 'keys')])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / 'keys' / 'etd_signing_key.hex').exists()
+    assert (tmp_path / 'keys' / 'etd_verify_key.hex').exists()
+
+
+# ── verify command ────────────────────────────────────────────────────────────
+
+def test_verify_signed_package_succeeds(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    from scripts.generate_keypair import generate
+    from scripts.sign_package import sign_package
+    key_dir = tmp_path / 'keys'
+    generate(key_dir)
+    sign_package(dst, key_dir / 'etd_signing_key.hex')
+    result = runner.invoke(cli, ['verify', str(dst)])
+    assert result.exit_code == 0, result.output
+
+
+def test_verify_unsigned_package_fails(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'unsigned_pkg'
+    shutil.copytree(src, dst)
+    result = runner.invoke(cli, ['verify', str(dst)])
+    assert result.exit_code == 1
+
+
+# ── publish command ───────────────────────────────────────────────────────────
+
+def test_publish_skip_sign(tmp_path):
+    out_dir = tmp_path / 'out'
+    result = runner.invoke(cli, [
+        'publish', 'examples/etd.pickplace.basic',
+        '--skip-sign',
+        '--out', str(out_dir),
+        '--runtime-context', 'runtime_context.json',
+    ])
+    assert result.exit_code == 0, result.output
+    zips = list(out_dir.glob('*.zip'))
+    assert len(zips) == 1
+    assert 'etd.pickplace.basic' in zips[0].name
+
+
+# ── validate --json with failing package ──────────────────────────────────────
+
+def test_validate_json_output_failure():
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.pickplace.basic',
+        '--service', 'perception.object_pose',
+        '--json',
+    ])
+    assert result.exit_code == 1
+    parsed = json.loads(result.output)
+    assert parsed['valid'] is False
+    assert parsed['compatibility']['level'] == 'D'
