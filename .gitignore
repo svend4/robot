@@ -6,3 +6,5 @@ release_out/*.zip
 *.zip
 keys/etd_signing_key.hex
 *.egg-info/
+.coverage
+htmlcov/
