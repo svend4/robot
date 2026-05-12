@@ -81,7 +81,7 @@ Grouped by topic below.
 
 | File | Summary |
 |---|---|
-| [unitree-skill-marketplace-analysis.md](unitree-skill-marketplace-analysis.md) | Unitree skill store: what is known, gaps, positioning for ETD |
+| [unitree-skill-marketplace-analysis.md](unitree-skill-marketplace-analysis.md) | Unitree skill store analysis: G1-D platform, UniPwn security case, safety-metadata principle, hybrid licensing model |
 | [unitree-skill-store-business-analysis.md](unitree-skill-store-business-analysis.md) | Business analysis of Unitree's approach vs ETD's approach |
 | [unitree-open-vs-commercial-analysis.md](unitree-open-vs-commercial-analysis.md) | Detailed open vs commercial analysis for Unitree context |
 | [unitree-open-vs-commercial-notes.md](unitree-open-vs-commercial-notes.md) | Working notes on Unitree open/commercial split |

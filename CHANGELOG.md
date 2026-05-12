@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.59.0 — Expand Unitree marketplace analysis with UniPwn security case and licensing model
+
+- `docs/unitree-skill-marketplace-analysis.md`: 21 lines → 120 lines
+  - Added Unitree G1-D end-to-end platform context (data acquisition, training,
+    simulation, one-click deployment)
+  - Added confirmed vs unconfirmed facts about Unitree monetization (TechRadar,
+    3DNews, robohorizon.com public reporting)
+  - Added UniPwn security case study (worm-class vulnerability in Go2, B2, G1, H1
+    — concrete argument for package signing, capability sandboxing, revocation,
+    and audit logging in any robot skill store)
+  - Added safety-metadata principle: a commercial package may protect its IP
+    but cannot hide its safety declarations (capabilities, fallback, constraints,
+    publisher identity, telemetry events)
+  - Added hybrid licensing model table (open-source reference, free proprietary,
+    commercial per-site, enterprise-certified, private OEM)
+  - Added ETD licensing formula: Core open-source, Reference Skills free/open,
+    Industrial Skills commercial/enterprise, Safety Metadata always readable,
+    Proprietary Payload may be protected
+- `docs/INDEX.md`: updated `unitree-skill-marketplace-analysis.md` description
+
+---
+
+## 0.58.0 — Enrich integration notes with specs from source material
+
+- `docs/hyundai-integration-notes.md`: added Hyundai robot ecosystem section —
+  H-Motion AMR (1.5 t), Parking Robot (3.4 t, 1.2 m/s), MobED Alliance (March 2026),
+  X-ble Shoulder (first KS-certified wearable in South Korea, March 2026),
+  X-ble MEX (medical rehab exo), ACR/DAL-e/Safety Inspection service robots,
+  Edge Brain (Hyundai Robotics LAB + DEEPX, January 2026), full Orbit → ETD → Edge
+  Brain → OEM stack diagram
+- `docs/atlas-integration-notes.md`: added Atlas platform specs table (56 DoF,
+  2.3 m reach, 50 kg peak payload, autonomous battery swap, barcode scanning, Orbit
+  MES/WMS fleet deployment), Hyundai acquisition context (80 % since 2021, 30 000
+  units/year US factory), 4-layer stack diagram, full 9-primitive sequence, gate
+  conditions, CHS profiles table, required services, integration boundary
+
+---
+
 ## 0.57.0 — INDEX.md descriptions updated to match expanded docs
 
 - Updated `docs/INDEX.md` roadmap, productization, funding, due-diligence,
