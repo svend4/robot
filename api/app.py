@@ -66,8 +66,18 @@ class InstallRequest(BaseModel):
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get('/health', tags=['system'])
-def health() -> Dict[str, str]:
-    return {'status': 'ok', 'version': '0.5.0'}
+def health() -> Dict[str, Any]:
+    station_count = len(list(_station_profiles_dir.glob('*.json'))) if _station_profiles_dir.exists() else 0
+    skill_count = len(_store.list_skills())
+    revoked_count = len(_store._revoked)
+    return {
+        'status': 'ok',
+        'version': '0.5.0',
+        'validator_version': '0.5.0',
+        'loaded_skills': skill_count,
+        'loaded_stations': station_count,
+        'revoked_skills': revoked_count,
+    }
 
 
 @app.post('/validate', tags=['validation'])

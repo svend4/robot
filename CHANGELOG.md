@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.63.0 — v0.6.0 feature: package revocation blocklist + health endpoint + CLI revoke
+
+### Code changes
+
+- `marketplace/skill_store.py`:
+  - Added `revocation_path` attribute pointing to `marketplace/revoked.json`
+  - Added `_load_revoked()` → `set[str]` of revoked skill IDs (loaded at `__init__`)
+  - Added `is_revoked(skill_id)` public predicate
+  - `validate_for_install()` now checks revocation before any validation; revoked
+    skills return `allowed=False, reason="skill_revoked"` immediately
+- `etd_cli.py`:
+  - Added `revoke` command: takes `SKILL_ID`, `--reason`, `--revoked-by`, `--out`;
+    writes JSON entry to `marketplace/revoked.json`; idempotent (duplicate skipped)
+- `api/app.py`:
+  - `GET /health` now returns `loaded_skills`, `loaded_stations`, `revoked_skills`,
+    and `validator_version` in addition to `status` and `version`
+
+### Tests (689 → 696)
+
+- `tests/test_marketplace.py` (+4): revoked skill blocked (`skill_revoked`),
+  non-revoked not blocked, no-revoked-file → empty set, `_load_revoked` extracts ids
+- `tests/test_cli.py` (+3): revoke writes new file, revoke appends to existing,
+  revoke is idempotent on duplicate
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for package revocation, health check endpoint,
+  CLI revoke command (all three v0.6.0 items now complete)
+
+---
+
 ## 0.62.0 — New: generic cobot skills reference doc (4 packages, derived from package files)
 
 - `docs/cobot-skills-reference.md`: NEW — 260-line reference document derived directly

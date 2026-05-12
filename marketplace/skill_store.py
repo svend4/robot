@@ -59,9 +59,20 @@ class SkillStore:
         self.index_path = repo_root / "marketplace" / "skill_store_index.json"
         self.policy_path = repo_root / "marketplace" / "marketplace_policy.json"
         self.licensing_policy_path = repo_root / "marketplace" / "licensing_policy.json"
+        self.revocation_path = repo_root / "marketplace" / "revoked.json"
         self.index = self._load_json(self.index_path)
         self.policy = self._load_json(self.policy_path)
         self.licensing_policy = self._load_json(self.licensing_policy_path) if self.licensing_policy_path.exists() else {}
+        self._revoked: set[str] = self._load_revoked()
+
+    def _load_revoked(self) -> set[str]:
+        if not self.revocation_path.exists():
+            return set()
+        data = self._load_json(self.revocation_path)
+        return {entry["skillId"] for entry in data.get("revoked", [])}
+
+    def is_revoked(self, skill_id: str) -> bool:
+        return skill_id in self._revoked
 
     def list_entries(self) -> List[StoreEntry]:
         return [StoreEntry.from_dict(entry) for entry in self.index.get("entries", [])]
@@ -87,6 +98,17 @@ class SkillStore:
         runtime_context: RuntimeContext,
         entitlement_token: Optional[str] = None,
     ) -> InstallDecision:
+        if self.is_revoked(skill_id):
+            return InstallDecision(
+                skillId=skill_id,
+                allowed=False,
+                reason="skill_revoked",
+                validationLevel="D",
+                licenseModel="unknown",
+                pricingModel="unknown",
+                requiresEntitlement=False,
+            )
+
         entry = self.get_entry(skill_id)
         if entry is None:
             return InstallDecision(

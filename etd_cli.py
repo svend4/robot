@@ -266,6 +266,44 @@ def install(skill_id: str, token: str | None, robot_class: str | None, runtime_c
 
 
 @cli.command()
+@click.argument('skill_id')
+@click.option('--reason', default='unspecified', show_default=True,
+              help='Reason for revocation')
+@click.option('--revoked-by', 'revoked_by', default='etd-cli', show_default=True,
+              help='Who is revoking the skill')
+@click.option('--out', default=None,
+              help='Path to revoked.json (default: marketplace/revoked.json)')
+def revoke(skill_id: str, reason: str, revoked_by: str, out: str | None):
+    """Add a skill to the revocation blocklist.
+
+    Revoked skills cannot be installed regardless of entitlement.
+    """
+    import datetime
+    revocation_path = Path(out) if out else ROOT / 'marketplace' / 'revoked.json'
+    if revocation_path.exists():
+        data = json.loads(revocation_path.read_text(encoding='utf-8'))
+    else:
+        data = {'revoked': []}
+
+    already = {e['skillId'] for e in data['revoked']}
+    if skill_id in already:
+        click.echo(click.style(f'{skill_id} is already in the revocation list.', fg='yellow'))
+        sys.exit(0)
+
+    data['revoked'].append({
+        'skillId': skill_id,
+        'reason': reason,
+        'revokedAt': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'revokedBy': revoked_by,
+    })
+    revocation_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
+    click.echo(click.style(f'Revoked: {skill_id}', fg='red', bold=True))
+    click.echo(f'  Reason   : {reason}')
+    click.echo(f'  Revoked by: {revoked_by}')
+    click.echo(f'  Written to: {revocation_path}')
+
+
+@cli.command()
 @click.option('--out-dir', default='keys', show_default=True)
 def keygen(out_dir: str):
     """Generate an Ed25519 keypair for signing skill packages."""

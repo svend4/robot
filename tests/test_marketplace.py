@@ -415,3 +415,61 @@ def test_compat_level_non_dict_no_level_attr_falls_back_to_d(store):
 
     level = store._compat_level(_ReportWithNonDictCompat())
     assert level == 'D'
+
+
+# ── Revocation blocklist (v0.6.0) ─────────────────────────────────────────────
+
+def test_revoked_skill_is_blocked(tmp_path, monkeypatch):
+    """validate_for_install returns skill_revoked when skill is in revoked.json."""
+    import json, shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    (mp / 'revoked.json').write_text(json.dumps({
+        'revoked': [{'skillId': 'etd.pickplace.basic', 'reason': 'test', 'revokedAt': '2026-01-01T00:00:00Z', 'revokedBy': 'test'}]
+    }))
+    store = SkillStore(tmp_path)
+    ctx = RuntimeContext(runtime_version='0.1.0', robot_class='humanoid', available_services=[])
+    decision = store.validate_for_install('etd.pickplace.basic', ctx)
+    assert decision.allowed is False
+    assert decision.reason == 'skill_revoked'
+
+
+def test_non_revoked_skill_not_blocked_by_revocation(tmp_path, monkeypatch):
+    """validate_for_install does not block a skill absent from revoked.json."""
+    import json, shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    (mp / 'revoked.json').write_text(json.dumps({'revoked': []}))
+    store = SkillStore(tmp_path)
+    assert store.is_revoked('etd.pickplace.basic') is False
+
+
+def test_store_no_revoked_file_loads_empty_set(store):
+    """SkillStore with no revoked.json initialises _revoked to empty set."""
+    # The real repo may or may not have revoked.json; either way is_revoked
+    # should work without raising.
+    assert isinstance(store._revoked, set)
+    assert store.is_revoked('etd.nonexistent.skill') is False
+
+
+def test_load_revoked_returns_set_of_skill_ids(tmp_path):
+    """_load_revoked() extracts skillId values into a set."""
+    import json, shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    (mp / 'revoked.json').write_text(json.dumps({
+        'revoked': [
+            {'skillId': 'etd.a.skill', 'reason': 'r1', 'revokedAt': '2026-01-01T00:00:00Z', 'revokedBy': 'test'},
+            {'skillId': 'etd.b.skill', 'reason': 'r2', 'revokedAt': '2026-01-01T00:00:00Z', 'revokedBy': 'test'},
+        ]
+    }))
+    store = SkillStore(tmp_path)
+    assert 'etd.a.skill' in store._revoked
+    assert 'etd.b.skill' in store._revoked
+    assert 'etd.c.other' not in store._revoked

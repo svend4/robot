@@ -171,8 +171,8 @@ A package that requests any forbidden capability is blocked at validation.
 tests/
 ├── test_validator.py         # 59 — _JSONSCHEMA_AVAILABLE=False branches (incl. non-dict doc → False), engine exception, .yml load, missing telemetry key, non-dict manifest → empty meta
 ├── test_api.py               # 35 — REST endpoints incl. station+nonexistent-skill branch, absolute path, available_services override, station_id compatible=True, find_skill None skips compat, decision-is-None → 404, policy-missing → 404
-├── test_cli.py               # 52 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None, publish no-skip-sign branch, station entry missing-services + human-aware warning, check_station_entry None→early-return, serve command uvicorn.run
-├── test_marketplace.py       # 37 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D
+├── test_cli.py               # 55 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None, publish no-skip-sign branch, station entry missing-services + human-aware warning, check_station_entry None→early-return, serve command uvicorn.run, revoke new-file/append/idempotent
+├── test_marketplace.py       # 41 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D, revoked skill blocked, non-revoked not blocked, no-revoked-file → empty set, _load_revoked extracts ids
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
 ├── test_sim_modules.py       # 225 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch+detail else-branches, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1+pick-ctx-path-not-exists, ascii_timeline empty-result+no-summary-keys+zero-duration, run_traced open-primitive cleanup, _plot_gantt matplotlib happy path + --save main branch + plt.show() no-save path, validate_examples failing-package
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ```
 
-Run: `python -m pytest` — 689 tests, all passing.
+Run: `python -m pytest` — 696 tests, all passing.
 
 ---
 

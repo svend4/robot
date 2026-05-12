@@ -677,3 +677,46 @@ def test_serve_command_invokes_uvicorn_run(monkeypatch):
     call_kwargs = mock_uvicorn.run.call_args
     assert call_kwargs.args[0] == 'api.app:app'
     assert call_kwargs.kwargs.get('port') == 9999
+
+
+# ── revoke command (v0.6.0) ───────────────────────────────────────────────────
+
+def test_revoke_writes_entry_to_new_file(tmp_path):
+    """revoke creates revoked.json with the correct skill entry."""
+    out = tmp_path / 'revoked.json'
+    result = runner.invoke(cli, [
+        'revoke', 'etd.test.badskill',
+        '--reason', 'security issue',
+        '--revoked-by', 'tester',
+        '--out', str(out),
+    ])
+    assert result.exit_code == 0
+    assert 'Revoked' in result.output
+    data = json.loads(out.read_text())
+    assert len(data['revoked']) == 1
+    entry = data['revoked'][0]
+    assert entry['skillId'] == 'etd.test.badskill'
+    assert entry['reason'] == 'security issue'
+    assert entry['revokedBy'] == 'tester'
+    assert 'revokedAt' in entry
+
+
+def test_revoke_appends_to_existing_file(tmp_path):
+    """revoke appends a new entry without removing existing revocations."""
+    out = tmp_path / 'revoked.json'
+    runner.invoke(cli, ['revoke', 'etd.first.skill', '--out', str(out)])
+    runner.invoke(cli, ['revoke', 'etd.second.skill', '--out', str(out)])
+    data = json.loads(out.read_text())
+    ids = {e['skillId'] for e in data['revoked']}
+    assert ids == {'etd.first.skill', 'etd.second.skill'}
+
+
+def test_revoke_duplicate_is_idempotent(tmp_path):
+    """Revoking the same skill twice does not create a duplicate entry."""
+    out = tmp_path / 'revoked.json'
+    runner.invoke(cli, ['revoke', 'etd.some.skill', '--out', str(out)])
+    result = runner.invoke(cli, ['revoke', 'etd.some.skill', '--out', str(out)])
+    assert result.exit_code == 0
+    assert 'already' in result.output
+    data = json.loads(out.read_text())
+    assert len(data['revoked']) == 1

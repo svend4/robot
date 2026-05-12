@@ -26,8 +26,10 @@ All items below were delivered in the prototype:
 - [ ] **Audit logging.** Every `validate_for_install`, skill execution start,
   and abort event written to a structured log (JSON Lines). Log includes
   `skill_id`, `station_id`, `timestamp`, `operator_id`, `result`.
-- [ ] **Package revocation.** Marketplace supports a `revoked.json` blocklist.
+- [x] **Package revocation.** Marketplace supports a `revoked.json` blocklist.
   Revoked skill IDs cannot be installed or executed regardless of entitlement.
+  `SkillStore._revoked` set loaded at init; `validate_for_install` returns
+  `skill_revoked` before any validation for blocked IDs.
 - [ ] **Fleet rollout policy.** Staged rollout: `canary` (1 station) →
   `pilot` (N stations) → `production`. Rollout state tracked per skill version.
 - [ ] **Signature verification at install time.** `verify_signature.py` called
@@ -35,10 +37,11 @@ All items below were delivered in the prototype:
   are blocked (currently optional).
 - [ ] **Runtime context schema.** Formal JSON Schema for `runtime_context.json`
   so OEM integrators can validate their context files before use.
-- [ ] **Health check endpoint.** `GET /health` returning validator version,
-  loaded packages, and station profile count.
-- [ ] **CLI `revoke` command.** Adds a skill ID to the revocation list with
-  a reason and timestamp.
+- [x] **Health check endpoint.** `GET /health` returning validator version,
+  loaded packages, station profile count, and revoked skill count.
+- [x] **CLI `revoke` command.** Adds a skill ID to the revocation list with
+  a reason and timestamp. Writes JSON entry to `marketplace/revoked.json`;
+  idempotent (duplicate is detected and skipped).
 
 ---
 
