@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.16.0 — Demo runner, marketplace_demo, report_runner, and API coverage (389 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (111 → 148 tests):
+  - `etd_demo_runner._pick_context()` — all 10 keyword branches (atlas, humanoid,
+    wia, welding, mobed, transport, amr, vest, exoskeleton, exo) plus default fallback
+  - `etd_demo_runner._level_ok()` — True for A/B, False for C/D
+  - `etd_demo_runner.run_all()` — all 8 packages return level A; result dict keys;
+    `fail_fast=True` still completes when all pass
+  - `etd_demo_runner._print_table()` — PASS line, FAIL line with compat_errors/
+    errors/warnings, summary `X/Y` line
+  - `marketplace_demo._pick_context()` — humanoid, atlas, welding, transport, assist,
+    default fallback to `default_runtime_context()`
+  - `report_runner._pick_context()` — atlas, humanoid, wia_welding, wia_weld, mobed,
+    transport, vest, exoskeleton, base fallback (reuses `_load_contexts` from validate_examples)
+- `tests/test_api.py` (21 → 27 tests):
+  - `POST /validate` with an absolute package path (exercises the `not is_absolute()` branch)
+  - `POST /validate` for `etd.hyundai.wia_welding` with WIA runtime context → level A
+  - `GET /store/skills?family=does_not_exist` → count 0, empty list
+  - `GET /store/skills?family=welding` → single WIA welding entry
+  - `GET /store/skills?family=assist` → single vest exoskeleton entry
+  - `POST /store/install` for MobED with `station_id=mobed_logistics_a` → station_compatible,
+    station_warnings, station_missing_services all present
+
+### Test totals by module (389 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 26 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 148 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 38 |
+
+---
+
 ## 0.15.0 — Visualizer, TracingMiddleware, and station profile edge cases (346 tests)
 
 ### Coverage additions

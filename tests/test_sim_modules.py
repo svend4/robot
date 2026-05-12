@@ -881,3 +881,238 @@ def test_run_traced_sets_result():
     trace = run_traced('etd.pickplace.basic', 'fragile_item')
     assert isinstance(trace.result, dict)
     assert 'status' in trace.result
+
+
+# ── etd_demo_runner ───────────────────────────────────────────────────────────
+
+from etd_demo_runner import _pick_context as _demo_pick_context, _level_ok, run_all as demo_run_all, _print_table
+
+
+def test_demo_pick_context_atlas():
+    p = _demo_pick_context('etd.atlas.humanoid_walkfetch')
+    assert 'atlas' in p.name
+
+
+def test_demo_pick_context_humanoid():
+    p = _demo_pick_context('etd.some.humanoid_skill')
+    assert 'atlas' in p.name
+
+
+def test_demo_pick_context_wia():
+    p = _demo_pick_context('etd.hyundai.wia_welding')
+    assert 'wia' in p.name
+
+
+def test_demo_pick_context_welding():
+    p = _demo_pick_context('etd.some.welding_skill')
+    assert 'wia' in p.name
+
+
+def test_demo_pick_context_mobed():
+    p = _demo_pick_context('etd.hyundai.mobed_transport')
+    assert 'mobed' in p.name
+
+
+def test_demo_pick_context_transport():
+    p = _demo_pick_context('etd.some.transport_skill')
+    assert 'mobed' in p.name
+
+
+def test_demo_pick_context_amr():
+    p = _demo_pick_context('etd.some.amr_skill')
+    assert 'mobed' in p.name
+
+
+def test_demo_pick_context_vest():
+    p = _demo_pick_context('etd.hyundai.vest_exoskeleton')
+    assert 'exo' in p.name
+
+
+def test_demo_pick_context_exoskeleton():
+    p = _demo_pick_context('etd.some.exoskeleton_skill')
+    assert 'exo' in p.name
+
+
+def test_demo_pick_context_exo():
+    p = _demo_pick_context('etd.some.exo_skill')
+    assert 'exo' in p.name
+
+
+def test_demo_pick_context_default():
+    p = _demo_pick_context('etd.pickplace.basic')
+    assert 'runtime_context.json' == p.name
+
+
+def test_level_ok_a():
+    assert _level_ok('A') is True
+
+
+def test_level_ok_b():
+    assert _level_ok('B') is True
+
+
+def test_level_ok_d():
+    assert _level_ok('D') is False
+
+
+def test_level_ok_c():
+    assert _level_ok('C') is False
+
+
+def test_demo_run_all_returns_eight_packages():
+    results = demo_run_all()
+    assert len(results) == 8
+
+
+def test_demo_run_all_all_level_a():
+    results = demo_run_all()
+    for r in results:
+        assert r['level'] == 'A', f"{r['package']} is level {r['level']}"
+
+
+def test_demo_run_all_result_keys():
+    results = demo_run_all()
+    for r in results:
+        for key in ('package', 'valid', 'level', 'score', 'ctx', 'errors', 'warnings'):
+            assert key in r, f"Missing key '{key}' in {r}"
+
+
+def test_demo_run_all_fail_fast_completes_when_all_pass():
+    results = demo_run_all(fail_fast=True)
+    assert len(results) == 8
+
+
+def test_print_table_shows_pass(capsys):
+    results = [{'package': 'etd.x', 'ctx': 'runtime_context.json',
+                'level': 'A', 'score': 1.0, 'compat_errors': [], 'errors': [], 'warnings': []}]
+    _print_table(results)
+    out = capsys.readouterr().out
+    assert 'PASS' in out
+    assert 'etd.x' in out
+
+
+def test_print_table_shows_fail(capsys):
+    results = [{'package': 'etd.y', 'ctx': 'runtime_context.json',
+                'level': 'D', 'score': 0.2, 'compat_errors': ['missing_service'],
+                'errors': ['schema_error'], 'warnings': ['warn1']}]
+    _print_table(results)
+    out = capsys.readouterr().out
+    assert 'FAIL' in out
+    assert 'missing_service' in out
+    assert 'schema_error' in out
+    assert 'warn1' in out
+
+
+def test_print_table_summary_line(capsys):
+    results = [
+        {'package': 'etd.a', 'ctx': 'ctx.json', 'level': 'A', 'score': 1.0,
+         'compat_errors': [], 'errors': [], 'warnings': []},
+        {'package': 'etd.b', 'ctx': 'ctx.json', 'level': 'D', 'score': 0.1,
+         'compat_errors': [], 'errors': [], 'warnings': []},
+    ]
+    _print_table(results)
+    out = capsys.readouterr().out
+    assert '1/2' in out
+
+
+# ── marketplace_demo._pick_context ────────────────────────────────────────────
+
+from sim.marketplace_demo import _pick_context as _md_pick_context
+
+
+def test_md_pick_context_humanoid():
+    from etd_reference_validator import RuntimeContext
+    ctx = _md_pick_context('humanoid')
+    assert isinstance(ctx, RuntimeContext)
+    assert ctx.robot_class == 'humanoid'
+
+
+def test_md_pick_context_atlas():
+    from etd_reference_validator import RuntimeContext
+    ctx = _md_pick_context('atlas')
+    assert isinstance(ctx, RuntimeContext)
+
+
+def test_md_pick_context_welding():
+    from etd_reference_validator import RuntimeContext
+    ctx = _md_pick_context('welding')
+    assert isinstance(ctx, RuntimeContext)
+    assert ctx.robot_class == 'cobot'
+
+
+def test_md_pick_context_transport():
+    from etd_reference_validator import RuntimeContext
+    ctx = _md_pick_context('transport')
+    assert isinstance(ctx, RuntimeContext)
+
+
+def test_md_pick_context_assist():
+    from etd_reference_validator import RuntimeContext
+    ctx = _md_pick_context('assist')
+    assert isinstance(ctx, RuntimeContext)
+
+
+def test_md_pick_context_default():
+    from marketplace.skill_store import default_runtime_context
+    ctx = _md_pick_context('unknown_family')
+    default = default_runtime_context()
+    assert ctx.robot_class == default.robot_class
+
+
+# ── report_runner._pick_context ───────────────────────────────────────────────
+
+from sim.report_runner import _pick_context as _rr_pick_context
+
+
+def test_rr_pick_context_atlas():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.atlas.humanoid_walkfetch', contexts)
+    assert ctx is contexts['atlas']
+
+
+def test_rr_pick_context_humanoid():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.some.humanoid_skill', contexts)
+    assert ctx is contexts['atlas']
+
+
+def test_rr_pick_context_wia_welding():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.hyundai.wia_welding', contexts)
+    assert ctx is contexts['wia']
+
+
+def test_rr_pick_context_wia_weld():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.hyundai.wia_weld_v2', contexts)
+    assert ctx is contexts['wia']
+
+
+def test_rr_pick_context_mobed():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.hyundai.mobed_transport', contexts)
+    assert ctx is contexts['mobed']
+
+
+def test_rr_pick_context_transport():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.some.transport_skill', contexts)
+    assert ctx is contexts['mobed']
+
+
+def test_rr_pick_context_vest():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.hyundai.vest_exoskeleton', contexts)
+    assert ctx is contexts['exo']
+
+
+def test_rr_pick_context_exoskeleton():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.some.exoskeleton_device', contexts)
+    assert ctx is contexts['exo']
+
+
+def test_rr_pick_context_base_fallback():
+    contexts = _load_contexts(ROOT)
+    ctx = _rr_pick_context('etd.pickplace.basic', contexts)
+    assert ctx is contexts['base']

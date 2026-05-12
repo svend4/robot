@@ -250,3 +250,77 @@ def test_sign_valid_package(tmp_path):
     assert body['signed'] is True
     assert 'signature_file' in body
     assert (dst / 'package.sig').exists()
+
+
+# ── Validate endpoint — extra paths ──────────────────────────────────────────
+
+def test_validate_with_absolute_path():
+    r = client.post('/validate', json={
+        'package_path': str(ROOT / 'examples' / 'etd.pickplace.basic'),
+        'robot_class': 'humanoid',
+        'available_services': _FULL_SERVICES,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['valid'] is True
+
+
+def test_validate_hyundai_wia_welding():
+    wia_ctx_path = ROOT / 'runtime_context_wia.json'
+    import json as _json
+    wia_services = _json.loads(wia_ctx_path.read_text())['available_services']
+    r = client.post('/validate', json={
+        'package_path': 'examples/etd.hyundai.wia_welding',
+        'robot_class': 'cobot',
+        'available_services': wia_services,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['valid'] is True
+    assert body['compatibility']['level'] == 'A'
+
+
+# ── Store — list skills extra filters ─────────────────────────────────────────
+
+def test_list_skills_filter_family_no_match():
+    r = client.get('/store/skills?family=does_not_exist')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['count'] == 0
+    assert body['skills'] == []
+
+
+def test_list_skills_filter_welding_family():
+    r = client.get('/store/skills?family=welding')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['count'] == 1
+    assert body['skills'][0]['skillId'] == 'etd.hyundai.wia_welding'
+
+
+def test_list_skills_filter_assist_family():
+    r = client.get('/store/skills?family=assist')
+    assert r.status_code == 200
+    body = r.json()
+    assert body['count'] == 1
+    assert body['skills'][0]['skillId'] == 'etd.hyundai.vest_exoskeleton'
+
+
+# ── Store — install decision extra cases ──────────────────────────────────────
+
+def test_install_mobed_with_compatible_station():
+    import json as _json
+    mobed_ctx = _json.loads((ROOT / 'runtime_context_mobed.json').read_text())
+    r = client.post('/store/install', json={
+        'skill_id': 'etd.hyundai.mobed_transport',
+        'entitlement_token': 'valid-token-123',
+        'robot_class': mobed_ctx['robot_class'],
+        'available_services': mobed_ctx['available_services'],
+        'station_id': 'mobed_logistics_a',
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['allowed'] is True
+    assert body['station_compatible'] is True
+    assert 'station_warnings' in body
+    assert 'station_missing_services' in body
