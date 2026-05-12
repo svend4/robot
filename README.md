@@ -169,18 +169,18 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 14 tests — schema validation, compat levels
-├── test_api.py               # 17 tests — REST endpoints
-├── test_cli.py               # 16 tests — CLI commands
-├── test_marketplace.py       # 13 tests — SkillStore list/find/install
-├── test_station_profiles.py  # 30 tests — compatibility checker, API, CLI
+├── test_validator.py         # 17 tests — schema validation, compat levels, all 8 packages
+├── test_api.py               # 18 tests — REST endpoints incl. vest_exo and version check
+├── test_cli.py               # 20 tests — CLI commands incl. all 4 Hyundai packages
+├── test_marketplace.py       # 17 tests — SkillStore list/find/install for all packages
+├── test_station_profiles.py  # 33 tests — compatibility checker, exo_assembly_a, API, CLI
 ├── test_orbit_bridge.py      # 28 tests — orbit event bridge
-└── test_sim_modules.py       # 42 tests — sim modules (replay, state gen, middleware, ...)
+├── test_sim_modules.py       # 42 tests — sim modules (replay, state gen, middleware, ...)
+├── test_acceptance.py        #  8 tests — wraps 39 YAML acceptance scenarios (all packages)
+└── test_ros2_bridge.py       # 15 tests — ETDSkillActionServer without ROS 2 installation
 ```
 
-Run: `python -m pytest` — 160 tests, all passing.
-
-Acceptance tests (39 scenarios across 8 packages): `python sim/acceptance_runner.py`
+Run: `python -m pytest` — 198 tests, all passing.
 
 ---
 

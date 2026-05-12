@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.6.0 — Test suite expansion to 198 tests
+
+### New test modules
+- `tests/test_acceptance.py` — integrates `sim/acceptance_runner.py` into pytest:
+  8 parametrized cases, one per skill package; covers all 39 YAML acceptance
+  scenarios; `random.seed(42)` for deterministic `etd.inspect.vision` confidence
+- `tests/test_ros2_bridge.py` — 15 tests for `ETDSkillActionServer` without
+  a ROS 2 installation: adapter loading, all 8 packages via `execute_goal()` with
+  `_NominalMiddleware`, server-busy guard, feedback callback correctness
+
+### Test coverage gaps closed
+- `test_validator.py`: added level-A tests for `etd.hyundai.wia_welding`,
+  `etd.hyundai.mobed_transport`, `etd.hyundai.vest_exoskeleton`
+- `test_marketplace.py`: renamed `test_store_lists_seven_skills` →
+  `test_store_lists_eight_skills`; added `test_install_vest_exo_*`,
+  `test_install_wia_welding_with_token_allowed`,
+  `test_install_mobed_transport_with_token_allowed`
+- `test_station_profiles.py`: added `test_load_exo_station_profile`,
+  `test_compatible_assist_at_exo_station`, `test_api_get_exo_station`;
+  `test_api_list_stations` now asserts `exo_assembly_a` is present
+- `test_api.py`: strengthened `test_health` to assert `version == '0.5.0'`;
+  added `test_get_vest_exoskeleton_skill`
+- `test_cli.py`: added `test_validate_hyundai_packages` (all 4 Hyundai packages
+  with correct runtime contexts), `test_info_vest_exoskeleton`,
+  `test_install_vest_exo_requires_entitlement`,
+  `test_install_vest_exo_with_token`
+
+### Version bumps
+- `pyproject.toml`: version `0.1.0` → `0.5.0`
+- `api/app.py`: API version `0.2.0` → `0.5.0` (FastAPI metadata + `/health`)
+- `sim/visualizer.py`: docstring updated "4 example skills" → "8 skill packages"
+
+### Test totals by module (198 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 17 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 17 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 42 |
+| `test_acceptance.py` | 8 (wraps 39 YAML scenarios) |
+| `test_ros2_bridge.py` | 15 |
+
+---
+
 ## 0.5.0 — Sim/adapters integration polish
 
 ### Visualizer
