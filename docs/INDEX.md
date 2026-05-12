@@ -13,6 +13,7 @@ Grouped by topic below.
 | [package-format.md](package-format.md) | Skill package file layout, required files, naming conventions |
 | [atlas-integration-notes.md](atlas-integration-notes.md) | Boston Dynamics / Atlas integration boundary — what ETD can and cannot touch |
 | [hyundai-integration-notes.md](hyundai-integration-notes.md) | Hyundai WIA welding cobot, MobED AMR, and VEX/H-MEX exoskeleton integration boundaries |
+| [cobot-skills-reference.md](cobot-skills-reference.md) | Per-skill reference for all 4 generic cobot packages: primitives, CHS profiles, gates, services, integration boundary |
 | [use-cases-automotive.md](use-cases-automotive.md) | Automotive production line use cases: sequencing, assembly, inspection |
 
 ---

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.62.0 — New: generic cobot skills reference doc (4 packages, derived from package files)
+
+- `docs/cobot-skills-reference.md`: NEW — 260-line reference document derived directly
+  from the actual package files in `examples/`
+  - `etd.pickplace.basic`: 5 primitives, 2 CHS profiles (small_box, fragile_item),
+    8 required services, station compat (assembly_a, logistics_a, cobot_a)
+  - `etd.assembly.precision`: 6 primitives, 2 CHS profiles (peg_in_hole,
+    connector_insert), contact_probe gate, micro_adjust gate, 10 required services
+    (incl. perception.part_alignment and force_control.contact_feedback),
+    station compat (assembly_a)
+  - `etd.inspect.vision`: 5 primitives, 2 CHS profiles (barcode_qa, defect_scan),
+    classify_result gate, report_quality → workflow.job_context publishing,
+    station compat (assembly_a, logistics_a, cobot_a)
+  - `etd.cobot.safeassist`: 5 primitives, 2 CHS profiles (safe_handover, tool_pass),
+    detect_human_ready gate, compliant hold force windows, release_on_confirmation
+    gate, station compat (assembly_a, cobot_a)
+  - Common section: safety model, middleware contract, skill intent protocol,
+    fallback behaviour, compatibility level A for all 4
+- `docs/INDEX.md`: added cobot-skills-reference.md entry in Architecture section
+
+---
+
 ## 0.61.0 — Publisher guide: real CLI commands, 10-step workflow (171 → 260 lines)
 
 - `docs/publisher-developer-guide.md`: 171 lines → 260 lines
