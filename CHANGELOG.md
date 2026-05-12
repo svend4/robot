@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.49.0 — CLI _check_station_entry None early-return + serve uvicorn, verify_signature no-sig error (679 tests)
+
+### Coverage additions
+- `tests/test_cli.py` (50 → 52 tests):
+  - **`_check_station_entry(None)` early return (line 110)**: monkeypatch `find_skill` to return None → after `decision.allowed=True`, `entry=None` → `if not entry: return` fired → no station output
+  - **`serve` command body (lines 282-285)**: inject fake uvicorn via `sys.modules` → `import uvicorn` resolves to mock → `uvicorn.run('api.app:app', ...)` called → lines 282-285 covered
+- `tests/test_signing.py` (61 → 62 tests):
+  - **`verify_package` no-sig-file path (lines 42-43)**: call `verify_package` on empty tmp dir (no `package.sig`) → `if not sig_path.exists():` True → error printed to stdout → False returned
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `etd_cli.py` | 96% | 98% |
+| `scripts/verify_signature.py` | 92% | 97% |
+
+### Test totals by module (679 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 52 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 227 |
+| `test_acceptance.py` | 99 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 62 |
+
+---
+
 ## 0.48.0 — cobot/mobed/inspect no-middleware defaults + mobed mid-segment abort (676 tests)
 
 ### Coverage additions

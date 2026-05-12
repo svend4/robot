@@ -113,6 +113,16 @@ def test_verify_missing_sig_file_returns_false(tmp_path):
     assert verify_package(dst) is False
 
 
+def test_verify_no_sig_file_prints_error_and_returns_false(tmp_path, capsys):
+    """verify_package on dir without package.sig → prints error message, returns False (lines 42-43)."""
+    pkg_dir = tmp_path / 'nosig'
+    pkg_dir.mkdir()
+    result = verify_package(pkg_dir)
+    assert result is False
+    captured = capsys.readouterr()
+    assert 'ERROR: no package.sig found' in captured.out
+
+
 def test_verify_tampered_file_returns_false(signed_pkg):
     pkg, _ = signed_pkg
     # Modify manifest.yaml after signing

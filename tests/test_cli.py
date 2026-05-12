@@ -645,3 +645,35 @@ def test_install_station_entry_shows_human_aware_warning(monkeypatch):
     ])
     assert result.exit_code == 0, result.output
     assert 'skill_requires_human_aware' in result.output
+
+
+# ── _check_station_entry(None) → line 110 early return ───────────────────────
+
+def test_check_station_entry_none_from_find_skill_returns_early(monkeypatch):
+    """After decision.allowed=True, monkeypatching find_skill to return None → _check_station_entry
+    receives None → 'if not entry: return' at line 110 → no station output printed."""
+    import marketplace.skill_store as _ss
+    monkeypatch.setattr(_ss.SkillStore, 'find_skill', lambda self, sid: None)
+    result = runner.invoke(cli, [
+        'install', 'etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/assembly_station_a.json',
+    ])
+    assert result.exit_code == 0
+    assert 'COMPATIBLE' not in result.output
+    assert 'INCOMPATIBLE' not in result.output
+
+
+# ── serve command: lines 282-285 ─────────────────────────────────────────────
+
+def test_serve_command_invokes_uvicorn_run(monkeypatch):
+    """serve command (lines 282-285): 'import uvicorn' + uvicorn.run() called with app + options."""
+    from unittest.mock import MagicMock
+    mock_uvicorn = MagicMock()
+    monkeypatch.setitem(sys.modules, 'uvicorn', mock_uvicorn)
+    result = runner.invoke(cli, ['serve', '--port', '9999'])
+    assert result.exit_code == 0
+    mock_uvicorn.run.assert_called_once()
+    call_kwargs = mock_uvicorn.run.call_args
+    assert call_kwargs.args[0] == 'api.app:app'
+    assert call_kwargs.kwargs.get('port') == 9999
