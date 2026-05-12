@@ -213,3 +213,62 @@ def test_client_execute_via_server_with_middleware(skill_id, goal):
     result = server.execute_goal(goal, middleware=_MW)
     assert result.get('status') == 'completed', \
         f'{skill_id}: {result.get("reason")!r}'
+
+
+# ── ETDSkillActionServer.main(--dry-run) ──────────────────────────────────────
+
+import sys as _sys
+
+from skill_action_server import main as _server_main
+from skill_action_client import ETDSkillActionClient, main as _client_main
+
+
+def test_server_main_dry_run_completes(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv',
+                        ['skill_action_server.py', '--skill', 'etd.pickplace.basic', '--dry-run'])
+    _server_main()
+    out = capsys.readouterr().out
+    assert 'Dry run' in out
+    assert 'etd.pickplace.basic' in out
+
+
+def test_server_main_dry_run_json_result(capsys, monkeypatch):
+    import json as _json
+    monkeypatch.setattr(_sys, 'argv',
+                        ['skill_action_server.py', '--skill', 'etd.pickplace.basic', '--dry-run'])
+    _server_main()
+    out = capsys.readouterr().out
+    json_start = out.find('{')
+    assert json_start != -1
+    parsed = _json.loads(out[json_start:])
+    assert 'status' in parsed
+
+
+# ── ETDSkillActionClient.main(--dry-run) ──────────────────────────────────────
+
+def test_client_main_dry_run_exits_zero(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', [
+        'skill_action_client.py',
+        '--skill', 'etd.pickplace.basic',
+        '--profile', 'small_box',
+        '--dry-run',
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _client_main()
+    assert exc_info.value.code == 0
+
+
+def test_client_main_dry_run_output(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', [
+        'skill_action_client.py',
+        '--skill', 'etd.pickplace.basic',
+        '--profile', 'small_box',
+        '--dry-run',
+    ])
+    try:
+        _client_main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert 'ETD Client' in out
+    assert 'etd.pickplace.basic' in out

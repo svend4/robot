@@ -326,3 +326,35 @@ def test_validate_listing_level_b_install_allowed(store):
     result = store.validate_listing('etd.pickplace.basic', ctx)
     assert result['validationLevel'] == 'B'
     assert result['installAllowed'] is True
+
+
+# ── validate_for_install reason='validation_failed' ───────────────────────────
+
+def test_install_validation_failed_reason(store):
+    ctx = RuntimeContext(
+        runtime_version='0.1.0',
+        robot_class='humanoid',
+        available_services=['perception.object_pose'],  # missing most services → level D
+    )
+    decision = store.validate_for_install('etd.pickplace.basic', ctx)
+    assert decision.allowed is False
+    assert decision.reason == 'validation_failed'
+    assert decision.validationLevel == 'D'
+
+
+# ── __init__ package imports (adapters + sim) ─────────────────────────────────
+
+def test_adapters_package_exports():
+    import adapters
+    assert callable(adapters.to_enterprise_event)
+    assert callable(adapters.check_skill_compatible)
+    assert callable(adapters.load_station_profile)
+    assert adapters.OrbitEventBridge is not None
+
+
+def test_sim_package_exports():
+    import sim
+    assert callable(sim.replay)
+    assert callable(sim.nominal_lifecycle)
+    assert sim.FakeMiddleware is not None
+    assert callable(sim.run_all_scenarios)

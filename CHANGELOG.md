@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.24.0 — ROS2 main() dry-run, validation_failed reason, package __init__ exports (542 tests)
+
+### Coverage additions
+- `tests/test_ros2_bridge.py` (30 → 34 tests):
+  - `ETDSkillActionServer.main(--dry-run)` — prints "Dry run" message and JSON result
+  - `ETDSkillActionClient.main(--dry-run)` — exits 0, prints ETD Client output
+- `tests/test_marketplace.py` (30 → 33 tests):
+  - `validate_for_install()` with level D → `reason='validation_failed'` explicitly asserted
+  - `adapters/__init__` exports: `to_enterprise_event`, `check_skill_compatible`,
+    `load_station_profile`, `OrbitEventBridge` all importable
+  - `sim/__init__` exports: `replay`, `nominal_lifecycle`, `FakeMiddleware`,
+    `run_all_scenarios` all importable
+- `tests/test_cli.py` (38 → 40 tests):
+  - `install` with nonexistent skill + `--station-profile` → `_check_station_entry(None)`
+    returns early, no COMPATIBLE/INCOMPATIBLE output
+  - `install` nonexistent skill → exits 1 with `skill_not_found` or BLOCKED in output
+
+### Test totals by module (542 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 33 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 194 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 47 |
+| **Total** | **542** |
+
+---
+
 ## 0.23.0 — stations CLI, install blocked+station skip, FakeMiddleware edges, sim demos (533 tests)
 
 ### Coverage additions

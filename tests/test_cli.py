@@ -421,3 +421,26 @@ def test_validate_station_skipped_when_no_manifest(tmp_path):
     ])
     # validation will fail (missing files), station check skipped with warning
     assert 'Station check skipped' in result.output or result.exit_code != 0
+
+
+# ── _check_station_entry(None) early return ───────────────────────────────────
+
+def test_install_nonexistent_skill_no_station_output():
+    # When skill_id is not found, _check_station_entry(None) is called → returns early
+    result = runner.invoke(cli, [
+        'install', 'etd.does.not.exist',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/assembly_station_a.json',
+    ])
+    assert result.exit_code == 1
+    # station output not produced when entry is None
+    assert 'COMPATIBLE' not in result.output
+    assert 'INCOMPATIBLE' not in result.output
+
+
+# ── install not found exits 1 ─────────────────────────────────────────────────
+
+def test_install_skill_not_found_exits_one():
+    result = runner.invoke(cli, ['install', 'etd.no.such.skill'])
+    assert result.exit_code == 1
+    assert 'skill_not_found' in result.output or 'BLOCKED' in result.output
