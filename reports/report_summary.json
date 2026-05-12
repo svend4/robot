@@ -26,6 +26,12 @@
       "score": 1.0
     },
     {
+      "package": "etd.hyundai.vest_exoskeleton",
+      "valid": true,
+      "level": "A",
+      "score": 1.0
+    },
+    {
       "package": "etd.hyundai.wia_welding",
       "valid": true,
       "level": "A",
@@ -52,6 +58,7 @@
     "etd.atlas.humanoid_walkfetch-0.1.0.zip",
     "etd.cobot.safeassist-0.1.0.zip",
     "etd.hyundai.mobed_transport-0.1.0.zip",
+    "etd.hyundai.vest_exoskeleton-0.1.0.zip",
     "etd.hyundai.wia_welding-0.1.0.zip",
     "etd.inspect.vision-0.1.0.zip",
     "etd.pickplace.basic-0.1.0.zip"
