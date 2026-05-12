@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.10.0 — Sim, client, and release pipeline coverage (256 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (42 → 52 tests):
+  - `RobotStateGenerator` humanoid family: `test_generator_humanoid_family`,
+    `test_generator_humanoid_reach_and_grasp`
+  - Noise mode: `test_generator_noise_mode_returns_valid_structure`
+  - `scenario_runner.print_results()`: `test_print_results_no_compat_errors`,
+    `test_print_results_with_compat_errors`, `test_print_results_mixed_pass_fail`
+    (including compat_errors display branch and pass/fail ratio line)
+- `tests/test_ros2_bridge.py` (15 → 19 tests):
+  - `ETDSkillActionClient.send_goal(dry_run=True)`: `test_client_dry_run_completes`,
+    `test_client_dry_run_feedback_printed`
+  - `ETDSkillActionClient._ros2_execute()` ImportError: `test_client_ros2_raises_without_rclpy`
+  - `ETDSkillActionServer.run_ros2()` ImportError: `test_server_run_ros2_raises_without_rclpy`
+- `tests/test_signing.py` (34 → 37 tests):
+  - `release_package._zip_dir()`: `test_zip_dir_creates_zip_file`,
+    `test_zip_dir_contains_expected_files`, `test_zip_dir_excludes_pycache`
+
+### Test totals by module (256 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 17 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 52 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 37 |
+
+---
+
 ## 0.9.0 — SkillStore coverage completions (243 tests)
 
 ### Coverage additions in `tests/test_marketplace.py` (17 → 28 tests)

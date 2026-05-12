@@ -268,3 +268,37 @@ def test_generate_keys_are_different(tmp_path):
     sk1 = (out1 / 'etd_signing_key.hex').read_text()
     sk2 = (out2 / 'etd_signing_key.hex').read_text()
     assert sk1 != sk2
+
+
+# ── release_package._zip_dir ──────────────────────────────────────────────────
+
+import zipfile as _zipfile
+from release_package import _zip_dir
+
+
+def test_zip_dir_creates_zip_file(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dest = tmp_path / 'test_pkg.zip'
+    _zip_dir(src, dest)
+    assert dest.exists()
+    assert dest.stat().st_size > 0
+
+
+def test_zip_dir_contains_expected_files(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dest = tmp_path / 'test_pkg.zip'
+    _zip_dir(src, dest)
+    with _zipfile.ZipFile(dest, 'r') as z:
+        names = z.namelist()
+    assert any('manifest.yaml' in n for n in names)
+    assert any('skill.json' in n for n in names)
+
+
+def test_zip_dir_excludes_pycache(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dest = tmp_path / 'test_pkg.zip'
+    _zip_dir(src, dest)
+    with _zipfile.ZipFile(dest, 'r') as z:
+        names = z.namelist()
+    assert not any('__pycache__' in n for n in names)
+    assert not any(n.endswith('.pyc') for n in names)

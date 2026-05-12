@@ -175,13 +175,13 @@ tests/
 ├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
 ├── test_station_profiles.py  # 33 — compatibility checker, exo_assembly_a, API, CLI
 ├── test_orbit_bridge.py      # 28 — orbit event bridge severity/filter/callback
-├── test_sim_modules.py       # 42 — event_replay, state_generator, middleware, scenarios
+├── test_sim_modules.py       # 52 — event_replay, state_generator, middleware, scenarios, print_results
 ├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
-├── test_ros2_bridge.py       # 15 — ETDSkillActionServer without ROS 2 installation
-└── test_signing.py           # 34 — Ed25519 sign/verify, round-trip all 8 packages, OEM gate, keypair gen
+├── test_ros2_bridge.py       # 19 — ETDSkillActionServer/Client, dry-run, no-rclpy error paths
+└── test_signing.py           # 37 — Ed25519 sign/verify, keypair gen, _zip_dir, OEM gate
 ```
 
-Run: `python -m pytest` — 243 tests, all passing.
+Run: `python -m pytest` — 256 tests, all passing.
 
 ---
 

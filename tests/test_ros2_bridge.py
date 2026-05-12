@@ -140,3 +140,35 @@ def test_execute_goal_feedback_only_for_telemetry_events():
     assert len(callbacks) > 0
     assert all('event' in m for m in callbacks), \
         'feedback_fn should only receive telemetry.events messages'
+
+
+# ── ETDSkillActionClient ──────────────────────────────────────────────────────
+
+from skill_action_client import ETDSkillActionClient
+
+
+def test_client_dry_run_completes():
+    client = ETDSkillActionClient('etd.pickplace.basic')
+    result = client.send_goal({'chsProfile': 'small_box', 'priority': 'normal'}, dry_run=True)
+    assert result.get('status') == 'completed'
+
+
+def test_client_dry_run_feedback_printed(capsys):
+    client = ETDSkillActionClient('etd.pickplace.basic')
+    client.send_goal({'chsProfile': 'small_box'}, dry_run=True)
+    out = capsys.readouterr().out
+    assert 'ETD Client' in out
+
+
+def test_client_ros2_raises_without_rclpy():
+    client = ETDSkillActionClient('etd.pickplace.basic')
+    with pytest.raises(RuntimeError, match='rclpy not available'):
+        client.send_goal({'chsProfile': 'small_box'}, dry_run=False)
+
+
+# ── ETDSkillActionServer.run_ros2 ─────────────────────────────────────────────
+
+def test_server_run_ros2_raises_without_rclpy():
+    server = ETDSkillActionServer('etd.pickplace.basic')
+    with pytest.raises(RuntimeError, match='rclpy not available'):
+        server.run_ros2()

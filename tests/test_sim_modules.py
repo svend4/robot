@@ -332,3 +332,71 @@ def test_failure_run_all_four_pass():
     assert len(results) == 4
     for r in results:
         assert r['passed'] is True, f'{r["scenario"]} failed: {r.get("detail")}'
+
+
+# ── RobotStateGenerator additional family coverage ────────────────────────────
+
+def test_generator_humanoid_family():
+    gen = RobotStateGenerator(skill_id='etd.atlas.humanoid_walkfetch')
+    state = gen.at('nav_to_pick')
+    assert state['skill_specific'].get('walking') is True
+    assert state['primitive'] == 'nav_to_pick'
+
+
+def test_generator_humanoid_reach_and_grasp():
+    gen = RobotStateGenerator(skill_id='etd.atlas.humanoid_walkfetch')
+    state = gen.at('reach_and_grasp')
+    assert state['skill_specific'].get('holding') is True
+    assert state['skill_specific'].get('at_pick') is True
+
+
+def test_generator_noise_mode_returns_valid_structure():
+    gen = RobotStateGenerator(skill_id='etd.pickplace.basic', noise=True)
+    state = gen.at('approach')
+    assert 'safety_state' in state
+    assert 'arm_state' in state
+    assert 'body_pose' in state
+    assert state['primitive'] == 'approach'
+
+
+# ── scenario_runner.print_results ─────────────────────────────────────────────
+
+import io
+import contextlib
+from sim.scenario_runner import print_results
+
+
+def test_print_results_no_compat_errors(capsys):
+    results = [
+        {'package': 'etd.pickplace.basic', 'valid': True, 'level': 'A',
+         'ctx': 'runtime_context.json', 'compat_errors': []},
+    ]
+    print_results(results)
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'PASS' in out
+    assert '1/1' in out
+
+
+def test_print_results_with_compat_errors(capsys):
+    results = [
+        {'package': 'etd.test.pkg', 'valid': False, 'level': 'D',
+         'ctx': 'runtime_context.json', 'compat_errors': ['missing service X']},
+    ]
+    print_results(results)
+    out = capsys.readouterr().out
+    assert 'FAIL' in out
+    assert 'missing service X' in out
+    assert '0/1' in out
+
+
+def test_print_results_mixed_pass_fail(capsys):
+    results = [
+        {'package': 'etd.ok.pkg',   'valid': True,  'level': 'A',
+         'ctx': 'runtime_context.json', 'compat_errors': []},
+        {'package': 'etd.bad.pkg',  'valid': False, 'level': 'D',
+         'ctx': 'runtime_context.json', 'compat_errors': []},
+    ]
+    print_results(results)
+    out = capsys.readouterr().out
+    assert '1/2' in out
