@@ -442,3 +442,182 @@ def test_pickplace_unknown_profile_falls_back_to_small_box_defaults(monkeypatch)
     result = run_fn({'chsProfile': 'nonexistent_profile', 'priority': 'normal'})
     assert result['status'] == 'completed'
     assert result['payload_kg'] == 1.5
+
+
+# ── Extended middleware: per-topic overrides + safety-state countdown ──────────
+
+class _AdapterMW(AcceptanceMiddleware):
+    """AcceptanceMiddleware with per-topic overrides and optional safety countdown.
+
+    after_n_safety_reads / then_safety: after N reads of state.safety_state,
+    subsequent reads return then_safety instead of the AcceptanceMiddleware defaults.
+    """
+
+    def __init__(self, joint_state=None, intent=None, fatigue=None,
+                 seam_tracker=None, after_n_safety_reads=None, then_safety=None, **kw):
+        super().__init__(**kw)
+        self._joint_state_override = joint_state
+        self._intent_override = intent
+        self._fatigue_override = fatigue
+        self._seam_tracker_override = seam_tracker
+        self._safety_count = 0
+        self._after_n = after_n_safety_reads
+        self._then_safety = then_safety or {}
+
+    def read(self, topic):
+        if topic == 'state.safety_state':
+            self._safety_count += 1
+            if self._after_n is not None and self._safety_count > self._after_n:
+                return dict(self._then_safety)
+        if topic == 'state.exo_joint_state' and self._joint_state_override is not None:
+            return dict(self._joint_state_override)
+        if topic == 'perception.intent_detector' and self._intent_override is not None:
+            return dict(self._intent_override)
+        if topic == 'state.fatigue_monitor' and self._fatigue_override is not None:
+            return dict(self._fatigue_override)
+        if topic == 'perception.seam_tracker' and self._seam_tracker_override is not None:
+            return dict(self._seam_tracker_override)
+        return super().read(topic)
+
+
+# ── Vest exoskeleton adapter: safety and calibration branches ─────────────────
+
+def test_exo_operator_panic_release_aborts():
+    """operator_panic_release flag in safety state aborts at first primitive."""
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    mw = AcceptanceMiddleware(initial_safety={'operator_panic_release': True})
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'operator_panic_release'
+
+
+def test_exo_calibration_failed_aborts():
+    """calibrate_fit aborts when joint sensor reports calibrated=False."""
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    mw = _AdapterMW(joint_state={'calibrated': False, 'torque_within_limits': True})
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'calibration_failed'
+
+
+def test_exo_intent_confidence_below_threshold_aborts(monkeypatch):
+    """detect_intent aborts when intent confidence is below the profile minimum."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    mw = _AdapterMW(intent={'confidence': 0.5, 'mode': 'overhead', 'direction': 'up'})
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'intent_confidence_below_threshold'
+    assert result['confidence'] == 0.5
+
+
+def test_exo_fatigue_threshold_adapts_gain(monkeypatch):
+    """monitor_fatigue / adapt_gain lowers final_gain when fatigue exceeds threshold."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    # overhead_assembly: fatigue_threshold_pct=70; inject 90 > 70
+    mw = _AdapterMW(fatigue={'fatigue_pct': 90, 'session_sec': 0})
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'completed'
+    assert result['fatigue_pct'] == 90
+    assert result['final_gain'] < 1.0  # max(0.5, 1.0 - (90-70)/100) = 0.8
+
+
+# ── Cobot safeassist adapter: wait_human_ready branches ──────────────────────
+
+def test_cobot_human_ready_timeout_aborts(monkeypatch):
+    """wait_human_ready aborts with human_ready_timeout when deadline is already past."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.cobot.safeassist')
+    mw = AcceptanceMiddleware(initial_safety={'human_ready_signal': False})
+    result = run_fn(
+        {'chsProfile': 'safe_handover', 'humanReadyTimeoutSec': -1},
+        middleware=mw,
+    )
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'human_ready_timeout'
+
+
+def test_cobot_forbidden_zone_during_wait_loop_aborts(monkeypatch):
+    """human_in_forbidden_zone detected inside the wait_human_ready while-loop aborts."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.cobot.safeassist')
+    # 3 outer reads safe (social_approach, offer_preposition, wait_human_ready),
+    # then forbidden zone on the first iteration inside the while loop
+    mw = _AdapterMW(
+        after_n_safety_reads=3,
+        then_safety={'human_in_forbidden_zone': True, 'human_ready_signal': False},
+    )
+    result = run_fn(
+        {'chsProfile': 'safe_handover', 'humanReadyTimeoutSec': 5.0},
+        middleware=mw,
+    )
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'human_in_forbidden_zone'
+
+
+# ── WIA welding adapter: seam-tracking, tack-weld, and arc-active branches ────
+
+def test_wia_seam_track_confidence_low_aborts():
+    """torch_align aborts when seam tracker confidence is below alignment minimum."""
+    run_fn = _load_run('etd.hyundai.wia_welding')
+    # standard_seam: alignment_confidence_min=0.90; inject confidence=0.5 via safety dict
+    mw = AcceptanceMiddleware(initial_safety={'confidence': 0.5})
+    result = run_fn({'chsProfile': 'standard_seam'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'seam_track_confidence_low'
+    assert result['confidence'] == 0.5
+
+
+def test_wia_tack_weld_skips_traverse_and_inspection(monkeypatch):
+    """tack_weld profile (travel_speed=0, post_inspection=False) skips traversal loop and inspection."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.wia_welding')
+    mw = AcceptanceMiddleware()
+    result = run_fn({'chsProfile': 'tack_weld'}, middleware=mw)
+    assert result['status'] == 'completed'
+    event_names = [e['event'] for e in mw.events]
+    assert 'welding.seam_progress' not in event_names
+    assert 'inspection.result' not in event_names
+
+
+def test_wia_arc_active_abort_emits_arc_stopped_first(monkeypatch):
+    """When human enters zone while arc is active, welding.arc_stopped precedes skill.aborted."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.wia_welding')
+    # 3 outer reads safe (approach_seam_start, torch_align, ignite_arc),
+    # 4th read at weld_traverse outer check → forbidden (arc_active=True at this point)
+    mw = _AdapterMW(
+        after_n_safety_reads=3,
+        then_safety={'human_in_forbidden_zone': True},
+    )
+    result = run_fn({'chsProfile': 'standard_seam'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['at_primitive'] == 'weld_traverse'
+    event_names = [e['event'] for e in mw.events]
+    assert 'welding.arc_stopped' in event_names
+    assert event_names.index('welding.arc_stopped') < event_names.index('skill.aborted')
+
+
+# ── MobED transport adapter: human abort inside navigation segment ─────────────
+
+def test_mobed_abort_during_navigation_segment(monkeypatch):
+    """human_in_forbidden_zone inside _navigate_segment loop returns abort from that function."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.mobed_transport')
+    # 1 outer read safe (navigate_to_pickup outer check), then forbidden inside loop
+    mw = _AdapterMW(
+        after_n_safety_reads=1,
+        then_safety={'human_in_forbidden_zone': True},
+    )
+    result = run_fn({'chsProfile': 'standard_carry'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'human_in_forbidden_zone'
+    assert result['at_primitive'] == 'navigate_to_pickup'

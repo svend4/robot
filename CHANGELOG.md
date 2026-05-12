@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.30.0 — OEM adapter safety-critical branch coverage: exo/cobot/wia/mobed (584 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (50 → 60 tests) — new `_AdapterMW` helper subclassing
+  `AcceptanceMiddleware` with per-topic overrides and a safety-read countdown:
+  - **Vest exoskeleton** (`etd.hyundai.vest_exoskeleton`):
+    - `operator_panic_release=True` → aborts with `reason='operator_panic_release'` (vs. `human_in_forbidden_zone`)
+    - `calibrated=False` in joint state → aborts with `reason='calibration_failed'`
+    - Intent confidence 0.5 below profile minimum 0.82 → `intent_confidence_below_threshold`
+    - `fatigue_pct=90 >= threshold 70` → `adapt_gain` branch lowers `final_gain` to 0.8
+  - **Cobot safeassist** (`etd.cobot.safeassist`):
+    - `humanReadyTimeoutSec=-1` (deadline already past) → `human_ready_timeout` abort
+    - Forbidden zone injected on 4th safety read (inside `wait_human_ready` while-loop) → inner abort
+  - **WIA welding** (`etd.hyundai.wia_welding`):
+    - Seam tracker confidence 0.5 < minimum 0.90 → `seam_track_confidence_low` abort at `torch_align`
+    - `tack_weld` profile (travel_speed=0, post_inspection=False) → `welding.seam_progress`
+      and `inspection.result` events absent from telemetry
+    - Arc active at `ignite_arc`, then human abort at `weld_traverse` → `welding.arc_stopped`
+      emitted before `skill.aborted` (covers `if arc_active:` branch, lines 119-120)
+  - **MobED transport** (`etd.hyundai.mobed_transport`):
+    - Human forbidden zone on 2nd safety read (inside `_navigate_segment` loop) →
+      abort returned from helper function with `at_primitive='navigate_to_pickup'`
+
+### Test totals by module (584 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 205 |
+| `test_acceptance.py` | 60 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **584** |
+
+---
+
 ## 0.29.0 — acceptance runner legacy inject, chsProfile injection, pickplace adapter branches (574 tests)
 
 ### Coverage additions
