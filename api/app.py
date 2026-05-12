@@ -35,7 +35,7 @@ from adapters.station_profile_loader import load_all_profiles, check_skill_compa
 app = FastAPI(
     title='ETD Skill Store API',
     description='Validate, browse, and install ETD robot skill packages.',
-    version='0.2.0',
+    version='0.5.0',
     docs_url='/docs',
     redoc_url='/redoc',
 )
@@ -67,7 +67,7 @@ class InstallRequest(BaseModel):
 
 @app.get('/health', tags=['system'])
 def health() -> Dict[str, str]:
-    return {'status': 'ok', 'version': '0.2.0'}
+    return {'status': 'ok', 'version': '0.5.0'}
 
 
 @app.post('/validate', tags=['validation'])

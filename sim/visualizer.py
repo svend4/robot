@@ -5,7 +5,7 @@ Two output modes:
   2. Matplotlib chart — available when matplotlib is installed
 
 Usage:
-    python sim/visualizer.py                     # ASCII for all 4 example skills
+    python sim/visualizer.py                     # ASCII for all 8 skill packages
     python sim/visualizer.py --skill etd.pickplace.basic
     python sim/visualizer.py --plot              # matplotlib chart
     python sim/visualizer.py --plot --save out.png
