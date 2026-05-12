@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "etd-skill-runtime"
-version = "0.1.0"
+version = "0.5.0"
 description = "ETD Robotics Skill Runtime — application-layer skill package framework for industrial robots and humanoids"
 readme = "README.md"
 license = {text = "MIT"}

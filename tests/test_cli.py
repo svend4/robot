@@ -48,6 +48,20 @@ def test_validate_all_packages():
         assert result.exit_code == 0, f'{pkg}: {result.output}'
 
 
+def test_validate_hyundai_packages():
+    cases = [
+        ('etd.atlas.humanoid_walkfetch', 'runtime_context_atlas.json'),
+        ('etd.hyundai.wia_welding',      'runtime_context_wia.json'),
+        ('etd.hyundai.mobed_transport',  'runtime_context_mobed.json'),
+        ('etd.hyundai.vest_exoskeleton', 'runtime_context_exo.json'),
+    ]
+    for pkg, ctx in cases:
+        result = runner.invoke(cli, ['validate', f'examples/{pkg}',
+                                     '--runtime-context', ctx])
+        assert result.exit_code == 0, f'{pkg}: {result.output}'
+        assert 'PASS' in result.output, f'{pkg} expected PASS, got: {result.output}'
+
+
 def test_validate_json_output():
     result = runner.invoke(cli, ['validate', 'examples/etd.pickplace.basic',
                                  '--runtime-context', 'runtime_context.json', '--json'])
@@ -129,6 +143,30 @@ def test_info_atlas():
     assert result.exit_code == 0
     parsed = json.loads(result.output)
     assert parsed['platformTarget'] == 'boston_dynamics_atlas'
+
+
+def test_info_vest_exoskeleton():
+    result = runner.invoke(cli, ['info', 'etd.hyundai.vest_exoskeleton'])
+    assert result.exit_code == 0
+    parsed = json.loads(result.output)
+    assert parsed['skillId'] == 'etd.hyundai.vest_exoskeleton'
+    assert parsed['family'] == 'assist'
+    assert parsed['requiresEntitlement'] is True
+
+
+def test_install_vest_exo_requires_entitlement():
+    result = runner.invoke(cli, ['install', 'etd.hyundai.vest_exoskeleton',
+                                 '--runtime-context', 'runtime_context_exo.json'])
+    assert result.exit_code == 1
+    assert 'entitlement' in result.output.lower()
+
+
+def test_install_vest_exo_with_token():
+    result = runner.invoke(cli, ['install', 'etd.hyundai.vest_exoskeleton',
+                                 '--runtime-context', 'runtime_context_exo.json',
+                                 '--token', 'valid-token'])
+    assert result.exit_code == 0, result.output
+    assert 'allowed' in result.output.lower()
 
 
 # ── install command ───────────────────────────────────────────────────────────
