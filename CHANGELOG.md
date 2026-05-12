@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.37.0 — inspect barcode_qa path, legacy YAML key, API station compatible, WIA profile fallback (626 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (75 → 79 tests):
+  - **`inspect.vision` barcode_qa profile**: `scan_mode='barcode'` → `_classify_barcode`
+    called (not `_classify_defects`); confidence 0.97 ≥ 0.88 → `pass_qc=True`;
+    `defects_found=[]` (no defect model in barcode path)
+  - **`run_suite` legacy `scenarios` key**: `spec.get('tests', spec.get('scenarios', []))`
+    fallback — YAML with `scenarios:` key (not `tests:`) loads correctly; suite runs
+    1 test, passes
+  - **WIA welding unknown `chsProfile` falls back to `standard_seam`**:
+    `_PROFILE_DEFAULTS.get(name, _PROFILE_DEFAULTS['standard_seam'])` default →
+    amperage=160, seam_length=150 confirmed in result
+- `tests/test_api.py` (31 → 32 tests):
+  - **`/store/install` `station_id` compatible path**: `etd.assembly.precision` +
+    `assembly_station_a` (allows `assembly` family) → `station_compatible=True`,
+    `station_reason='station_compatible'`, `station_missing_services=[]`
+
+### Test totals by module (626 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 56 |
+| `test_api.py` | 32 |
+| `test_cli.py` | 43 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 38 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 215 |
+| `test_acceptance.py` | 79 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 57 |
+
+---
+
 ## 0.36.0 — adapter branch coverage: exo gain/mode, cobot speed, assembly threshold, infra fallbacks (622 tests)
 
 ### Coverage additions

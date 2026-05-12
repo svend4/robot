@@ -857,3 +857,85 @@ def test_assembly_vision_align_confidence_at_exact_threshold_passes():
     assert result['status'] == 'completed'
     event_names = [e['event'] for e in mw.events]
     assert 'skill.aborted' not in event_names
+
+
+# ── inspect.vision: barcode_qa profile → _classify_barcode path ──────────────
+
+def test_inspect_barcode_qa_uses_classify_barcode(monkeypatch):
+    """barcode_qa profile sets scan_mode='barcode': _classify_barcode called, not _classify_defects."""
+    import random as _random
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    # uniform->max => confidence = 0.94 + 0.03 = 0.97 ≥ 0.88 → pass_qc True
+    monkeypatch.setattr(_random, 'uniform', lambda a, b: b)
+    run_fn = _load_run('etd.inspect.vision')
+    result = run_fn({'chsProfile': 'barcode_qa', 'partId': 'BARCODE-001'},
+                    middleware=AcceptanceMiddleware())
+    assert result['status'] == 'completed'
+    assert result['pass_qc'] is True
+    assert result['profile'] == 'barcode_qa'
+    # barcode_qa produces no defects_found list (QCResult defaults to [])
+    assert result['defects_found'] == []
+
+
+# ── run_suite: legacy 'scenarios' key in YAML falls back correctly ─────────────
+
+def test_run_suite_legacy_scenarios_key_falls_back(tmp_path, monkeypatch):
+    """spec.get('tests', spec.get('scenarios', [])) handles legacy YAML with 'scenarios' key."""
+    import sim.acceptance_runner as _acc_mod
+    import yaml as _yaml
+
+    # Build a minimal fake package
+    pkg = tmp_path / 'examples' / 'etd.legacy.test'
+    (pkg / 'tests').mkdir(parents=True)
+    (pkg / 'policies').mkdir()
+
+    # YAML uses legacy 'scenarios' key instead of 'tests'
+    (pkg / 'tests' / 'acceptance_tests.yaml').write_text(
+        _yaml.dump({
+            'suite': 'legacy test suite',
+            'skill_id': 'etd.legacy.test',
+            'scenarios': [{
+                'id': 'legacy_pass',
+                'description': 'always passes',
+                'input': {'job_context': {}},
+                'expect': {'status': 'completed'},
+            }],
+        })
+    )
+
+    # skill.json required by _load_run
+    import json as _json
+    (pkg / 'skill.json').write_text(_json.dumps({
+        'skillId': 'etd.legacy.test',
+        'entrypoint': 'policies/chs_adapter.py:run',
+    }))
+
+    # Minimal adapter that always returns completed
+    (pkg / 'policies' / 'chs_adapter.py').write_text(
+        'def run(job_context, middleware=None):\n'
+        '    return {"status": "completed"}\n'
+    )
+
+    monkeypatch.setattr(_acc_mod, 'ROOT', tmp_path)
+    suite = run_suite('etd.legacy.test')
+    assert suite.total == 1
+    assert suite.passed == 1
+    assert suite.failed == 0
+
+
+# ── WIA welding: unknown chsProfile falls back to standard_seam defaults ──────
+
+def test_wia_unknown_profile_falls_back_to_standard_seam(monkeypatch):
+    """Invalid chsProfile falls back to standard_seam via _PROFILE_DEFAULTS.get(name, default)."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.hyundai.wia_welding')
+    wia_mod = sys.modules['etd_acc_etd_hyundai_wia_welding']
+    # Confidence above standard_seam threshold (0.90)
+    mw = AcceptanceMiddleware(initial_safety={'confidence': 0.95})
+    result = run_fn({'chsProfile': 'nonexistent_profile'}, middleware=mw)
+    assert result['status'] == 'completed'
+    # standard_seam defaults: amperage=160, seam_length=150
+    assert result['amperage_a'] == wia_mod._PROFILE_DEFAULTS['standard_seam']['amperageA']
+    assert result['seam_length_mm'] == wia_mod._PROFILE_DEFAULTS['standard_seam']['seamLengthMm']

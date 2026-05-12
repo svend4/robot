@@ -398,3 +398,24 @@ def test_install_available_services_overrides_context():
     assert r_override.status_code == 200
     assert r_override.json()['allowed'] is False
     assert r_override.json()['reason'] == 'validation_failed'
+
+
+# ── POST /store/install: station_id returns station_compatible=True ───────────
+
+def test_install_with_valid_station_id_returns_station_compatible_true():
+    """station_id branch: compatible skill+station → station_compatible=True in response."""
+    # etd.assembly.precision (family=assembly) + assembly_station_a (allows assembly)
+    r = client.post('/store/install', json={
+        'skill_id': 'etd.assembly.precision',
+        'robot_class': 'humanoid',
+        'runtime_version': '0.1.0',
+        'station_id': 'assembly_station_a',
+        'entitlement_token': 'VALID-TOKEN',
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['skillId'] == 'etd.assembly.precision'
+    assert body['allowed'] is True
+    assert body['station_compatible'] is True
+    assert body['station_reason'] == 'station_compatible'
+    assert body['station_missing_services'] == []
