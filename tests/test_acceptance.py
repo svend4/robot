@@ -1268,3 +1268,80 @@ def test_wia_human_in_zone_during_traverse_aborts():
     assert result['status'] == 'aborted'
     assert result['reason'] == 'human_in_forbidden_zone'
     assert result['at_primitive'] == 'weld_traverse'
+
+
+# ── cobot.safeassist adapter: no-middleware defaults ─────────────────────────
+
+def test_cobot_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _read_human_state returns hardcoded defaults (line 87);
+    _publish no-op (line 92->exit); hasattr-publish guards in social_approach (148->190)
+    and handover_transfer (182->184) take False branch."""
+    from unittest.mock import patch
+    import time as _time_mod
+    _cobot_run = _load_run('etd.cobot.safeassist')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _cobot_run({'chsProfile': 'safe_handover'}, middleware=None)
+    assert result['status'] == 'completed'
+    assert result['handover_accepted'] is True
+
+
+# ── mobed_transport adapter: no-middleware defaults + mid-segment abort ───────
+
+def test_mobed_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _read returns {} fallback (line 76); _publish no-op (line 69->exit)."""
+    from unittest.mock import patch
+    import time as _time_mod
+    _mobed_run = _load_run('etd.hyundai.mobed_transport')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _mobed_run({'chsProfile': 'standard_carry'}, middleware=None)
+    assert result['status'] == 'completed'
+
+
+def test_mobed_human_in_zone_during_second_navigation_aborts():
+    """Human enters forbidden zone during navigate_to_destination segment → abort path (line 160)
+    where _navigate_segment returns an error dict and run() returns it immediately."""
+    from unittest.mock import patch
+    import time as _time_mod
+
+    class _DangerInSecondNavMiddleware:
+        def __init__(self):
+            self._safety_reads = 0
+
+        def read(self, topic):
+            if topic == 'state.safety_state':
+                self._safety_reads += 1
+                # Reads 1-7 are safe:
+                #   navigate_to_pickup: 1 primitive-level + 4 segment steps = 5
+                #   dock_and_lift: 1 primitive-level = 1
+                #   navigate_to_destination: 1 primitive-level = 1  → total 7
+                # Read 8+: inside navigate_to_destination segment → human enters zone.
+                if self._safety_reads >= 8:
+                    return {'human_in_forbidden_zone': True}
+                return {'human_in_forbidden_zone': False, 'human_in_safety_radius': False}
+            return {}
+
+        def publish(self, topic, payload):
+            pass
+
+    mw = _DangerInSecondNavMiddleware()
+    _mobed_run = _load_run('etd.hyundai.mobed_transport')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _mobed_run({'chsProfile': 'standard_carry'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'human_in_forbidden_zone'
+    assert result['at_primitive'] == 'navigate_to_destination'
+
+
+# ── inspect.vision adapter: no-middleware defaults ────────────────────────────
+
+def test_inspect_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _publish no-op (line 104->exit); hasattr-publish guards in
+    scan_target (149->183) and report_quality (180->183) take False branch."""
+    from unittest.mock import patch
+    import time as _time_mod
+    import random
+    random.seed(42)
+    _inspect_run = _load_run('etd.inspect.vision')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _inspect_run({'chsProfile': 'barcode_qa'}, middleware=None)
+    assert result['status'] == 'completed'

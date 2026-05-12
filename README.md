@@ -176,12 +176,12 @@ tests/
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
 ├── test_sim_modules.py       # 227 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch+detail else-branches, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1+pick-ctx-path-not-exists, ascii_timeline empty-result+no-summary-keys+zero-duration, run_traced open-primitive cleanup, _plot_gantt matplotlib happy path + --save main branch, validate_examples failing-package
-├── test_acceptance.py        # 95 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan, failed-suite SystemExit(1), exo no-middleware defaults + lumbar mode + read-only, atlas no-middleware defaults + handover loop sleep, wia no-middleware defaults + mid-traverse abort
+├── test_acceptance.py        # 99 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan, failed-suite SystemExit(1), exo no-middleware defaults + lumbar mode + read-only, atlas no-middleware defaults + handover loop sleep, wia no-middleware defaults + mid-traverse abort, cobot no-middleware defaults, mobed no-middleware + mid-segment abort, inspect no-middleware defaults
 ├── test_ros2_bridge.py       # 35 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2()
 └── test_signing.py           # 61 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version
 ```
 
-Run: `python -m pytest` — 672 tests, all passing.
+Run: `python -m pytest` — 676 tests, all passing.
 
 ---
 

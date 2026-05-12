@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.48.0 — cobot/mobed/inspect no-middleware defaults + mobed mid-segment abort (676 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (95 → 99 tests):
+  - **cobot `_read_human_state` else-branch (line 87)**: `run(middleware=None)` → `hasattr(None, 'read')` False → hardcoded human-present defaults returned
+  - **cobot `_publish` no-op (line 92->exit)**: same call → `hasattr(None, 'publish')` False
+  - **cobot `social_approach` direct-publish skip (line 148->190)**: `hasattr(None, 'publish')` False → `command.skill_intent` not published
+  - **cobot `handover_transfer` direct-publish skip (line 182->184)**: same → `command.skill_intent` not published; `time.sleep(0.3)` (mocked) still runs
+  - **mobed `_read` else-return (line 76)**: `run(middleware=None)` → `hasattr(None, 'read')` False → returns `{}`
+  - **mobed `_publish` no-op (line 69->exit)**: same call → no-op
+  - **mobed `navigate_to_destination` early return (line 160)**: counter middleware safe for first 7 safety reads (navigate_to_pickup primitive+4 steps, dock_and_lift, navigate_to_destination primitive) → read 8 (inside segment) returns `human_in_forbidden_zone=True` → `_navigate_segment` returns error dict → `return err` at line 160
+  - **inspect `_publish` no-op (line 104->exit)**: `run(middleware=None)` → no-op
+  - **inspect `scan_target` direct-publish skip (line 149->183)**: `hasattr(None, 'publish')` False
+  - **inspect `report_quality` direct-publish skip (line 180->183)**: same
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `examples/etd.cobot.safeassist/policies/chs_adapter.py` | 92% | 97% |
+| `examples/etd.hyundai.mobed_transport/policies/chs_adapter.py` | 93% | 97% |
+| `examples/etd.inspect.vision/policies/chs_adapter.py` | 94% | 97% |
+
+### Test totals by module (676 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 50 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 227 |
+| `test_acceptance.py` | 99 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 61 |
+
+---
+
 ## 0.47.0 — adapter no-middleware defaults, vest-exo lumbar + read-only, atlas handover loop, wia mid-traverse abort, validate_examples failing-package (672 tests)
 
 ### Coverage additions
