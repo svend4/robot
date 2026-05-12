@@ -85,9 +85,12 @@ All items below were delivered in the prototype:
 
 - [ ] **Publisher portal.** Web UI for skill package submission, review status,
   and version management.
-- [ ] **Automated review pipeline.** On submission: schema validation →
+- [x] **Automated review pipeline.** On submission: schema validation →
   capability audit → safety boundary check → compatibility matrix generation.
   Human review required for `riskLevel: high` packages.
+  `marketplace/review_pipeline.py`: `ReviewPipeline.run()` → `ReviewResult`
+  with `passed`, `human_review_required`, `blocking_findings`, `compat_matrix`.
+  CLI: `etd review PACKAGE_PATH [--json]`.
 - [x] **Signed entitlement tokens.** `marketplace/entitlement_token.py`:
   Ed25519-signed tokens binding `skill_id + station_id + expiry + operator_org`.
   Wire format: `base64url(payload_json).base64url(signature)`. `issue_token()` /
@@ -97,8 +100,13 @@ All items below were delivered in the prototype:
 - [ ] **Package sandboxing.** Skill adapters run in a restricted Python
   environment: no `subprocess`, no `os.system`, no network access, no file
   writes outside `telemetry/`.
-- [ ] **Version negotiation.** Marketplace serves the highest compatible
+- [x] **Version negotiation.** Marketplace serves the highest compatible
   version of a skill for a given `runtime: ">=0.x.y"` constraint.
+  `marketplace/version_negotiator.py`: `parse_version`, `satisfies` (operators:
+  `>=`, `>`, `<=`, `<`, `==`, `!=`, `~=` compatible-release, conjunctions),
+  `best_version`, `sort_versions`. `StoreEntry.runtimeConstraint` field.
+  `SkillStore.get_versions()` / `get_entry()` use negotiation.
+  CLI: `etd versions SKILL_ID [--runtime VERSION]`.
 - [ ] **Multi-vendor index.** Marketplace can aggregate packages from multiple
   signed publisher feeds (similar to a Linux package repository model).
 - [ ] **Dashboard.** Real-time view of active skills, station health, recent

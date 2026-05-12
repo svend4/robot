@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.70.0 — v1.0.0: version negotiation + automated review pipeline (886 → 981 tests)
+
+### Code changes
+
+- `marketplace/version_negotiator.py` (NEW): semver constraint resolution.
+  `parse_version(v)` → `(major, minor, patch)` tuple; degrades gracefully on
+  invalid input. `satisfies(version, constraint)` supports all operators:
+  `>=`, `>`, `<=`, `<`, `==`, `!=`, `~=` (compatible-release: `~=1.2` →
+  `>=1.2,<2.0`; `~=1.2.3` → `>=1.2.3,<1.3`), comma-separated conjunctions,
+  and bare version (acts as `==`). `best_version(entries, runtime_version)` →
+  highest-versioned entry whose `runtimeConstraint` is satisfied, or None.
+  `sort_versions(entries, descending=True)` → sorted list.
+- `marketplace/skill_store.py`:
+  - `StoreEntry` gains `runtimeConstraint: str = ""` field
+  - `SkillStore.get_versions(skill_id)` → entries sorted highest-first
+  - `SkillStore.get_entry(skill_id, runtime_version)` uses `best_version()`;
+    falls back to first entry when no constraint is set
+  - `SkillStore.find_skill(skill_id, runtime_version)` uses `get_entry()`
+- `marketplace/review_pipeline.py` (NEW): `ReviewPipeline.run(package_path)`
+  executes 4 stages and returns a `ReviewResult`:
+  1. `schema_validation` — `ETDReferenceValidator` with permissive `_ALL_SERVICES`
+     context; blocks on any schema/semantic error
+  2. `capability_audit` — verifies `command.skill_intent` is in write caps,
+     no high-risk forbidden caps in write list, warns on undeclared forbidden
+     and non-standard forbidden declarations
+  3. `safety_boundary` — checks force window sign/order/magnitude, payload
+     constraint vs profile, `arcZoneRadius_m >= 1.0m`
+  4. compat matrix — cross-references station profiles against
+     `requiresServices`; produces `robot_classes`, `compatible_stations`,
+     `station_count`
+  `human_review_required` when `riskLevel == high` or any stage fails.
+  `StageResult.passed` defaults to `False` (safe by default).
+- `etd_cli.py`:
+  - `versions SKILL_ID [--runtime VERSION]` — list all index entries for a
+    skill, annotated with constraint satisfaction for the given runtime
+  - `review PACKAGE_PATH [--json]` — run full 4-stage review pipeline; exits
+    1 when pipeline fails or package path doesn't exist
+
+### Tests (886 → 981)
+
+- `tests/test_version_negotiator.py` (+47, NEW):
+  - `TestParseVersion`: 3/2/1-part, invalid, empty, leading whitespace
+  - `TestSatisfiesSingle`: all 8 operators, empty/wildcard/bare version
+  - `TestSatisfiesConjunction`: range satisfied/upper-fail/lower-fail, 3-part
+  - `TestSatisfiesCompatRelease`: `~=` minor and patch variants
+  - `TestBestVersion`: single no-constraint, picks highest compatible, newest
+    when all compatible, none when none compatible, empty list, conjunction
+    constraint, no runtimeConstraint attribute
+  - `TestSortVersions`: descending (default) and ascending
+  - `TestSkillStoreVersionNegotiation`: `get_versions`, `get_entry`,
+    unknown skill, `find_skill` raw dict
+  - `TestVersionsCLI`: known skill exit-0, unknown skill exit-1
+- `tests/test_review_pipeline.py` (+48, NEW):
+  - `TestStageResult`/`TestReviewResult`: dataclass defaults, `passed` property,
+    `blocking_findings`, `summary` content, `to_dict` shape
+  - `TestPipelineSchemaStage`: valid package passes; real `etd.pickplace.basic`
+  - `TestPipelineCapabilityStage`: valid/missing-required/forbidden-cap/
+    extra-forbidden-warns/multiple-forbidden
+  - `TestPipelineSafetyStage`: valid/high-risk-warns/negative-lower/upper-lt-lower/
+    >500N-warns/payload-exceeds/arcZone-<1m/no-profiles/multiple-profiles
+  - `TestCompatMatrix`: all keys present, robot_classes/required/optional/
+    runtime from manifest, no-compat-section fallback
+  - `TestHumanReviewRequired`: clean medium-risk, high-risk, cap fail, safety fail
+  - `TestPipelineRealPackages`: 3 packages run without exception, JSON serialisable
+  - `TestLoadHelper`: JSON/YAML/`.yml` extension
+  - `TestReviewCLI`: valid package exit-0, `--json` output, nonexistent path
+    exit-nonzero, high-risk shows warning
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for version negotiation and automated
+  review pipeline (4 of 7 v1.0.0 items complete)
+
+---
+
 ## 0.69.0 — v1.0.0 start: signed entitlement tokens (850 → 886 tests)
 
 ### Code changes

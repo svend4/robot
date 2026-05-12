@@ -409,6 +409,45 @@ def revoke(skill_id: str, reason: str, revoked_by: str, out: str | None):
     click.echo(f'  Written to: {revocation_path}')
 
 
+@cli.command('review')
+@click.argument('package_path')
+@click.option('--json', 'as_json', is_flag=True, help='Output as JSON')
+@click.option('--station-profiles-dir', default=None, help='Custom station profiles directory')
+def review_package(package_path: str, as_json: bool, station_profiles_dir):
+    """Run the automated review pipeline on a skill package."""
+    from marketplace.review_pipeline import ReviewPipeline
+    station_dir = Path(station_profiles_dir) if station_profiles_dir else None
+    pipeline = ReviewPipeline(station_profiles_dir=station_dir)
+    result = pipeline.run(Path(package_path))
+    if as_json:
+        import json as _json
+        click.echo(_json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        click.echo(result.summary())
+    if result.human_review_required and not result.passed:
+        click.echo(click.style('\nHuman review required before publication.', fg='yellow', bold=True))
+    raise SystemExit(0 if result.passed else 1)
+
+
+@cli.command('versions')
+@click.argument('skill_id')
+@click.option('--runtime', default='0.0.0', show_default=True, help='Runtime version for negotiation')
+def versions_cmd(skill_id: str, runtime: str):
+    """List available versions of a skill and show the best match for --runtime."""
+    from marketplace.skill_store import SkillStore
+    store = SkillStore(ROOT)
+    all_versions = store.get_versions(skill_id)
+    if not all_versions:
+        click.echo(f'Skill not found: {skill_id}', err=True)
+        raise SystemExit(1)
+    best = store.get_entry(skill_id, runtime)
+    click.echo(f'Skill: {skill_id}  (runtime constraint: {runtime})')
+    for entry in all_versions:
+        marker = ' ← best match' if best and entry.version == best.version else ''
+        constraint = entry.runtimeConstraint or '(any)'
+        click.echo(f'  {entry.version}  constraint={constraint}{marker}')
+
+
 @cli.group()
 def token():
     """Issue and verify signed entitlement tokens (Ed25519)."""

@@ -30,6 +30,7 @@ class StoreEntry:
     requiresEntitlement: bool = False
     requiresSignature: bool = True
     supportLevel: str = "community"
+    runtimeConstraint: str = ""  # e.g. ">=0.1.0" — used by version negotiator
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "StoreEntry":
@@ -93,16 +94,37 @@ class SkillStore:
     def list_skills(self) -> List[Dict[str, Any]]:
         return list(self.index.get("entries", []))
 
-    def get_entry(self, skill_id: str) -> Optional[StoreEntry]:
-        for entry in self.list_entries():
-            if entry.skillId == skill_id:
-                return entry
-        return None
+    def get_versions(self, skill_id: str) -> List[StoreEntry]:
+        """Return all index entries for *skill_id*, sorted highest-version first."""
+        from marketplace.version_negotiator import sort_versions
+        return sort_versions([e for e in self.list_entries() if e.skillId == skill_id])
 
-    def find_skill(self, skill_id: str) -> Optional[Dict[str, Any]]:
-        for entry in self.index.get("entries", []):
-            if entry.get("skillId") == skill_id:
-                return entry
+    def get_entry(self, skill_id: str, runtime_version: str = '0.0.0') -> Optional[StoreEntry]:
+        """Return the best-version entry for *skill_id* compatible with *runtime_version*.
+
+        Falls back to any entry for the skill when no runtime constraint is set.
+        Returns None when the skill is not in the index.
+        """
+        versions = self.get_versions(skill_id)
+        if not versions:
+            return None
+        from marketplace.version_negotiator import best_version
+        result = best_version(versions, runtime_version)
+        return result if result is not None else versions[0]
+
+    def find_skill(self, skill_id: str, runtime_version: str = '0.0.0') -> Optional[Dict[str, Any]]:
+        """Return the raw index dict for the best version of *skill_id*.
+
+        Uses version negotiation when multiple versions exist; falls back to
+        any matching entry when no runtime constraint is configured.
+        """
+        entry = self.get_entry(skill_id, runtime_version)
+        if entry is None:
+            return None
+        # Return the raw dict from the index so callers get all fields
+        for raw in self.index.get("entries", []):
+            if raw.get("skillId") == skill_id and raw.get("version") == entry.version:
+                return raw
         return None
 
     def validate_for_install(
