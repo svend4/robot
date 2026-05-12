@@ -1,4 +1,4 @@
-# ETD Robotics Skill Runtime — Prototype
+# ETD Robotics Skill Runtime — Prototype v0.5.0
 
 A proof-of-concept **application-layer skill package framework** for industrial robots and humanoids. ETD sits between enterprise/workflow systems and OEM robot middleware — it validates, routes, and manages skill packages without touching certified safety-critical control.
 
@@ -22,22 +22,33 @@ The validator checks every package before installation. The marketplace manages 
 ## Project structure
 
 ```
-├── examples/                     # 4 reference skill packages
-│   ├── etd.pickplace.basic/      # pick-and-place (MIT, free)
-│   ├── etd.assembly.precision/   # precision insertion (commercial, per-site)
-│   ├── etd.inspect.vision/       # vision QA inspection (commercial, subscription)
-│   └── etd.cobot.safeassist/     # human-aware cobot assist (enterprise)
-├── marketplace/                  # skill store: index, policy, license profiles
-├── sim/                          # simulation and demo runners
-├── adapters/                     # OEM/middleware integration adapters
-├── schemas/                      # JSON schemas for all package files
-├── station_profiles/             # example station compatibility profiles
-├── scripts/                      # release packaging tool
-├── docs/                         # architecture, roadmap, licensing, commercialization
-├── etd_reference_validator.py    # core validator
-├── validate_examples.py          # run all 4 examples through validator
-├── runtime_context.json          # example runtime context
-└── requirements.txt              # PyYAML >= 6.0
+├── examples/                           # 8 reference skill packages (all level A)
+│   ├── etd.pickplace.basic/            # pick-and-place (MIT, free)
+│   ├── etd.assembly.precision/         # precision force-controlled insertion
+│   ├── etd.inspect.vision/             # vision QA / defect scan
+│   ├── etd.cobot.safeassist/           # human-collaborative handover
+│   ├── etd.atlas.humanoid_walkfetch/   # Boston Dynamics Atlas walk-and-fetch
+│   ├── etd.hyundai.wia_welding/        # Hyundai WIA H-Motion arc-welding
+│   ├── etd.hyundai.mobed_transport/    # Hyundai MobED AMR logistics
+│   └── etd.hyundai.vest_exoskeleton/  # Hyundai VEX/H-MEX wearable assist
+├── marketplace/                        # skill store: index, policy, license profiles
+├── adapters/                           # orbit event bridge, station profile loader, OEM adapters
+├── sim/                                # simulation, demo runners, visualizer
+├── schemas/                            # JSON Schema Draft 2020-12 for all package files
+├── station_profiles/                   # 6 station compatibility profiles
+├── scripts/                            # release packaging, signing, keypair generation
+├── api/                                # FastAPI REST skill store
+├── tests/                              # 160 pytest tests
+├── docs/                               # architecture, roadmap, licensing, commercialization
+├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
+├── etd_reference_validator.py          # core validator
+├── etd_cli.py                          # CLI: validate, install, stations, info
+├── etd_demo_runner.py                  # validates all 8 packages with correct contexts
+├── runtime_context.json                # base runtime context
+├── runtime_context_atlas.json          # Boston Dynamics Atlas context
+├── runtime_context_wia.json            # Hyundai WIA cobot context
+├── runtime_context_mobed.json          # Hyundai MobED AMR context
+└── runtime_context_exo.json            # Hyundai VEX exoskeleton context
 ```
 
 ---
@@ -47,23 +58,54 @@ The validator checks every package before installation. The marketplace manages 
 ```bash
 pip install -r requirements.txt
 
-# Validate all 4 example packages
-python validate_examples.py
+# Validate all 8 packages (all show valid=True, level=A)
+python etd_demo_runner.py
 
-# Run simulation scenarios
-python sim/run_sim_demo.py
-python sim/run_assembly_demo.py
+# CLI
+python etd_cli.py validate examples/etd.pickplace.basic
+python etd_cli.py stations
+python etd_cli.py install etd.hyundai.wia_welding \
+    --station-profile station_profiles/weld_station_a.json
+
+# REST API
+uvicorn api.app:app --reload
+# GET  http://localhost:8000/store/skills
+# POST http://localhost:8000/store/install  {"skillId": "etd.pickplace.basic"}
+# GET  http://localhost:8000/store/stations
+
+# Acceptance tests (39 scenarios, all 8 packages)
+python sim/acceptance_runner.py
+python sim/acceptance_runner.py --skill etd.hyundai.vest_exoskeleton --verbose
+
+# Visualizer — ASCII timeline for all 8 skills
+python sim/visualizer.py
+
+# Sim modules
 python sim/scenario_runner.py
 python sim/failure_scenarios.py
+python sim/marketplace_demo.py
 
-# Generate a validation report
+# Report
 python sim/report_runner.py
 
-# Marketplace install-decision demo
-python sim/marketplace_demo.py
+# Release a package (validate → sign → zip)
+python scripts/release_package.py examples/etd.hyundai.wia_welding
 ```
 
-All four packages should report `valid=True, level=A, score=1.0`.
+---
+
+## Skill packages
+
+| Package | Family | Primitives | Platform | License |
+|---|---|---|---|---|
+| `etd.pickplace.basic` | manipulator | 5 | generic | MIT / free |
+| `etd.assembly.precision` | assembly | 6 | generic | commercial, per-site |
+| `etd.inspect.vision` | inspection | 5 | generic | commercial, subscription |
+| `etd.cobot.safeassist` | cobot | 6 | generic | enterprise private |
+| `etd.atlas.humanoid_walkfetch` | humanoid | 9 | Boston Dynamics Atlas | commercial, per-site |
+| `etd.hyundai.wia_welding` | weld | 7 | Hyundai WIA H-Motion | commercial, per-site |
+| `etd.hyundai.mobed_transport` | transport | 5 | Hyundai MobED AMR | commercial, per-site |
+| `etd.hyundai.vest_exoskeleton` | assist | 6 | Hyundai VEX/H-MEX | commercial, subscription |
 
 ---
 
@@ -82,6 +124,23 @@ All four packages should report `valid=True, level=A, score=1.0`.
 
 ---
 
+## Station profiles
+
+Six station profiles are included in `station_profiles/`:
+
+| Profile | Platform | Max payload | Families |
+|---|---|---|---|
+| `assembly_station_a` | generic cobot | 20 kg | manipulator, assembly |
+| `cobot_zone_a` | generic cobot | 15 kg | cobot, assembly |
+| `weld_station_a` | Hyundai WIA H-Motion | 25 kg | weld, cobot |
+| `mobed_logistics_a` | Hyundai MobED AMR | 100 kg | transport |
+| `humanoid_hmgma_a` | Boston Dynamics Atlas | 20 kg | humanoid, manipulator |
+| `exo_assembly_a` | Hyundai VEX/H-MEX | 30 kg | assist, cobot, assembly |
+
+Use `--station-profile` in the CLI or `station_id` in the API to gate installation by station compatibility.
+
+---
+
 ## Safety model
 
 Every package **must** declare that it cannot override:
@@ -91,7 +150,7 @@ Every package **must** declare that it cannot override:
 - certified torque limits
 - human protective stop
 
-A package that requests any forbidden capability is blocked by the validator.
+A package that requests any forbidden capability is blocked at validation.
 
 ---
 
@@ -100,35 +159,45 @@ A package that requests any forbidden capability is blocked by the validator.
 | License | Source | Entitlement | Example |
 |---|---|---|---|
 | `open_source` | full source | no | `etd.pickplace.basic` |
-| `commercial` | partial/binary | yes | `etd.assembly.precision` |
+| `commercial` | partial/binary | yes | `etd.assembly.precision`, `etd.hyundai.wia_welding` |
 | `commercial` | binary only | yes | `etd.inspect.vision` |
 | `enterprise_private` | private | yes | `etd.cobot.safeassist` |
 
 ---
 
-## CI
+## Test suite
 
-GitHub Actions runs `validate_examples.py` + `sim/report_runner.py` on every push and pull request (`.github/workflows/validate-examples.yml`).
+```
+tests/
+├── test_validator.py         # 14 tests — schema validation, compat levels
+├── test_api.py               # 17 tests — REST endpoints
+├── test_cli.py               # 16 tests — CLI commands
+├── test_marketplace.py       # 13 tests — SkillStore list/find/install
+├── test_station_profiles.py  # 30 tests — compatibility checker, API, CLI
+├── test_orbit_bridge.py      # 28 tests — orbit event bridge
+└── test_sim_modules.py       # 42 tests — sim modules (replay, state gen, middleware, ...)
+```
+
+Run: `python -m pytest` — 160 tests, all passing.
+
+Acceptance tests (39 scenarios across 8 packages): `python sim/acceptance_runner.py`
 
 ---
 
-## Roadmap (v0.2)
+## CI
 
-- Real JSON Schema validation (replace manual checks)
-- Package signing (Ed25519)
-- Simulator certification flow
-- Fleet rollout policy
-- REST API for skill store
+GitHub Actions runs `validate_examples.py` + `sim/report_runner.py` + pytest + acceptance runner on every push and pull request (`.github/workflows/validate-examples.yml`).
 
 ---
 
 ## Key documents
 
+- [`docs/INDEX.md`](docs/INDEX.md) — full document index + implementation status
 - [`docs/architecture.md`](docs/architecture.md) — layered architecture
-- [`docs/roadmap-v0.2.md`](docs/roadmap-v0.2.md) — next milestones
+- [`docs/package-format.md`](docs/package-format.md) — skill package file layout
+- [`docs/atlas-integration-notes.md`](docs/atlas-integration-notes.md) — Boston Dynamics / Atlas integration boundary
 - [`docs/licensing-and-commercialization.md`](docs/licensing-and-commercialization.md) — open/commercial models
 - [`docs/marketplace-commercial-policy.md`](docs/marketplace-commercial-policy.md) — marketplace policy
-- [`docs/atlas-integration-notes.md`](docs/atlas-integration-notes.md) — Boston Dynamics / Atlas integration
 - [`docs/use-cases-automotive.md`](docs/use-cases-automotive.md) — automotive production use cases
 - [`CHANGELOG.md`](CHANGELOG.md) — version history
 
