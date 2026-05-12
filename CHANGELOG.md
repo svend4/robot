@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.69.0 — v1.0.0 start: signed entitlement tokens (850 → 886 tests)
+
+### Code changes
+
+- `marketplace/entitlement_token.py` (NEW): `EntitlementToken` dataclass with
+  canonical JSON payload (`sort_keys=True`), `is_expired()`, `covers()`. Wire
+  format: `base64url(payload_json).base64url(signature)` using NaCl Ed25519.
+  `issue_token(skill_id, station_id, operator_org, signing_key, ttl_days)` →
+  opaque string. `verify_token(token_str, verify_key, skill_id, station_id)` →
+  `(valid, reason, EntitlementToken|None)` — reasons: `token_valid`,
+  `token_expired`, `signature_invalid`, `malformed_token`,
+  `token_skill_station_mismatch`, `decode_error`, `payload_parse_error`.
+- `marketplace/skill_store.py`:
+  - `SkillStore.__init__` accepts optional `entitlement_pubkey_path`; loads
+    `VerifyKey` only when explicitly provided (no auto-detection, preserves
+    backwards compat for existing `demo-entitlement` tokens)
+  - Entitlement token verification moved **before** schema validation (early
+    reject: bad token never triggers expensive validation)
+- `etd_cli.py`: `token` command group with `issue` (signs with signing key) and
+  `verify` (checks signature + expiry + skill/station coverage); both support
+  `--json` flag
+
+### Tests (850 → 886)
+
+- `tests/test_entitlement_token.py` (+36, NEW):
+  - `EntitlementToken`: canonical payload, sorted keys, `is_expired`, `covers`
+    (exact/wildcard/wrong-skill/wrong-station/expired)
+  - `issue_token`: roundtrip, ttl_days respected, deterministic payload decoding
+  - `verify_token`: valid, wildcard station, wrong skill/station/key, malformed,
+    tampered payload, expired, None token on decode error
+  - `SkillStore` integration: valid signed token allows, invalid blocks, expired
+    blocked with `token_expired`, no-pubkey falls back to truthy
+  - CLI: `token issue` output, `--json`, custom station/org; `token verify`
+    exit-0/exit-1/`--json`
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for signed entitlement tokens
+  (1 of 7 v1.0.0 items complete)
+
+---
+
 ## 0.68.0 — v0.7.0: Atlas adapter + registry + action server auto-wiring (803 → 850 tests)
 
 ### Code changes

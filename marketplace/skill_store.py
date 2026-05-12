@@ -55,7 +55,7 @@ class InstallDecision:
 
 
 class SkillStore:
-    def __init__(self, repo_root: Path):
+    def __init__(self, repo_root: Path, entitlement_pubkey_path: Optional[Path] = None):
         self.repo_root = repo_root
         self.index_path = repo_root / "marketplace" / "skill_store_index.json"
         self.policy_path = repo_root / "marketplace" / "marketplace_policy.json"
@@ -66,6 +66,17 @@ class SkillStore:
         self.licensing_policy = self._load_json(self.licensing_policy_path) if self.licensing_policy_path.exists() else {}
         self._revoked: set[str] = self._load_revoked()
         self.audit_log = AuditLog(repo_root / "logs" / "etd_audit.jsonl")
+        self._entitlement_verify_key = self._load_entitlement_key(entitlement_pubkey_path)
+
+    def _load_entitlement_key(self, key_path: Optional[Path]):
+        """Load Ed25519 verify key for entitlement tokens. Returns None if unavailable."""
+        if key_path is None or not key_path.exists():
+            return None
+        try:
+            from nacl.signing import VerifyKey
+            return VerifyKey(bytes.fromhex(key_path.read_text().strip()))
+        except Exception:
+            return None
 
     def _load_revoked(self) -> set[str]:
         if not self.revocation_path.exists():
@@ -138,6 +149,38 @@ class SkillStore:
 
         package_path = self.repo_root / entry.packagePath
 
+        # Entitlement token check — runs before expensive validation so invalid
+        # tokens are rejected cheaply and without leaking schema details.
+        if entry.requiresEntitlement:
+            if not entitlement_token:
+                return _audit(InstallDecision(
+                    skillId=entry.skillId,
+                    allowed=False,
+                    reason="entitlement_required",
+                    validationLevel="D",
+                    licenseModel=entry.licenseModel,
+                    pricingModel=entry.pricingModel,
+                    requiresEntitlement=True,
+                ))
+            if self._entitlement_verify_key is not None:
+                from marketplace.entitlement_token import verify_token
+                valid, token_reason, _ = verify_token(
+                    entitlement_token,
+                    self._entitlement_verify_key,
+                    skill_id=skill_id,
+                    station_id=station_id or '*',
+                )
+                if not valid:
+                    return _audit(InstallDecision(
+                        skillId=entry.skillId,
+                        allowed=False,
+                        reason=token_reason,
+                        validationLevel="D",
+                        licenseModel=entry.licenseModel,
+                        pricingModel=entry.pricingModel,
+                        requiresEntitlement=True,
+                    ))
+
         if entry.requiresSignature:
             try:
                 import io
@@ -172,17 +215,6 @@ class SkillStore:
                 licenseModel=entry.licenseModel,
                 pricingModel=entry.pricingModel,
                 requiresEntitlement=entry.requiresEntitlement,
-            ))
-
-        if entry.requiresEntitlement and not entitlement_token:
-            return _audit(InstallDecision(
-                skillId=entry.skillId,
-                allowed=False,
-                reason="entitlement_required",
-                validationLevel=level,
-                licenseModel=entry.licenseModel,
-                pricingModel=entry.pricingModel,
-                requiresEntitlement=True,
             ))
 
         return _audit(InstallDecision(

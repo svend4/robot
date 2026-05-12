@@ -88,9 +88,12 @@ All items below were delivered in the prototype:
 - [ ] **Automated review pipeline.** On submission: schema validation →
   capability audit → safety boundary check → compatibility matrix generation.
   Human review required for `riskLevel: high` packages.
-- [ ] **Signed entitlement tokens.** Replace `entitlement_checked: true` flag
-  with a cryptographically signed token that binds `skill_id + station_id +
-  expiry + operator_org`.
+- [x] **Signed entitlement tokens.** `marketplace/entitlement_token.py`:
+  Ed25519-signed tokens binding `skill_id + station_id + expiry + operator_org`.
+  Wire format: `base64url(payload_json).base64url(signature)`. `issue_token()` /
+  `verify_token()` using existing NaCl infrastructure. `SkillStore` verifies
+  tokens when `entitlement_pubkey_path` is configured; falls back to truthy
+  check for backwards-compat. `token issue` / `token verify` CLI commands.
 - [ ] **Package sandboxing.** Skill adapters run in a restricted Python
   environment: no `subprocess`, no `os.system`, no network access, no file
   writes outside `telemetry/`.

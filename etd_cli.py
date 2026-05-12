@@ -409,6 +409,74 @@ def revoke(skill_id: str, reason: str, revoked_by: str, out: str | None):
     click.echo(f'  Written to: {revocation_path}')
 
 
+@cli.group()
+def token():
+    """Issue and verify signed entitlement tokens (Ed25519)."""
+
+
+@token.command('issue')
+@click.argument('skill_id')
+@click.option('--station', default='*', show_default=True, help='Station ID or * for any')
+@click.option('--org', default='etd-operator', show_default=True, help='Operator organisation name')
+@click.option('--ttl', default=365, show_default=True, type=int, help='Token validity in days')
+@click.option('--key', 'key_path', default=str(ROOT / 'keys' / 'etd_signing_key.hex'), show_default=True)
+@click.option('--json', 'as_json', is_flag=True, help='Print token as JSON envelope')
+def token_issue(skill_id: str, station: str, org: str, ttl: int, key_path: str, as_json: bool):
+    """Issue a signed entitlement token for SKILL_ID."""
+    from nacl.signing import SigningKey
+    from marketplace.entitlement_token import issue_token
+    key = SigningKey(bytes.fromhex(Path(key_path).read_text().strip()))
+    tok = issue_token(
+        skill_id=skill_id,
+        station_id=station,
+        operator_org=org,
+        signing_key=key,
+        ttl_days=ttl,
+    )
+    if as_json:
+        import json as _json
+        click.echo(_json.dumps({'token': tok, 'skill_id': skill_id, 'station_id': station,
+                                'operator_org': org, 'ttl_days': ttl}, indent=2))
+    else:
+        click.echo(click.style('Issued entitlement token:', bold=True))
+        click.echo(f'  Skill    : {skill_id}')
+        click.echo(f'  Station  : {station}')
+        click.echo(f'  Org      : {org}')
+        click.echo(f'  Valid for: {ttl} days')
+        click.echo(f'  Token    : {tok}')
+
+
+@token.command('verify')
+@click.argument('token_str')
+@click.argument('skill_id')
+@click.option('--station', default='*', show_default=True)
+@click.option('--pubkey', 'pubkey_path', default=str(ROOT / 'keys' / 'etd_verify_key.hex'), show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def token_verify(token_str: str, skill_id: str, station: str, pubkey_path: str, as_json: bool):
+    """Verify a signed entitlement TOKEN_STR for SKILL_ID."""
+    from nacl.signing import VerifyKey
+    from marketplace.entitlement_token import verify_token
+    verify_key = VerifyKey(bytes.fromhex(Path(pubkey_path).read_text().strip()))
+    valid, reason, tok = verify_token(token_str, verify_key, skill_id, station)
+    if as_json:
+        import json as _json
+        payload = {'valid': valid, 'reason': reason}
+        if tok:
+            payload['token'] = {'skill_id': tok.skill_id, 'station_id': tok.station_id,
+                                 'expiry': tok.expiry, 'operator_org': tok.operator_org,
+                                 'issued_at': tok.issued_at}
+        click.echo(_json.dumps(payload, indent=2))
+    else:
+        label = click.style('VALID', fg='green', bold=True) if valid else click.style('INVALID', fg='red', bold=True)
+        click.echo(f'Token: {label}  ({reason})')
+        if tok:
+            click.echo(f'  Skill    : {tok.skill_id}')
+            click.echo(f'  Station  : {tok.station_id}')
+            click.echo(f'  Expiry   : {tok.expiry}')
+            click.echo(f'  Org      : {tok.operator_org}')
+    raise SystemExit(0 if valid else 1)
+
+
 @cli.command()
 @click.option('--out-dir', default='keys', show_default=True)
 def keygen(out_dir: str):
