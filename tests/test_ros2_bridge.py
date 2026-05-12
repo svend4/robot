@@ -452,3 +452,75 @@ def test_client_ros2_execute_goal_accepted_returns_result(monkeypatch):
     result = client.send_goal({'chsProfile': 'small_box'}, dry_run=False)
     assert result['status'] == 'completed'
     fake_rclpy.shutdown.assert_called_once()
+
+
+# ── _local_execute(): sys.path.insert True branch (line 52) ──────────────────
+
+def test_client_local_execute_inserts_bridge_dir_when_missing(monkeypatch):
+    """_local_execute(): if str(_bridge_dir) not in sys.path → sys.path.insert (line 52).
+    Temporarily remove the bridge dir from sys.path so the guard fires."""
+    import random
+    bridge_dir_str = str(_BRIDGE_DIR)
+    # Remove bridge dir from sys.path so condition on line 51 is True
+    monkeypatch.setattr(sys, 'path', [p for p in sys.path if p != bridge_dir_str])
+    assert bridge_dir_str not in sys.path
+
+    random.seed(42)
+    client = ETDSkillActionClient('etd.pickplace.basic')
+    result = client.send_goal({'chsProfile': 'fragile_item'}, dry_run=True)
+    assert result.get('status') == 'completed'
+    assert bridge_dir_str in sys.path  # must have been re-inserted
+
+
+# ── _ros2_execute(): feedback callback body invoked (lines 93-94) ─────────────
+
+def test_client_ros2_execute_invokes_feedback_callback(monkeypatch):
+    """_ros2_execute(): rclpy.spin_until_future_complete invokes _fb_callback →
+    lines 93-94 (feedback_received.append + logger.info) are executed."""
+    import json as _json
+    from unittest.mock import MagicMock
+    fake_rclpy, fake_ac = _make_full_ros2_mocks(monkeypatch)
+    fake_ac.wait_for_server.return_value = True
+
+    # Setup goal handle that is accepted + returns a result
+    fake_goal_handle = MagicMock()
+    fake_goal_handle.accepted = True
+    expected_result = {'status': 'completed'}
+    fake_result_resp = MagicMock()
+    fake_result_resp.result.result_json = _json.dumps(expected_result)
+    fake_result_future = MagicMock()
+    fake_result_future.result.return_value = fake_result_resp
+    fake_goal_handle.get_result_async.return_value = fake_result_future
+
+    fake_goal_future = MagicMock()
+    fake_goal_future.result.return_value = fake_goal_handle
+
+    # Capture the feedback_callback passed to send_goal_async
+    captured_fb_callbacks = []
+
+    def _send_goal_side_effect(goal, feedback_callback=None):
+        if feedback_callback:
+            captured_fb_callbacks.append(feedback_callback)
+        return fake_goal_future
+
+    fake_ac.send_goal_async.side_effect = _send_goal_side_effect
+
+    # On the first spin call, invoke the captured callback (simulates ROS 2 feedback)
+    spin_call_count = [0]
+
+    def _spin_side_effect(node, future):
+        spin_call_count[0] += 1
+        if spin_call_count[0] == 1 and captured_fb_callbacks:
+            fake_fb = MagicMock()
+            fake_fb.feedback.current_event = 'primitive.entered'
+            captured_fb_callbacks[0](fake_fb)  # → lines 93-94
+
+    fake_rclpy.spin_until_future_complete.side_effect = _spin_side_effect
+
+    client = ETDSkillActionClient('etd.pickplace.basic')
+    result = client.send_goal({'chsProfile': 'small_box'}, dry_run=False)
+
+    assert result['status'] == 'completed'
+    assert len(captured_fb_callbacks) == 1
+    assert spin_call_count[0] == 2  # goal spin + result spin
+    fake_rclpy.shutdown.assert_called_once()

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.53.0 — ROS2 client 93%→98%: feedback callback + sys.path.insert branch (689 tests)
+
+### Coverage additions
+- `tests/test_ros2_bridge.py` (41 → 43 tests):
+  - **`_local_execute` `sys.path.insert` branch (line 52)**: temporarily strip bridge dir from `sys.path` via monkeypatch → condition is True → line 52 executes → bridge dir re-inserted
+  - **`_ros2_execute` feedback callback body (lines 93-94)**: capture `_fb_callback` from `send_goal_async`; first `spin_until_future_complete` call invokes it with a fake feedback message → `feedback_received.append` + `logger.info` both covered
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `skill_action_client.py` | 93% | 98% |
+
+### Test totals by module (689 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 52 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 225 |
+| `test_acceptance.py` | 98 |
+| `test_ros2_bridge.py` | 43 |
+| `test_signing.py` | 62 |
+
+---
+
 ## 0.52.0 — visualizer plt.show() no-save path + README count corrections (687 tests)
 
 ### Coverage additions
