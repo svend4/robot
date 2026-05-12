@@ -171,17 +171,17 @@ A package that requests any forbidden capability is blocked at validation.
 tests/
 ├── test_validator.py         # 52 — _JSONSCHEMA_AVAILABLE=False branches, engine exception, .yml load
 ├── test_api.py               # 28 — REST endpoints incl. station+nonexistent-skill branch, absolute path
-├── test_cli.py               # 40 — stations command, install not-found, _check_station_entry(None)
+├── test_cli.py               # 41 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter
 ├── test_marketplace.py       # 35 — skill_store __main__ block, validation_failed reason, __init__ exports
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
-├── test_sim_modules.py       # 205 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s
+├── test_sim_modules.py       # 211 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx, failure_scenarios exception branch
 ├── test_acceptance.py        # 69 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI
 ├── test_ros2_bridge.py       # 34 — server/client main(--dry-run), no-middleware branches, all-8 parametrized
 └── test_signing.py           # 56 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip
 ```
 
-Run: `python -m pytest` — 593 tests, all passing.
+Run: `python -m pytest` — 599 tests, all passing.
 
 ---
 

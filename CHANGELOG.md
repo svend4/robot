@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.32.0 — sim/cli branch coverage: _pick_context fallback, report_runner release_out, failure exception, chained filter (599 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (205 → 211 tests):
+  - **`scenario_runner._pick_context`**: `p.exists()` False branch — keyword matches but
+    context file is absent, so function falls through to `runtime_context.json` default
+    (monkeypatched `_CTX_MAP` to use a non-existent file name)
+  - **`etd_demo_runner._pick_context`**: same `p.exists()` False / default fallback branch
+  - **`failure_scenarios.scenario_human_in_forbidden_zone`**: `except Exception as exc` branch —
+    fake `chs_adapter.py` in `tmp_path` whose `run()` raises `RuntimeError`; monkeypatched
+    `ROOT`; verified `passed=False`, `status='error'`, `reason` contains the error message
+  - **`report_runner.main()`** — `release_out` exists: created `tmp_path/release_out/` with
+    one `.zip` file; monkeypatched `ROOT`; verified zip name appears in `release_summary` output
+  - **`report_runner.main()`** — OEM context files missing: only `runtime_context.json` present;
+    all four `else base_ctx` fallbacks exercised; output still contains 8-entry `validation_summary`
+- `tests/test_cli.py` (40 → 41 tests):
+  - **`list_skills` chained `--family` + `--free` filter**: `--family inspect --free` returns
+    empty (inspect skill is subscription); `--family transport --free` returns mobed_transport
+    (both criteria satisfied) — exercises the sequential filter chain at lines 185–188 of `etd_cli.py`
+
+### Test totals by module (599 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 41 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 211 |
+| `test_acceptance.py` | 69 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+
+---
+
 ## 0.31.0 — adapter branch coverage: assembly/inspect/atlas + extended _AdapterMW (593 tests)
 
 ### Coverage additions

@@ -1639,3 +1639,78 @@ def test_plot_gantt_no_matplotlib_prints_message(capsys, monkeypatch):
     _plot_gantt([])
     out = capsys.readouterr().out
     assert 'matplotlib not installed' in out
+
+
+# ── scenario_runner._pick_context: p.exists() False → falls back to default ──
+
+def test_sr_pick_context_file_not_found_falls_back_to_default(monkeypatch):
+    import sim.scenario_runner as _sr_mod
+    monkeypatch.setattr(_sr_mod, '_CTX_MAP', [
+        (('atlas', 'humanoid'), 'runtime_context_DOES_NOT_EXIST.json'),
+    ])
+    p = _sr_pick_context('etd.atlas.humanoid_walkfetch')
+    assert p.name == 'runtime_context.json'
+
+
+# ── etd_demo_runner._pick_context: p.exists() False → falls back to default ──
+
+def test_demo_pick_context_file_not_found_falls_back_to_default(monkeypatch):
+    import etd_demo_runner as _demo_mod
+    monkeypatch.setattr(_demo_mod, '_CTX_MAP', [
+        (('atlas', 'humanoid'), 'runtime_context_DOES_NOT_EXIST.json'),
+    ])
+    p = _demo_pick_context('etd.atlas.humanoid_walkfetch')
+    assert p.name == 'runtime_context.json'
+
+
+# ── failure_scenarios.scenario_human_in_forbidden_zone: except Exception branch
+
+def test_failure_human_zone_exception_branch(tmp_path, monkeypatch):
+    import sim.failure_scenarios as _fs_mod
+    fake_policies = tmp_path / 'examples' / 'etd.assembly.precision' / 'policies'
+    fake_policies.mkdir(parents=True)
+    (fake_policies / 'chs_adapter.py').write_text(
+        'def run(job_context, middleware=None):\n'
+        '    raise RuntimeError("injected test error")\n'
+    )
+    monkeypatch.setattr(_fs_mod, 'ROOT', tmp_path)
+    r = scenario_human_in_forbidden_zone()
+    assert r['passed'] is False
+    assert r['status'] == 'error'
+    assert 'injected test error' in r['reason']
+
+
+# ── report_runner.main(): release_out exists with zip files ──────────────────
+
+def test_report_runner_release_out_in_summary(tmp_path, monkeypatch, capsys):
+    import shutil
+    for fname in ['runtime_context.json', 'runtime_context_atlas.json',
+                  'runtime_context_wia.json', 'runtime_context_mobed.json',
+                  'runtime_context_exo.json']:
+        shutil.copy(ROOT / fname, tmp_path / fname)
+    (tmp_path / 'examples').symlink_to(ROOT / 'examples')
+    release_out = tmp_path / 'release_out'
+    release_out.mkdir()
+    (release_out / 'etd.pickplace.basic-0.5.0.zip').write_bytes(b'PK')
+    monkeypatch.setattr(_rr_mod, 'ROOT', tmp_path)
+    with pytest.raises(SystemExit) as exc_info:
+        _rr_mod.main()
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert 'etd.pickplace.basic-0.5.0.zip' in parsed['release_summary']
+
+
+# ── report_runner.main(): OEM context files missing → else base_ctx fallback ─
+
+def test_report_runner_missing_oem_contexts_fall_back_to_base(tmp_path, monkeypatch, capsys):
+    import shutil
+    shutil.copy(ROOT / 'runtime_context.json', tmp_path / 'runtime_context.json')
+    (tmp_path / 'examples').symlink_to(ROOT / 'examples')
+    monkeypatch.setattr(_rr_mod, 'ROOT', tmp_path)
+    with pytest.raises(SystemExit):
+        _rr_mod.main()
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert 'validation_summary' in parsed
+    assert len(parsed['validation_summary']) == 8

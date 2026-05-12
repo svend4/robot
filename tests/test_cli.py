@@ -444,3 +444,16 @@ def test_install_skill_not_found_exits_one():
     result = runner.invoke(cli, ['install', 'etd.no.such.skill'])
     assert result.exit_code == 1
     assert 'skill_not_found' in result.output or 'BLOCKED' in result.output
+
+
+# ── list --family AND --free chained filter ───────────────────────────────────
+
+def test_list_filter_family_and_free_chained():
+    # inspect family has pricingModel=subscription → chained --free removes it
+    result = runner.invoke(cli, ['list', '--family', 'inspect', '--free'])
+    assert result.exit_code == 0
+    assert 'etd.inspect.vision' not in result.output
+    # transport family has pricingModel=free → both filters match
+    result2 = runner.invoke(cli, ['list', '--family', 'transport', '--free'])
+    assert result2.exit_code == 0
+    assert 'etd.hyundai.mobed_transport' in result2.output
