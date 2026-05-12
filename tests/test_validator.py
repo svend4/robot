@@ -671,3 +671,23 @@ def test_semantic_missing_telemetry_key_falls_back_to_empty_events(tmp_path):
     report = ETDReferenceValidator(ctx).validate_package(dst)
     # or {} guard prevents AttributeError; lifecycle check returns False
     assert report.semantic_checks.get('telemetry_has_lifecycle_event') is False
+
+
+# ── _JSONSCHEMA_AVAILABLE=False + doc is list → isinstance(doc, dict)=False ──
+
+def test_jsonschema_unavailable_non_dict_doc_gives_false_schema_result(tmp_path, monkeypatch):
+    """When jsonschema is off and a file is not a dict (e.g. list), schema check is False."""
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'non_dict_contract'
+    shutil.copytree(src, dst)
+
+    # Replace execution_contract.json with a JSON array (not an object)
+    (dst / 'execution_contract.json').write_text('[]')
+
+    import etd_reference_validator as _val
+    monkeypatch.setattr(_val, '_JSONSCHEMA_AVAILABLE', False)
+
+    ctx = _base_ctx()
+    report = _val.ETDReferenceValidator(ctx).validate_package(dst)
+    # execution_contract: isinstance([], dict) = False → schema_results['execution_contract'] = False
+    assert report.schema.get('execution_contract') is False

@@ -495,3 +495,35 @@ def test_validate_robot_class_and_service_both_applied():
     # Many required services missing → compat errors → exit 1
     assert result.exit_code == 1
     assert 'FAIL' in result.output
+
+
+# ── _check_station: warnings text output (for w in result.warnings: echo) ────
+
+def test_validate_station_human_aware_warning_in_text_output(tmp_path):
+    """Skill requires human-aware but station doesn't enforce it → warning line in output."""
+    # Create a skill with humanAware: True
+    (tmp_path / 'manifest.yaml').write_text(
+        'skillId: etd.test.ha\nversion: 0.1.0\nsafety:\n  humanAware: true\n'
+    )
+    (tmp_path / 'skill.json').write_text(
+        json.dumps({
+            'skillId': 'etd.test.ha',
+            'family': 'manipulator',
+            'maxPayloadKg': 5.0,
+        })
+    )
+    # Station profile with requires_human_aware=False and allows 'manipulator'
+    station_file = tmp_path / 'station.json'
+    station_file.write_text(json.dumps({
+        'station_id': 'test_station',
+        'allowed_skill_families': ['manipulator'],
+        'max_payload_kg': 20.0,
+        'requires_human_aware': False,
+    }))
+    result = runner.invoke(cli, [
+        'validate', str(tmp_path),
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', str(station_file),
+    ])
+    # _check_station text branch: 'for w in result.warnings: click.echo(f"  ! {w}")'
+    assert 'skill_requires_human_aware_but_station_does_not_enforce_it' in result.output

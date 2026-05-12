@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.39.0 — release validation failure, station human-aware warning, non-dict schema fallback (634 tests)
+
+### Coverage additions
+- `tests/test_signing.py` (57 → 58 tests):
+  - **`release_package.main()` validation failure → exit-1**: empty package dir fails validation
+    → `if not rep.valid:` branch → prints `Validation FAILED:` + raises `SystemExit(1)`
+- `tests/test_cli.py` (43 → 44 tests):
+  - **`validate` with station that does not enforce human-aware warns in text output**:
+    skill has `humanAware: true`, station has `requires_human_aware: false` →
+    `_check_station` emits `skill_requires_human_aware_but_station_does_not_enforce_it` warning
+- `tests/test_validator.py` (57 → 58 tests):
+  - **`_JSONSCHEMA_AVAILABLE=False` + non-dict document → `False` schema result**:
+    `execution_contract.json` replaced with JSON array `[]` → `isinstance(doc, dict)` is `False`
+    → `schema_results['execution_contract'] = False`
+
+### Test totals by module (634 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 58 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 44 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 38 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 216 |
+| `test_acceptance.py` | 81 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 58 |
+
+---
+
 ## 0.38.0 — inject empty patch, legacy expected key, missing telemetry key, marketplace exit-1, API find_skill None (631 tests)
 
 ### Coverage additions

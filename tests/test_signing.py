@@ -615,3 +615,24 @@ def test_verify_main_prints_ok_on_valid(tmp_path, capsys, monkeypatch, keypair):
         _vs_main()
     out = capsys.readouterr().out
     assert 'OK' in out
+
+
+# ── release_package.main(): validation failure → SystemExit(1) ───────────────
+
+def test_release_main_validation_failure_exits_1(tmp_path, capsys, monkeypatch):
+    """Empty package dir → all required files missing → valid=False → exit(1)."""
+    pkg = tmp_path / 'etd.empty.pkg'
+    pkg.mkdir()
+    out_dir = tmp_path / 'out'
+    monkeypatch.setattr(_sys, 'argv', [
+        'release_package.py',
+        str(pkg),
+        '--skip-sign',
+        '--out', str(out_dir),
+        '--runtime-context', 'runtime_context.json',
+    ])
+    with pytest.raises(SystemExit) as exc_info:
+        _release_main()
+    assert exc_info.value.code == 1
+    out = capsys.readouterr().out
+    assert 'Validation FAILED' in out
