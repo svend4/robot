@@ -1105,3 +1105,166 @@ def test_acc_main_failed_suite_prints_count_and_exits_1(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert '0/1 passed' in out
     assert 'FAILED' in out
+
+
+# ── vest_exoskeleton adapter: no-middleware + lumbar + read-only ─────────────
+
+def test_exo_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _safety_state/_joint_state/_intent/_fatigue return hardcoded defaults;
+    _publish is a no-op. Covers lines 98, 104, 110, 116, 120->exit."""
+    from unittest.mock import patch
+    import time as _time_mod
+    _exo_run = _load_run('etd.hyundai.vest_exoskeleton')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _exo_run({'profileId': 'overhead_assembly'}, middleware=None)
+    assert result['status'] == 'completed'
+    assert result['assist_cycles'] == 1
+
+
+def test_exo_engage_assist_lumbar_mode():
+    """engage_assist with intent.mode='lumbar' → lumbar_mode_entered event published (line 202)."""
+    from unittest.mock import patch
+    import time as _time_mod
+
+    class _LumbarMiddleware:
+        def __init__(self):
+            self.events = []
+        def read(self, key):
+            if key == 'perception.intent_detector':
+                return {'confidence': 0.99, 'mode': 'lumbar', 'direction': 'down'}
+            return {}
+        def publish(self, topic, payload):
+            self.events.append(payload)
+
+    mw = _LumbarMiddleware()
+    _exo_run = _load_run('etd.hyundai.vest_exoskeleton')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _exo_run({'profileId': 'lumbar_support'}, middleware=mw)
+    assert result['status'] == 'completed'
+    event_names = [e.get('event') for e in mw.events]
+    assert 'assist.lumbar_mode_entered' in event_names
+
+
+def test_exo_engage_assist_no_publish_skips_torque_command():
+    """Middleware with read but no publish → hasattr False in engage_assist → torque publish skipped
+    (line 204->212)."""
+    from unittest.mock import patch
+    import time as _time_mod
+
+    class _ReadOnlyMiddleware:
+        def read(self, key):
+            if key == 'perception.intent_detector':
+                return {'confidence': 0.99, 'mode': 'overhead'}
+            return {}
+
+    mw = _ReadOnlyMiddleware()
+    _exo_run = _load_run('etd.hyundai.vest_exoskeleton')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _exo_run({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'completed'
+    assert result['assist_cycles'] == 1
+
+
+# ── Atlas adapter: no-middleware defaults + handover while-loop sleep ────────
+
+def test_atlas_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _read_state returns hardcoded defaults dict (lines 123-136);
+    _emit_intent and _publish are no-ops (lines 152->exit, 157->exit)."""
+    from unittest.mock import patch
+    import time as _time_mod
+    _atlas_run = _load_run('etd.atlas.humanoid_walkfetch')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _atlas_run({'chsProfile': 'sequencing_carry'}, middleware=None)
+    assert result['status'] == 'completed'
+    assert result['delivery_mode'] == 'deposit'
+
+
+def test_atlas_human_handover_loop_sleeps_before_accepted():
+    """human_handover profile: first while-loop poll returns not-ready → time.sleep(0.05) called
+    (line 297); second poll → human_ready_signal → accepted. Covers lines 285->315, 297."""
+    from unittest.mock import patch
+    import time as _time_mod
+
+    class _HandoverMiddleware:
+        def __init__(self):
+            self._safety_reads = 0
+
+        def read(self, topic):
+            if topic == 'state.safety_state':
+                self._safety_reads += 1
+                # 9 primitive-level safety checks run before the handover while-loop.
+                # Read #10 = first while-loop iteration → not ready yet (triggers line 297).
+                # Read #11+ = human signals ready → break.
+                if self._safety_reads == 10:
+                    return {'human_in_forbidden_zone': False, 'human_ready_signal': False,
+                            'human_distance_m': 1.5}
+                return {'human_in_forbidden_zone': False, 'human_ready_signal': True,
+                        'human_distance_m': 3.5}
+            if topic == 'state.balance_state':
+                return {'stable': True, 'com_margin': 0.12}
+            if topic == 'perception.scene_map':
+                return {'map_ready': True, 'obstacles': []}
+            if topic == 'perception.object_pose':
+                return {'confidence': 0.97, 'x': 3.0, 'y': 1.5, 'z': 0.8,
+                        'mass_estimate_kg': 2.0}
+            return {}
+
+        def publish(self, topic, payload):
+            pass
+
+    mw = _HandoverMiddleware()
+    _atlas_run = _load_run('etd.atlas.humanoid_walkfetch')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _atlas_run(
+            {'chsProfile': 'human_handover', 'humanId': 'WORKER-01'},
+            middleware=mw,
+        )
+    assert result['status'] == 'completed'
+    assert result['handover_accepted'] is True
+
+
+# ── WIA welding adapter: no-middleware defaults + human-in-zone during traverse
+
+def test_wia_run_with_no_middleware_uses_defaults():
+    """run() middleware=None → _read returns {} fallback (line 87); _publish no-op (line 80->exit).
+    Uses tack_weld (travel_speed=0) to keep the test fast."""
+    from unittest.mock import patch
+    import time as _time_mod
+    _wia_run = _load_run('etd.hyundai.wia_welding')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _wia_run({'chsProfile': 'tack_weld'}, middleware=None)
+    assert result['status'] == 'completed'
+
+
+def test_wia_human_in_zone_during_traverse_aborts():
+    """Human enters forbidden zone during weld_traverse step loop → arc stopped + skill aborted
+    mid-traverse (lines 163-168)."""
+    from unittest.mock import patch
+    import time as _time_mod
+
+    class _SafetyInTraversalMiddleware:
+        def __init__(self):
+            self._safety_reads = 0
+
+        def read(self, topic):
+            if topic == 'state.safety_state':
+                self._safety_reads += 1
+                # Reads 1-4: primitive-level safety checks for approach/torch/ignite/traverse → safe.
+                # Read 5+: inside the traverse for-loop → human enters zone → abort.
+                if self._safety_reads >= 5:
+                    return {'human_in_forbidden_zone': True}
+                return {'human_in_forbidden_zone': False}
+            if topic == 'perception.seam_tracker':
+                return {'confidence': 0.95}
+            return {}
+
+        def publish(self, topic, payload):
+            pass
+
+    mw = _SafetyInTraversalMiddleware()
+    _wia_run = _load_run('etd.hyundai.wia_welding')
+    with patch.object(_time_mod, 'sleep', lambda s: None):
+        result = _wia_run({'chsProfile': 'standard_seam'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'human_in_forbidden_zone'
+    assert result['at_primitive'] == 'weld_traverse'

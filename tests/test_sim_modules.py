@@ -1582,6 +1582,29 @@ def test_validate_examples_main_all_pass(capsys):
     assert 'valid=True' in out
 
 
+def test_validate_examples_main_with_failing_package(monkeypatch, capsys):
+    """main() where the validator returns invalid → prints errors, appends to failed list,
+    raises SystemExit. Covers lines 53-54, 56, 58."""
+
+    class _FakeReport:
+        valid = False
+        errors = ['schema_check_failed']
+        compatibility = {'level': 'D', 'score': 0}
+
+    class _FakeValidator:
+        def __init__(self, ctx):
+            pass
+        def validate_package(self, path):
+            return _FakeReport()
+
+    monkeypatch.setattr(_ve_mod, 'ETDReferenceValidator', _FakeValidator)
+    with pytest.raises(SystemExit):
+        _ve_mod.main()
+    out = capsys.readouterr().out
+    assert 'valid=False' in out
+    assert '! schema_check_failed' in out
+
+
 # ── sim/marketplace_demo.main() ───────────────────────────────────────────────
 
 import sim.marketplace_demo as _mdemo_mod

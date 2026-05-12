@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.47.0 — adapter no-middleware defaults, vest-exo lumbar + read-only, atlas handover loop, wia mid-traverse abort, validate_examples failing-package (672 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (87 → 95 tests):
+  - **vest_exoskeleton `_safety_state/_joint_state/_intent/_fatigue` else-branches (lines 98,104,110,116)**:
+    `run(middleware=None)` → `hasattr(None, 'read')` False → hardcoded defaults returned
+  - **vest_exoskeleton `_publish` no-op (line 120->exit)**: same middleware=None call → `hasattr(None, 'publish')` False
+  - **vest_exoskeleton `engage_assist` lumbar branch (line 202)**: middleware reads `mode='lumbar'` →
+    `elif mode == 'lumbar':` True → `assist.lumbar_mode_entered` published
+  - **vest_exoskeleton `engage_assist` no-publish skip (line 204->212)**: read-only middleware
+    (has `read`, no `publish`) → `hasattr(mw, 'publish')` False → torque publish skipped, `assist_cycles += 1` still runs
+  - **atlas `_read_state` defaults dict (lines 123-136)**: `run(middleware=None)` → returns
+    hardcoded robot-state defaults (pose, balance, safety, scene, object)
+  - **atlas `_emit_intent/_publish` no-op (lines 152->exit, 157->exit)**: same call → no `publish` attr → both guards False
+  - **atlas handover while-loop sleep (line 297)**: `human_handover` profile + counter middleware
+    → first poll returns `human_ready_signal=False` → `time.sleep(0.05)` hit → second poll True → accepted
+  - **wia `_read` empty-return (line 87)**: `run(middleware=None)` with `tack_weld` → `hasattr(None, 'read')` False → `{}`
+  - **wia `_publish` no-op (line 80->exit)**: same call → `hasattr(None, 'publish')` False
+  - **wia mid-traverse safety abort (lines 163-168)**: counter middleware safe for first 4 safety
+    reads → read 5 (inside traverse loop step) returns `human_in_forbidden_zone=True` →
+    `welding.arc_stopped` + `skill.aborted` published → returns `aborted/weld_traverse`
+- `tests/test_sim_modules.py` (226 → 227 tests):
+  - **`validate_examples.main()` with failing validator (lines 53-54, 56, 58)**: monkeypatch
+    `ETDReferenceValidator` to return `valid=False, errors=['schema_check_failed']` → `'  ! schema_check_failed'`
+    printed for each package → `failed` list populated → `SystemExit` raised with joined names
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `examples/etd.hyundai.vest_exoskeleton/policies/chs_adapter.py` | 89% | 98% |
+| `examples/etd.hyundai.wia_welding/policies/chs_adapter.py` | 91% | 98% |
+| `examples/etd.atlas.humanoid_walkfetch/policies/chs_adapter.py` | 91% | 95% |
+| `validate_examples.py` | 80% | 94% |
+
+### Test totals by module (672 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 50 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 227 |
+| `test_acceptance.py` | 95 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 61 |
+
+---
+
 ## 0.46.0 — _plot_gantt matplotlib path + --save branch, publish no-skip-sign, station entry missing-services + warning (664 tests)
 
 ### Coverage additions
