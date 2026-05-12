@@ -439,3 +439,26 @@ def test_install_station_id_find_skill_none_omits_station_compat():
     assert r.status_code == 200
     body = r.json()
     assert 'station_compatible' not in body
+
+
+# ── POST /store/install: validate_for_install returns None → 404 ──────────────
+
+def test_install_decision_none_returns_404():
+    """validate_for_install returning None → defensive 'decision is None' guard → 404."""
+    from unittest.mock import patch
+    import api.app as _app_mod
+    with patch.object(_app_mod._store, 'validate_for_install', return_value=None):
+        r = client.post('/store/install', json={'skill_id': 'etd.pickplace.basic'})
+    assert r.status_code == 404
+    assert 'Skill not found' in r.json()['detail']
+
+
+# ── GET /store/policy: policy file missing → 404 ─────────────────────────────
+
+def test_get_policy_missing_file_returns_404(tmp_path, monkeypatch):
+    """policy_path.exists() False → HTTPException 404 'Policy file not found'."""
+    import api.app as _app_mod
+    monkeypatch.setattr(_app_mod, 'ROOT', tmp_path)
+    r = client.get('/store/policy')
+    assert r.status_code == 404
+    assert 'Policy file not found' in r.json()['detail']

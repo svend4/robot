@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.45.0 — API decision-None/policy-missing 404s, acceptance failed-suite exit, CLI warnings + install-None branches (659 tests)
+
+### Coverage additions
+- `tests/test_api.py` (33 → 35 tests):
+  - **`POST /store/install` `decision is None` → 404**: mock `validate_for_install()` returns None
+    → defensive `if decision is None:` guard fires → 404 `'Skill not found'`
+  - **`GET /store/policy` file missing → 404**: monkeypatch `api.app.ROOT` to `tmp_path` (no
+    `marketplace/marketplace_policy.json`) → `if not policy_path.exists():` → 404
+- `tests/test_acceptance.py` (86 → 87 tests):
+  - **`main()` failed suites → print count + `SystemExit(1)`**: fake `run_suite` returns
+    `failed=1` → `if failed:` True → prints `'(1 FAILED)'` → `if any(s.failed > 0):` True →
+    `raise SystemExit(1)`
+- `tests/test_cli.py` (45 → 47 tests):
+  - **`_print_report` `if report.warnings:` True branch**: monkeypatch
+    `etd_reference_validator._JSONSCHEMA_AVAILABLE = False` → validator adds jsonschema warning
+    → `'Warnings:'` and `'jsonschema not installed'` appear in output
+  - **`install` `if decision is None:` guard**: monkeypatch `SkillStore.validate_for_install`
+    to return None → `'Skill not found'` echoed to stderr → `sys.exit(1)`
+
+### Test totals by module (659 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 47 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 224 |
+| `test_acceptance.py` | 87 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 61 |
+
+---
+
 ## 0.44.0 — replay no-data key, acceptance main() no-skill scan, whitespace pub-key, signing else-branch, manifest-parse exception (654 tests)
 
 ### Coverage additions

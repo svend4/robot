@@ -170,18 +170,18 @@ A package that requests any forbidden capability is blocked at validation.
 ```
 tests/
 ├── test_validator.py         # 59 — _JSONSCHEMA_AVAILABLE=False branches (incl. non-dict doc → False), engine exception, .yml load, missing telemetry key, non-dict manifest → empty meta
-├── test_api.py               # 33 — REST endpoints incl. station+nonexistent-skill branch, absolute path, available_services override, station_id compatible=True, find_skill None skips compat
-├── test_cli.py               # 45 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output
+├── test_api.py               # 35 — REST endpoints incl. station+nonexistent-skill branch, absolute path, available_services override, station_id compatible=True, find_skill None skips compat, decision-is-None → 404, policy-missing → 404
+├── test_cli.py               # 47 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together, human-aware station warning, missing services text output, warnings branch, install decision-None
 ├── test_marketplace.py       # 37 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
 ├── test_sim_modules.py       # 224 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch+detail else-branches, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1+pick-ctx-path-not-exists, ascii_timeline empty-result+no-summary-keys+zero-duration, run_traced open-primitive cleanup
-├── test_acceptance.py        # 86 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan
+├── test_acceptance.py        # 87 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan, failed-suite SystemExit(1)
 ├── test_ros2_bridge.py       # 35 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2()
 └── test_signing.py           # 61 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version
 ```
 
-Run: `python -m pytest` — 654 tests, all passing.
+Run: `python -m pytest` — 659 tests, all passing.
 
 ---
 

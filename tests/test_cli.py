@@ -562,3 +562,25 @@ def test_validate_station_text_output_shows_missing_services(tmp_path):
     # _check_station text branch: 'if result.missing_services: click.echo(Missing services: ...)'
     assert 'Missing services' in result.output
     assert 'some.missing.service' in result.output
+
+
+# ── validate: report.warnings non-empty → _print_report prints 'Warnings:' ───
+
+def test_validate_prints_warnings_when_jsonschema_unavailable(monkeypatch):
+    """_print_report 'if report.warnings:' True branch — fires when jsonschema is disabled."""
+    import etd_reference_validator as _val_mod
+    monkeypatch.setattr(_val_mod, '_JSONSCHEMA_AVAILABLE', False)
+    result = runner.invoke(cli, ['validate', 'examples/etd.pickplace.basic'])
+    assert 'Warnings:' in result.output
+    assert 'jsonschema not installed' in result.output
+
+
+# ── install: validate_for_install returns None → 'Skill not found' + exit 1 ──
+
+def test_install_decision_none_prints_error_and_exits_1(monkeypatch):
+    """install command defensive guard: 'if decision is None:' → error message + exit(1)."""
+    import marketplace.skill_store as _ss
+    monkeypatch.setattr(_ss.SkillStore, 'validate_for_install', lambda self, *a, **kw: None)
+    result = runner.invoke(cli, ['install', 'etd.pickplace.basic'])
+    assert result.exit_code == 1
+    assert 'Skill not found' in result.output
