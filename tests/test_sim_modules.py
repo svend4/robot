@@ -1794,6 +1794,36 @@ def test_plot_gantt_no_matplotlib_prints_message(capsys, monkeypatch):
     assert 'matplotlib not installed' in out
 
 
+# ── _plot_gantt(): matplotlib happy path → saves PNG ─────────────────────────
+
+def test_plot_gantt_saves_png_when_matplotlib_available(tmp_path):
+    """_plot_gantt with save_path → matplotlib Agg backend → PNG written to disk."""
+    import random
+    random.seed(42)
+    trace = run_traced('etd.pickplace.basic', 'fragile_item')
+    out_file = tmp_path / 'gantt_test.png'
+    _plot_gantt([trace], save_path=str(out_file))
+    assert out_file.exists()
+    assert out_file.stat().st_size > 0
+
+
+# ── visualizer.main(): --save triggers _plot_gantt (line 303 True branch) ────
+
+def test_visualizer_main_save_flag_writes_png(tmp_path, monkeypatch, capsys):
+    """main(--save FILE) → 'if args.plot or args.save:' True → _plot_gantt called → PNG saved."""
+    import random
+    random.seed(42)
+    out_png = tmp_path / 'timeline.png'
+    monkeypatch.setattr(_sys, 'argv', [
+        'visualizer.py', '--skill', 'etd.pickplace.basic', '--save', str(out_png),
+    ])
+    _viz_main()
+    assert out_png.exists()
+    assert out_png.stat().st_size > 0
+    out = capsys.readouterr().out
+    assert 'Chart saved' in out
+
+
 # ── scenario_runner._pick_context: p.exists() False → falls back to default ──
 
 def test_sr_pick_context_file_not_found_falls_back_to_default(monkeypatch):

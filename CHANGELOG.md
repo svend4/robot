@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.46.0 — _plot_gantt matplotlib path + --save branch, publish no-skip-sign, station entry missing-services + warning (664 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (224 → 226 tests):
+  - **`_plot_gantt` matplotlib happy path (lines 222–259)**: matplotlib IS installed → Agg backend
+    → `_plot_gantt([trace], save_path=str(tmp_path/'gantt.png'))` → PNG file created
+  - **`visualizer.main()` `--save` flag (line 303)**: `'if args.plot or args.save:'` True →
+    `_plot_gantt(traces, save_path=args.save)` called; PNG exists and `'Chart saved'` printed
+- `tests/test_cli.py` (47 → 50 tests):
+  - **`publish` `if skip_sign:` False branch (line 161->163)**: invoke without `--skip-sign` →
+    condition False → `--skip-sign` NOT appended to subprocess cmd → release_package.py runs
+    without it (signing skipped due to missing key, but exits 0)
+  - **`_check_station_entry` `if result.missing_services:` True (line 123)**: monkeypatch
+    `find_skill` with entry `requiredServices=['svc.not.at.station']`; mobed_logistics_a has
+    services that exclude it → `missing_services` non-empty → `'Missing services'` printed
+  - **`_check_station_entry` `for w in result.warnings:` body (line 125)**: monkeypatch
+    `find_skill` with `requiresHumanAware=True`; logistics_cell_a has `requires_human_aware=False`
+    → warning `'skill_requires_human_aware_...'` added → loop body executed and printed
+
+### Test totals by module (664 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 50 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 226 |
+| `test_acceptance.py` | 87 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 61 |
+
+---
+
 ## 0.45.0 — API decision-None/policy-missing 404s, acceptance failed-suite exit, CLI warnings + install-None branches (659 tests)
 
 ### Coverage additions

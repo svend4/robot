@@ -584,3 +584,64 @@ def test_install_decision_none_prints_error_and_exits_1(monkeypatch):
     result = runner.invoke(cli, ['install', 'etd.pickplace.basic'])
     assert result.exit_code == 1
     assert 'Skill not found' in result.output
+
+
+# ── publish: without --skip-sign → 'if skip_sign:' False branch ──────────────
+
+def test_publish_without_skip_sign_hits_false_branch(tmp_path):
+    """publish without --skip-sign: 'if skip_sign:' evaluates False → subprocess runs
+    without --skip-sign appended; release_package.py sees no key → skips signing but succeeds."""
+    out_dir = tmp_path / 'out'
+    result = runner.invoke(cli, [
+        'publish', 'examples/etd.pickplace.basic',
+        '--key', 'keys/nonexistent_key_for_test.pem',
+        '--out', str(out_dir),
+        '--runtime-context', 'runtime_context.json',
+        # deliberately NO --skip-sign → if skip_sign: False branch
+    ])
+    assert result.exit_code == 0, result.output
+    assert len(list(out_dir.glob('*.zip'))) == 1
+
+
+# ── install: _check_station_entry shows missing services (line 123) ──────────
+
+def test_install_station_entry_shows_missing_services(monkeypatch):
+    """_check_station_entry: entry with requiredServices not in station → missing_services → line 123."""
+    import marketplace.skill_store as _ss
+    fake_entry = {
+        'skillId': 'etd.pickplace.basic',
+        'family': 'pickplace',
+        'maxPayloadKg': 5.0,
+        'requiresHumanAware': False,
+        'requiredServices': ['svc.not.at.station'],
+    }
+    monkeypatch.setattr(_ss.SkillStore, 'find_skill', lambda self, sid: fake_entry)
+    result = runner.invoke(cli, [
+        'install', 'etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/mobed_logistics_a.json',
+    ])
+    assert 'Missing services' in result.output
+    assert 'svc.not.at.station' in result.output
+
+
+# ── install: _check_station_entry shows human-aware warning (line 125) ────────
+
+def test_install_station_entry_shows_human_aware_warning(monkeypatch):
+    """_check_station_entry: requiresHumanAware=True + station lacks it → warnings loop line 125."""
+    import marketplace.skill_store as _ss
+    fake_entry = {
+        'skillId': 'etd.pickplace.basic',
+        'family': 'pickplace',
+        'maxPayloadKg': 5.0,
+        'requiresHumanAware': True,
+        'requiredServices': [],
+    }
+    monkeypatch.setattr(_ss.SkillStore, 'find_skill', lambda self, sid: fake_entry)
+    result = runner.invoke(cli, [
+        'install', 'etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--station-profile', 'station_profiles/logistics_cell_a.json',
+    ])
+    assert result.exit_code == 0, result.output
+    assert 'skill_requires_human_aware' in result.output
