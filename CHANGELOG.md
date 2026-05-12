@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.7.0 — Signing pipeline tests and OEM adapter coverage (225 tests)
+
+### New test module
+- `tests/test_signing.py` (27 tests) — full coverage of the Ed25519 signing pipeline:
+  - `sign_package()`: sig file creation, required JSON fields, algorithm/digest
+    labels, 64-byte signature, 32-byte public key, signed_files list
+  - `verify_package()`: embedded key, explicit public key, missing sig file,
+    tampered file detection, wrong public key rejection
+  - Sign→verify round-trip parametrized over all 8 skill packages
+  - `_package_digest()` determinism and cross-package uniqueness
+  - `generic_oem_adapter.to_oem_request()`: nominal request, default station,
+    forbidden-command rejection for `servo_torque`, `collision_disable`,
+    `emergency_stop_override`, empty payload allowed
+
+### Test totals by module (225 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 17 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 17 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 42 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 15 |
+| `test_signing.py` | 27 |
+
+---
+
 ## 0.6.0 — Test suite expansion to 198 tests
 
 ### New test modules

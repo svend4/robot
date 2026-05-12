@@ -169,18 +169,19 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 17 tests — schema validation, compat levels, all 8 packages
-├── test_api.py               # 18 tests — REST endpoints incl. vest_exo and version check
-├── test_cli.py               # 20 tests — CLI commands incl. all 4 Hyundai packages
-├── test_marketplace.py       # 17 tests — SkillStore list/find/install for all packages
-├── test_station_profiles.py  # 33 tests — compatibility checker, exo_assembly_a, API, CLI
-├── test_orbit_bridge.py      # 28 tests — orbit event bridge
-├── test_sim_modules.py       # 42 tests — sim modules (replay, state gen, middleware, ...)
-├── test_acceptance.py        #  8 tests — wraps 39 YAML acceptance scenarios (all packages)
-└── test_ros2_bridge.py       # 15 tests — ETDSkillActionServer without ROS 2 installation
+├── test_validator.py         # 17 — schema validation, compat levels, all 8 packages
+├── test_api.py               # 18 — REST endpoints incl. vest_exo and version check
+├── test_cli.py               # 20 — CLI commands incl. all 4 Hyundai packages
+├── test_marketplace.py       # 17 — SkillStore list/find/install for all packages
+├── test_station_profiles.py  # 33 — compatibility checker, exo_assembly_a, API, CLI
+├── test_orbit_bridge.py      # 28 — orbit event bridge severity/filter/callback
+├── test_sim_modules.py       # 42 — event_replay, state_generator, middleware, scenarios
+├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
+├── test_ros2_bridge.py       # 15 — ETDSkillActionServer without ROS 2 installation
+└── test_signing.py           # 27 — Ed25519 sign/verify, round-trip all 8 packages, OEM gate
 ```
 
-Run: `python -m pytest` — 198 tests, all passing.
+Run: `python -m pytest` — 225 tests, all passing.
 
 ---
 
