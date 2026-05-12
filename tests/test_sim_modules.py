@@ -1,5 +1,6 @@
 """Tests for sim/ modules: event_replay, mock_robot_state_generator,
 fake_middleware_endpoint, scenario_runner, and failure_scenarios."""
+import json
 import sys
 from pathlib import Path
 
@@ -1262,3 +1263,139 @@ def test_aborted_lifecycle_empty_primitives():
     events = [e['event'] for e in log]
     assert events == ['skill.started', 'skill.aborted']
     assert len(log) == 2
+
+
+# ── failure_scenarios detail fields ──────────────────────────────────────────
+
+def test_failure_missing_service_detail_message():
+    r = scenario_missing_service_level_d()
+    assert 'missing service' in r['detail']
+
+
+def test_failure_payload_block_reason_contains_limit():
+    r = scenario_payload_out_of_range()
+    assert '2.0' in r['block_reason']
+
+
+def test_failure_payload_detail_message():
+    r = scenario_payload_out_of_range()
+    assert 'payload gate works correctly' in r['detail']
+
+
+def test_failure_station_mismatch_reason_contains_not_allowed():
+    r = scenario_station_family_mismatch()
+    assert 'not_allowed' in r['reason']
+
+
+def test_failure_station_mismatch_detail_message():
+    r = scenario_station_family_mismatch()
+    assert 'transport rejected' in r['detail']
+
+
+def test_failure_human_zone_detail_message():
+    r = scenario_human_in_forbidden_zone()
+    assert 'human detected' in r['detail']
+
+
+# ── failure_scenarios.main() ──────────────────────────────────────────────────
+
+import sys as _sys
+from sim.failure_scenarios import main as _fs_main
+
+
+def test_failure_main_pretty_print(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['failure_scenarios.py'])
+    try:
+        _fs_main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert 'missing_service_level_d' in out
+    assert 'human_in_forbidden_zone' in out
+    assert 'payload_out_of_range' in out
+    assert 'station_family_mismatch' in out
+    assert '4/4' in out
+
+
+def test_failure_main_json_output(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['failure_scenarios.py', '--json'])
+    try:
+        _fs_main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert isinstance(parsed, list)
+    assert len(parsed) == 4
+    assert all(r['passed'] is True for r in parsed)
+    scenarios = {r['scenario'] for r in parsed}
+    assert 'missing_service_level_d' in scenarios
+    assert 'station_family_mismatch' in scenarios
+
+
+# ── etd_demo_runner.main() ────────────────────────────────────────────────────
+
+import etd_demo_runner as _demo_mod
+
+
+def test_demo_main_pretty_print(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['etd_demo_runner.py'])
+    try:
+        _demo_mod.main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'etd.hyundai.wia_welding' in out
+    assert '8/8' in out
+
+
+def test_demo_main_json_output(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['etd_demo_runner.py', '--json'])
+    try:
+        _demo_mod.main()
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert isinstance(parsed, list)
+    assert len(parsed) == 8
+    packages = {r['package'] for r in parsed}
+    assert 'etd.pickplace.basic' in packages
+    assert 'etd.hyundai.vest_exoskeleton' in packages
+
+
+def test_demo_main_fail_fast_exits_zero(monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['etd_demo_runner.py', '--fail-fast'])
+    with pytest.raises(SystemExit) as exc_info:
+        _demo_mod.main()
+    assert exc_info.value.code == 0
+
+
+# ── sim/scenario_runner.main() ────────────────────────────────────────────────
+
+from sim.scenario_runner import main as _sr_main
+
+
+def test_scenario_runner_main_exits_zero(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['scenario_runner.py'])
+    with pytest.raises(SystemExit) as exc_info:
+        _sr_main()
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    assert 'etd.' in out
+
+
+# ── validate_examples.main() ──────────────────────────────────────────────────
+
+import validate_examples as _ve_mod
+
+
+def test_validate_examples_main_all_pass(capsys):
+    try:
+        _ve_mod.main()
+    except SystemExit as e:
+        pytest.fail(f'validate_examples.main() raised SystemExit: {e}')
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'valid=True' in out

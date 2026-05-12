@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.20.0 — failure_scenarios main(), demo_runner main(), validate_examples main() (461 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (179 → 183 tests):
+  - `sim/failure_scenarios.main()` pretty-print mode — output contains all 4 scenario
+    names and `4/4` summary line
+  - `sim/failure_scenarios.main(--json)` — valid JSON list of 4 results, all `passed=True`
+  - Detailed result dict fields for each scenario: `detail` string content,
+    `block_reason` payload limit, `reason` contains `not_allowed`
+  - `etd_demo_runner.main()` pretty-print — output contains package names and `8/8`
+  - `etd_demo_runner.main(--json)` — valid JSON list of 8 entries with `package` key
+  - `etd_demo_runner.main(--fail-fast)` — exits 0 when all packages pass
+  - `sim/scenario_runner.main()` — exits 0, output contains `etd.` skill IDs
+  - `validate_examples.main()` — no SystemExit, output contains `valid=True`
+
+### Test totals by module (461 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 43 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 31 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 183 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 27 |
+| `test_signing.py` | 41 |
+| **Total** | **461** |
+
+---
+
 ## 0.19.0 — Generator fallback, scenario_runner dispatch, replay edges, level-B install (448 tests)
 
 ### Coverage additions
