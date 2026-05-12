@@ -176,12 +176,12 @@ tests/
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
 ├── test_sim_modules.py       # 205 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s
-├── test_acceptance.py        # 60 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, legacy inject, adapter safety branches (exo/cobot/wia/mobed), main() CLI
+├── test_acceptance.py        # 69 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI
 ├── test_ros2_bridge.py       # 34 — server/client main(--dry-run), no-middleware branches, all-8 parametrized
 └── test_signing.py           # 56 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip
 ```
 
-Run: `python -m pytest` — 584 tests, all passing.
+Run: `python -m pytest` — 593 tests, all passing.
 
 ---
 

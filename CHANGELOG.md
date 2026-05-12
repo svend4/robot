@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.31.0 — adapter branch coverage: assembly/inspect/atlas + extended _AdapterMW (593 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (60 → 69 tests):
+  - Extended `_AdapterMW` with `part_alignment`, `balance_state`, `scene_map`,
+    `object_pose` per-topic overrides (in addition to existing joint_state/intent/fatigue/seam_tracker)
+  - **Assembly precision** (`etd.assembly.precision`):
+    - `vision_align` aborts when `alignment_confidence_below_threshold` (confidence 0.5 < 0.90)
+    - `vision_align` aborts when `alignment_offset_too_large` (offset 5.0mm > precision_mm×3=1.5mm)
+    - `seat_verify` aborts when `insufficient_seating_force` (force 5.0N < seat_force×0.8=12.0N)
+  - **Inspect vision** (`etd.inspect.vision`):
+    - `classify_result` aborts when `low_classification_confidence` — monkeypatched
+      `random.uniform` to minimum so `0.93−0.04=0.89 < 0.92`
+    - `_classify_defects` with `random.random()=0.0 < 0.08` injects a defect → `pass_qc=False`
+      in completed result (exercises the defects branch in `QCResult`)
+  - **Atlas humanoid** (`etd.atlas.humanoid_walkfetch`):
+    - Balance gate at every primitive: `stable=False` → `balance_loss_detected` at first primitive
+    - `localize_target`: `map_ready=False` in scene map → `localization_failure`
+    - `approach_object`: `object_pose.confidence=0.5 < 0.85` → `grasp_confidence_low`
+    - `deposit_or_handover` with `human_handover` profile: `humanReadyTimeoutSec=-1`
+      (monkeypatched via `_PROFILE_DEFAULTS`) → `handover_timeout` abort
+
+### Test totals by module (593 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 205 |
+| `test_acceptance.py` | 69 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **593** |
+
+---
+
 ## 0.30.0 — OEM adapter safety-critical branch coverage: exo/cobot/wia/mobed (584 tests)
 
 ### Coverage additions

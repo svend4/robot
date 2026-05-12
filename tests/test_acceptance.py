@@ -454,12 +454,18 @@ class _AdapterMW(AcceptanceMiddleware):
     """
 
     def __init__(self, joint_state=None, intent=None, fatigue=None,
-                 seam_tracker=None, after_n_safety_reads=None, then_safety=None, **kw):
+                 seam_tracker=None, part_alignment=None,
+                 balance_state=None, scene_map=None, object_pose=None,
+                 after_n_safety_reads=None, then_safety=None, **kw):
         super().__init__(**kw)
         self._joint_state_override = joint_state
         self._intent_override = intent
         self._fatigue_override = fatigue
         self._seam_tracker_override = seam_tracker
+        self._part_alignment_override = part_alignment
+        self._balance_state_override = balance_state
+        self._scene_map_override = scene_map
+        self._object_pose_override = object_pose
         self._safety_count = 0
         self._after_n = after_n_safety_reads
         self._then_safety = then_safety or {}
@@ -477,6 +483,14 @@ class _AdapterMW(AcceptanceMiddleware):
             return dict(self._fatigue_override)
         if topic == 'perception.seam_tracker' and self._seam_tracker_override is not None:
             return dict(self._seam_tracker_override)
+        if topic == 'perception.part_alignment' and self._part_alignment_override is not None:
+            return dict(self._part_alignment_override)
+        if topic == 'state.balance_state' and self._balance_state_override is not None:
+            return dict(self._balance_state_override)
+        if topic == 'perception.scene_map' and self._scene_map_override is not None:
+            return dict(self._scene_map_override)
+        if topic == 'perception.object_pose' and self._object_pose_override is not None:
+            return dict(self._object_pose_override)
         return super().read(topic)
 
 
@@ -621,3 +635,126 @@ def test_mobed_abort_during_navigation_segment(monkeypatch):
     assert result['status'] == 'aborted'
     assert result['reason'] == 'human_in_forbidden_zone'
     assert result['at_primitive'] == 'navigate_to_pickup'
+
+
+# ── Assembly precision adapter: vision alignment and seating branches ──────────
+
+def test_assembly_alignment_confidence_below_threshold_aborts():
+    """vision_align aborts when part_alignment confidence is below profile minimum."""
+    run_fn = _load_run('etd.assembly.precision')
+    # peg_in_hole: alignment_confidence_min=0.90; inject confidence=0.5
+    mw = AcceptanceMiddleware(initial_safety={'confidence': 0.5})
+    result = run_fn({'chsProfile': 'peg_in_hole'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'alignment_confidence_below_threshold'
+    assert result['confidence'] == 0.5
+
+
+def test_assembly_alignment_offset_too_large_aborts():
+    """vision_align aborts when part offset exceeds precision_mm * 3."""
+    run_fn = _load_run('etd.assembly.precision')
+    # peg_in_hole: precision_mm=0.5, limit=1.5mm; inject offset=5.0mm
+    mw = _AdapterMW(part_alignment={'confidence': 0.95, 'offset_mm': 5.0, 'aligned': False})
+    result = run_fn({'chsProfile': 'peg_in_hole'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'alignment_offset_too_large'
+    assert result['offset_mm'] == 5.0
+
+
+def test_assembly_insufficient_seating_force_aborts():
+    """seat_verify aborts when measured contact force is below 80% of seat_force_n."""
+    run_fn = _load_run('etd.assembly.precision')
+    # peg_in_hole: seat_force_n=15.0, threshold=12.0; inject normal_force_n=5.0
+    mw = AcceptanceMiddleware(initial_safety={'normal_force_n': 5.0})
+    result = run_fn({'chsProfile': 'peg_in_hole'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'insufficient_seating_force'
+
+
+# ── Inspect vision adapter: classification confidence and defect branches ──────
+
+def test_inspect_low_classification_confidence_aborts(monkeypatch):
+    """classify_result aborts when classification confidence falls below threshold."""
+    import random as _random
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    # defect_scan: threshold=0.92; uniform(a,b)->a => 0.93+(-0.04)=0.89 < 0.92
+    monkeypatch.setattr(_random, 'uniform', lambda a, b: a)
+    monkeypatch.setattr(_random, 'random', lambda: 0.5)
+    run_fn = _load_run('etd.inspect.vision')
+    result = run_fn({'chsProfile': 'defect_scan', 'partId': 'P-001'},
+                    middleware=AcceptanceMiddleware())
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'low_classification_confidence'
+    assert result['confidence'] < 0.92
+
+
+def test_inspect_defect_found_sets_pass_qc_false(monkeypatch):
+    """_classify_defects with a detected defect sets pass_qc=False in completed result."""
+    import random as _random
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    # uniform->max => confidence=0.97 >= 0.92 (passes gate); random()->0.0<0.08 => defect injected
+    monkeypatch.setattr(_random, 'uniform', lambda a, b: b)
+    monkeypatch.setattr(_random, 'random', lambda: 0.0)
+    run_fn = _load_run('etd.inspect.vision')
+    result = run_fn({'chsProfile': 'defect_scan', 'partId': 'P-002'},
+                    middleware=AcceptanceMiddleware())
+    assert result['status'] == 'completed'
+    assert result['pass_qc'] is False
+    assert len(result['defects_found']) > 0
+
+
+# ── Atlas humanoid adapter: balance, localization, grasp, handover branches ────
+
+def test_atlas_balance_loss_detected_aborts(monkeypatch):
+    """Balance check at every primitive aborts immediately when stable=False."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.atlas.humanoid_walkfetch')
+    mw = _AdapterMW(balance_state={'stable': False, 'com_margin': 0.0, 'gait': 'stand'})
+    result = run_fn({'chsProfile': 'sequencing_carry'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'balance_loss_detected'
+
+
+def test_atlas_localization_failure_aborts(monkeypatch):
+    """localize_target aborts when scene map reports map_ready=False."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.atlas.humanoid_walkfetch')
+    mw = _AdapterMW(scene_map={'map_ready': False, 'obstacles': []})
+    result = run_fn({'chsProfile': 'sequencing_carry'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'localization_failure'
+
+
+def test_atlas_grasp_confidence_low_aborts(monkeypatch):
+    """approach_object aborts when object pose confidence is below grasp_confidence_min."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.atlas.humanoid_walkfetch')
+    # sequencing_carry: grasp_confidence_min=0.85; inject confidence=0.5
+    mw = _AdapterMW(object_pose={
+        'confidence': 0.5, 'x': 3.0, 'y': 1.5, 'z': 0.8,
+        'object_class': 'automotive_part', 'mass_estimate_kg': 4.5,
+    })
+    result = run_fn({'chsProfile': 'sequencing_carry'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'grasp_confidence_low'
+    assert result['confidence'] == 0.5
+
+
+def test_atlas_handover_timeout_aborts(monkeypatch):
+    """deposit_or_handover aborts with handover_timeout when human_ready deadline is past."""
+    import time as _time
+    monkeypatch.setattr(_time, 'sleep', lambda s: None)
+    run_fn = _load_run('etd.atlas.humanoid_walkfetch')
+    atlas_mod = sys.modules['etd_acc_etd_atlas_humanoid_walkfetch']
+    # Set timeout to -1 so deadline is already past; loop body never executes
+    monkeypatch.setitem(atlas_mod._PROFILE_DEFAULTS['human_handover'],
+                        'humanReadyTimeoutSec', -1.0)
+    mw = AcceptanceMiddleware(initial_safety={'human_ready_signal': False})
+    result = run_fn({'chsProfile': 'human_handover'}, middleware=mw)
+    assert result['status'] == 'aborted'
+    assert result['reason'] == 'handover_timeout'
