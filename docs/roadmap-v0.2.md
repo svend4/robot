@@ -56,13 +56,19 @@ All items below were delivered in the prototype:
 
 - [ ] **ROS 2 action type built.** Compile `ExecuteSkill.action` in a real
   ROS 2 workspace; wire `ETDSkillActionServer` to a running robot node.
-- [ ] **Hyundai WIA adapter wired to H-Motion.** `perception.seam_tracker`
-  and `welding.torch_control` topics sourced from real H-Motion ROS 2 topics.
-- [ ] **Middleware contract formalized.** `etd_middleware_contract.py` defines
+- [x] **Hyundai WIA adapter wired to H-Motion.** `adapters/hyundai_wia_adapter.py`
+  maps all ETD service topics to H-Motion ROS 2 topic names; `dry_run=True` mode
+  with injectable mock state enables full sim/test without hardware; `dry_run=False`
+  path stubs `_ros2_read` / `_ros2_publish` for real rclpy integration.
+- [x] **Middleware contract formalized.** `etd_middleware_contract.py` defines
   abstract base class `ETDMiddleware` with typed `read` / `publish` signatures.
-  OEM adapters subclass it and are validated at load time.
-- [ ] **Telemetry pipeline.** Events emitted to a configurable sink (file,
-  MQTT, or OEM telemetry bus) rather than middleware.publish only.
+  `load_middleware_adapter()` validates required_topics at load time.
+  `HyundaiWIAAdapter` subclasses it and is tested end-to-end with the WIA skill.
+- [x] **Telemetry pipeline.** `adapters/telemetry_sink.py`: pluggable
+  `TelemetrySink` hierarchy — `NullSink`, `ConsoleSink`, `FileSink`,
+  `MQTTSink` (paho-mqtt; stubs to stdout when library absent), `MultiSink`
+  (fan-out). `HyundaiWIAAdapter` forwards `telemetry.events` to any configured
+  sink, decoupling robot telemetry from OEM middleware publish.
 - [ ] **Acceptance tests on hardware.** At least one YAML scenario run against
   a physical cobot (not just `AcceptanceMiddleware`).
 

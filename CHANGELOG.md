@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.66.0 — v0.7.0 start: middleware contract + Hyundai WIA adapter + telemetry pipeline (709 → 755 tests)
+
+### Code changes
+
+- `etd_middleware_contract.py` (NEW): `ETDMiddleware` abstract base class with
+  typed `read(topic) → dict` and `publish(topic, message) → None` signatures.
+  `required_topics` class variable declared by each adapter. `validate()` checks
+  all required topics are reachable at load time. `load_middleware_adapter()` type-
+  checks and validates; returns adapter unchanged for chaining.
+- `adapters/hyundai_wia_adapter.py` (NEW): `HyundaiWIAAdapter(ETDMiddleware)`
+  wiring all ETD service topics to H-Motion ROS 2 topic names
+  (`/hmotion/perception/seam_tracker`, `/hmotion/welding/torch_control`, …).
+  `dry_run=True` (default): reads from injectable mock-state table, publishes
+  recorded to `adapter.published`. `dry_run=False`: stubs `_ros2_read` /
+  `_ros2_publish` for real rclpy integration. `inject_state()` helper for tests.
+  `telemetry_sink` parameter forwards `telemetry.events` to any `TelemetrySink`.
+- `adapters/telemetry_sink.py` (NEW): pluggable telemetry output hierarchy:
+  `NullSink` (tests), `ConsoleSink` (stdout), `FileSink` (JSON Lines),
+  `MQTTSink` (paho-mqtt; stubs to stdout when absent), `MultiSink` (fan-out,
+  swallows per-sink errors). `TelemetrySink` ABC with `emit()` / `close()`.
+
+### Tests (709 → 755)
+
+- `tests/test_middleware_contract.py` (+46, NEW):
+  - `ETDMiddleware` contract: ABC enforcement, validate() pass/fail, required_topics
+  - `load_middleware_adapter`: TypeError for non-subclass, RuntimeError for missing
+    topics, calls validate()
+  - `HyundaiWIAAdapter` (25 tests): dry_run reads/publish/inject/topic_for,
+    telemetry sink forwarding, live-mode ROS 2 stubs
+  - Sinks (15 tests): NullSink, ConsoleSink, FileSink append/parent-creation,
+    MultiSink fan-out / fault isolation / close, empty MultiSink
+  - Integration (4 tests): WIA weld skill + HyundaiWIAAdapter end-to-end;
+    abort on injected human-in-zone; FileSink receives skill events
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for middleware contract formalized, Hyundai
+  WIA adapter wired to H-Motion, and telemetry pipeline (3 of 5 v0.7.0 items)
+
+---
+
 ## 0.65.0 — v0.6.0 complete: fleet rollout policy + runtime context schema (701 → 709 tests)
 
 ### Code changes
