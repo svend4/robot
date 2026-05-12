@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.52.0 — visualizer plt.show() no-save path + README count corrections (687 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (224 → 225 tests):
+  - **`_plot_gantt` `plt.show()` branch (line 259)**: call `_plot_gantt([trace])` without `save_path`; `matplotlib.use` and `plt.show` patched directly on already-imported real modules → `else: plt.show()` covered; visualizer.py 98% → 99%
+
+### README corrections
+- `test_acceptance.py`: corrected count 100 → 98 (parametrize expansion ≠ function count)
+- `test_sim_modules.py`: corrected count 227 → 225 (same reason)
+
+### Coverage deltas
+| File | Before | After |
+|---|---|---|
+| `sim/visualizer.py` | 98% | 99% |
+
+### Test totals by module (687 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 35 |
+| `test_cli.py` | 52 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 39 |
+| `test_sim_modules.py` | 225 |
+| `test_acceptance.py` | 98 |
+| `test_ros2_bridge.py` | 41 |
+| `test_signing.py` | 62 |
+
+---
+
 ## 0.51.0 — ROS2 bridge full mock: server callback capture + client timeout/reject/happy-path (686 tests)
 
 ### Coverage additions

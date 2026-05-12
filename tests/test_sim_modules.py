@@ -1979,3 +1979,25 @@ def test_report_runner_skips_non_directory_entries(tmp_path, monkeypatch, capsys
     parsed = json.loads(out)
     assert len(parsed['validation_summary']) == 1
     assert parsed['validation_summary'][0]['package'] == 'etd.pickplace.basic'
+
+
+# ── _plot_gantt(): no save_path → plt.show() branch (line 259) ───────────────
+
+def test_plot_gantt_calls_show_when_no_save_path(monkeypatch):
+    """_plot_gantt with save_path=None → plt.show() executed (line 259).
+    Patches matplotlib.use (prevents backend-switch warning) and plt.show
+    (prevents display attempt) on the real already-imported modules."""
+    import random
+    import matplotlib
+    import matplotlib.pyplot as _plt
+
+    random.seed(42)
+    trace = run_traced('etd.pickplace.basic', 'fragile_item')
+
+    show_calls = []
+    monkeypatch.setattr(matplotlib, 'use', lambda backend: None)
+    monkeypatch.setattr(_plt, 'show', lambda: show_calls.append(True))
+
+    _plot_gantt([trace])  # save_path=None → else: plt.show()
+
+    assert show_calls == [True]
