@@ -415,7 +415,7 @@ class TestPipelineRealPackages:
         result = ReviewPipeline().run(pkg)
         assert result.skill_id  # non-empty
         assert result.version
-        assert len(result.stages) == 3
+        assert len(result.stages) == 4  # sandbox_check, schema_validation, capability_audit, safety_boundary
 
     def test_to_dict_is_json_serialisable(self):
         pkg = ROOT / "examples" / "etd.pickplace.basic"

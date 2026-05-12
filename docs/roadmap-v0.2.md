@@ -97,9 +97,13 @@ All items below were delivered in the prototype:
   `verify_token()` using existing NaCl infrastructure. `SkillStore` verifies
   tokens when `entitlement_pubkey_path` is configured; falls back to truthy
   check for backwards-compat. `token issue` / `token verify` CLI commands.
-- [ ] **Package sandboxing.** Skill adapters run in a restricted Python
+- [x] **Package sandboxing.** Skill adapters run in a restricted Python
   environment: no `subprocess`, no `os.system`, no network access, no file
-  writes outside `telemetry/`.
+  writes outside `telemetry/`. `marketplace/sandbox.py`: `SandboxChecker`
+  (static AST analysis — forbidden imports, OS calls, builtins, write-outside-
+  telemetry) + `SkillSandbox` context manager (runtime `sys.meta_path` blocker).
+  Integrated as `sandbox_check` stage 1 in `ReviewPipeline`. CLI:
+  `etd sandbox-check PACKAGE_PATH [--json]`.
 - [x] **Version negotiation.** Marketplace serves the highest compatible
   version of a skill for a given `runtime: ">=0.x.y"` constraint.
   `marketplace/version_negotiator.py`: `parse_version`, `satisfies` (operators:

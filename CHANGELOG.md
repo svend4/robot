@@ -1,5 +1,74 @@
 # Changelog
 
+## 0.71.0 — v1.0.0: package sandboxing (981 → 1047 tests)
+
+### Code changes
+
+- `marketplace/sandbox.py` (NEW): two-layer sandbox protection.
+  - `SandboxChecker` — static AST analysis of every `*.py` file in a package
+    (excluding `__pycache__`). Reports:
+    - `forbidden_import` — `subprocess`, `socket`, `ssl`, `urllib`, `requests`,
+      `httpx`, `aiohttp`, `ftplib`, `smtplib`, `telnetlib`, `paramiko`,
+      `multiprocessing`, `threading`, `ctypes`, `cffi`, `pickle`, `marshal`,
+      `shelve`, `importlib`, `pty`, `signal`, and more
+    - `forbidden_os_call` — `os.system`, `os.popen`, `os.fork`, `os.kill`,
+      `os.execv*`, `os.spawn*`, `os.remove`, `os.makedirs`, `os.chmod`, etc.
+    - `forbidden_builtin` — `eval`, `exec`, `compile`, `__import__`, `breakpoint`
+    - `unrestricted_write` — `open()` with write/append/exclusive mode and a
+      static path not under `telemetry/`
+    - `syntax_error` — package Python file fails to parse
+    Config-only packages (no `.py` files) automatically pass with a note.
+  - `SkillSandbox` context manager — installs a `sys.meta_path` `_BlockingFinder`
+    that raises `SandboxImportError` (subclass of `ImportError`) for any
+    forbidden module import attempted while the sandbox is active. Accepts
+    `extra_forbidden` frozenset for additional module roots. Finder is always
+    removed on context exit (even if an exception is raised).
+- `marketplace/review_pipeline.py`: `sandbox_check` added as **stage 1**
+  (before schema_validation). Pipeline now runs 4 named stages:
+  `sandbox_check → schema_validation → capability_audit → safety_boundary`.
+  Packages with Python files containing forbidden imports/calls fail this stage
+  and set `human_review_required = True`.
+- `etd_cli.py`: `sandbox-check PACKAGE_PATH [--json]` command. Exits 0 when
+  the package passes; exits 1 for violations or missing path.
+
+### Tests (981 → 1047)
+
+- `tests/test_sandbox.py` (+66, NEW):
+  - `TestSandboxViolation`: str representation
+  - `TestSandboxReport`: passed property, summary PASS/FAIL, `to_dict` shape
+    and JSON-serialisability
+  - `TestCheckerConfigOnly`: no `.py` files passes + config-only note; real
+    example packages pass
+  - `TestCheckerForbiddenImports`: `subprocess`, `socket`, `from subprocess`,
+    `requests`, `pickle`, `ctypes`, `multiprocessing`, `importlib`, `threading`
+    all fail; `os`, `json`, `pathlib` allowed; line number accurate
+  - `TestCheckerForbiddenOSCalls`: `os.system`, `os.popen`, `os.fork`,
+    `os.kill`, `os.execv`, `os.remove`, `os.makedirs` fail; `os.path.join`,
+    `os.path.exists` allowed
+  - `TestCheckerForbiddenBuiltins`: `eval`, `exec`, `compile`, `__import__`,
+    `breakpoint` fail; `print` allowed
+  - `TestCheckerOpenWrite`: write/append outside `telemetry/` fails; write
+    inside `telemetry/` and read mode pass; no-mode passes
+  - `TestCheckerMultipleFiles`: violations from multiple files collected;
+    `python_files` list populated; `__pycache__` excluded; syntax error reported
+  - `TestSkillSandbox`: blocks `subprocess`/`socket` (with sys.modules eviction);
+    allows `json`/`pathlib`; finder removed after context exit (including on
+    exception); `extra_forbidden` installs additional blocker; `SandboxImportError
+    is ImportError`
+  - `TestReviewPipelineSandboxStage`: config-only passes; forbidden-import fails
+    and sets `human_review_required`; sandbox_check is first stage; real
+    packages pass
+  - `TestSandboxCheckCLI`: clean package exits 0; `--json` output; nonexistent
+    path exits 1; forbidden-import package exits 1; output mentions "Sandbox"
+- `tests/test_review_pipeline.py`: updated stage count assertion (3 → 4)
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for package sandboxing
+  (5 of 7 v1.0.0 items complete)
+
+---
+
 ## 0.70.0 — v1.0.0: version negotiation + automated review pipeline (886 → 981 tests)
 
 ### Code changes

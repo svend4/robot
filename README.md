@@ -42,7 +42,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
-├── etd_cli.py                          # CLI: validate, install, stations, info, revoke, audit-log, validate-context, rollout, token, versions, review
+├── etd_cli.py                          # CLI: validate, install, stations, info, revoke, audit-log, validate-context, rollout, token, versions, review, sandbox-check
 ├── etd_demo_runner.py                  # validates all 8 packages with correct contexts
 ├── runtime_context.json                # base runtime context
 ├── runtime_context_atlas.json          # Boston Dynamics Atlas context
@@ -77,6 +77,8 @@ python etd_cli.py versions etd.pickplace.basic
 python etd_cli.py versions etd.pickplace.basic --runtime 0.5.0
 python etd_cli.py review examples/etd.hyundai.wia_welding
 python etd_cli.py review examples/etd.hyundai.wia_welding --json
+python etd_cli.py sandbox-check examples/etd.hyundai.wia_welding
+python etd_cli.py sandbox-check examples/etd.hyundai.wia_welding --json
 
 # REST API
 uvicorn api.app:app --reload
@@ -188,7 +190,8 @@ tests/
 ├── test_atlas_adapter_registry.py # 47 — AtlasAdapter unit+integration, adapter registry prefix/exact/fallback/register, get_adapter_for_skill dry_run+sink, skill_action_server auto-wiring
 └── test_entitlement_token.py      # 36 — EntitlementToken payload/covers/expiry, issue_token roundtrip, verify_token valid/wrong-key/tampered/expired, SkillStore integration with signed token, CLI token issue/verify
 ├── test_version_negotiator.py     # 47 — parse_version, satisfies (>=/>/<=/</==/!=/~= compat-release/conjunctions), best_version, sort_versions, SkillStore.get_versions/get_entry, CLI versions command
-├── test_review_pipeline.py        # 48 — StageResult/ReviewResult, pipeline schema/capability/safety/compat stages, human_review_required flag, real packages, CLI review command
+├── test_review_pipeline.py        # 48 — StageResult/ReviewResult, pipeline sandbox/schema/capability/safety/compat stages, human_review_required flag, real packages, CLI review command
+├── test_sandbox.py                # 66 — SandboxViolation/SandboxReport, SandboxChecker (config-only, forbidden imports/OS calls/builtins/open-write), multi-file, pycache exclusion, syntax errors; SkillSandbox runtime blocker; ReviewPipeline sandbox stage; CLI sandbox-check
 ├── test_marketplace.py       # 48 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}, _compat_level non-dict no-level-attr → D, revoked skill blocked, non-revoked not blocked, no-revoked-file → empty set, _load_revoked extracts ids, audit allowed/blocked entries, signature_invalid blocks install
 ├── test_station_profiles.py  # 39 — compatibility checker, optional fields, no-services branch, empty-required+nonempty-available, all-required-present+nonempty-available, API, CLI
 ├── test_orbit_bridge.py      # 39 — all severity mappings, filter rules, callback/timestamp, replay, timestamp_ms=0 preserved, replay event without data key
@@ -198,7 +201,7 @@ tests/
 └── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ```
 
-Run: `python -m pytest` — 981 tests, all passing.
+Run: `python -m pytest` — 1047 tests, all passing.
 
 ---
 

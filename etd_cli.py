@@ -448,6 +448,25 @@ def versions_cmd(skill_id: str, runtime: str):
         click.echo(f'  {entry.version}  constraint={constraint}{marker}')
 
 
+@cli.command('sandbox-check')
+@click.argument('package_path')
+@click.option('--json', 'as_json', is_flag=True, help='Output as JSON')
+def sandbox_check(package_path: str, as_json: bool):
+    """Static sandbox analysis of a skill package (AST scan for forbidden imports/calls)."""
+    from marketplace.sandbox import SandboxChecker
+    import json as _json
+    p = Path(package_path)
+    if not p.exists():
+        click.echo(f'Error: package path does not exist: {package_path}', err=True)
+        raise SystemExit(1)
+    report = SandboxChecker().check(p)
+    if as_json:
+        click.echo(_json.dumps(report.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        click.echo(report.summary())
+    raise SystemExit(0 if report.passed else 1)
+
+
 @cli.group()
 def token():
     """Issue and verify signed entitlement tokens (Ed25519)."""

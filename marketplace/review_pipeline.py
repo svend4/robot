@@ -164,6 +164,7 @@ class ReviewPipeline:
             risk_level=risk_level,
         )
 
+        result.stages.append(self._stage_sandbox(p))
         result.stages.append(self._stage_schema(p))
         result.stages.append(self._stage_capabilities(caps))
         result.stages.append(self._stage_safety(manifest, profiles_doc, risk_level))
@@ -177,7 +178,21 @@ class ReviewPipeline:
 
         return result
 
-    # ── Stage 1: Schema validation ────────────────────────────────────────────
+    # ── Stage 1: Sandbox static analysis ─────────────────────────────────────
+
+    def _stage_sandbox(self, p: Path) -> StageResult:
+        from marketplace.sandbox import SandboxChecker
+        stage = StageResult(name='sandbox_check')
+        try:
+            report = SandboxChecker().check(p)
+            stage.passed = report.passed
+            stage.findings = [str(v) for v in report.violations]
+            stage.warnings = list(report.notes)
+        except Exception as exc:
+            stage.findings.append(f'sandbox_checker_exception: {exc}')
+        return stage
+
+    # ── Stage 2: Schema validation ────────────────────────────────────────────
 
     def _stage_schema(self, p: Path) -> StageResult:
         stage = StageResult(name='schema_validation')
