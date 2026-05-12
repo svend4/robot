@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.35.0 — validator compat fallback, CLI dual flags, acceptance runner expect branches (615 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (55 → 56 tests):
+  - **Missing `compatibility` key → `or {}` fallback** (line 228): removed the
+    entire `compatibility` section from manifest → `compat = {}` →
+    `compat.get('robotClass', []) = []` → `robot_class_mismatch` confirmed
+- `tests/test_cli.py` (42 → 43 tests):
+  - **`_load_ctx` both `--robot-class` AND `--service` simultaneously**: exercises
+    both `if robot_class is not None:` and `if services:` branches in a single
+    call; one service provided → many missing → compat errors → exit 1
+- `tests/test_acceptance.py` (69 → 71 tests):
+  - **Missing `status` key in `expect` dict**: `exp_status = None` →
+    `if exp_status and ...` short-circuits → status check skipped →
+    `passed = True` regardless of actual status
+  - **`status` matches, no `reason` key**: `exp_reason = None` → reason check
+    also skipped → `passed = True` even with an arbitrary actual reason
+
+### Test totals by module (615 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 56 |
+| `test_api.py` | 30 |
+| `test_cli.py` | 43 |
+| `test_marketplace.py` | 36 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 215 |
+| `test_acceptance.py` | 71 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 57 |
+
+---
+
 ## 0.34.0 — cross-module branch coverage: validator fallbacks, marketplace, API, signing, ROS 2 (611 tests)
 
 ### Coverage additions

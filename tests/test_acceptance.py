@@ -758,3 +758,29 @@ def test_atlas_handover_timeout_aborts(monkeypatch):
     result = run_fn({'chsProfile': 'human_handover'}, middleware=mw)
     assert result['status'] == 'aborted'
     assert result['reason'] == 'handover_timeout'
+
+
+# ── _run_test: missing 'status' key in expect → exp_status None → check skipped
+
+def test_run_test_no_status_in_expect_skips_status_check():
+    # expect dict has no 'status' key → exp_status = None → if exp_status and ... → False
+    # → failure_msg stays None → test passes regardless of actual status
+    test_spec = {'id': 'no_status', 'description': 'no status check'}
+    r = _run_test(_make_run_fn('completed'), test_spec, 'etd.test.skill')
+    assert r.passed is True
+    assert r.failure_message is None
+
+
+# ── _run_test: 'status' matches but 'reason' missing → reason check skipped ──
+
+def test_run_test_no_reason_in_expect_skips_reason_check():
+    # expect has status (matches) but no 'reason' key → exp_reason = None → check skipped
+    test_spec = {
+        'id': 'no_reason',
+        'description': 'status matches, reason check skipped',
+        'expect': {'status': 'aborted'},  # no 'reason' key
+    }
+    # run_fn returns status='aborted' with an arbitrary reason
+    r = _run_test(_make_run_fn('aborted', reason='some_unexpected_reason'), test_spec, 'etd.test.skill')
+    assert r.passed is True
+    assert r.failure_message is None

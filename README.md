@@ -171,17 +171,17 @@ A package that requests any forbidden capability is blocked at validation.
 tests/
 ├── test_validator.py         # 52 — _JSONSCHEMA_AVAILABLE=False branches, engine exception, .yml load
 ├── test_api.py               # 28 — REST endpoints incl. station+nonexistent-skill branch, absolute path
-├── test_cli.py               # 42 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else []
+├── test_cli.py               # 43 — stations command, install not-found, _check_station_entry(None), chained --family+--free filter, missing requiredServices → else [], --robot-class+--service together
 ├── test_marketplace.py       # 36 — skill_store __main__ block, validation_failed reason, __init__ exports, missing licensing_policy → {}
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
 ├── test_sim_modules.py       # 215 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch, demo fail_fast break, scenario_runner non-dir skip
-├── test_acceptance.py        # 69 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI
+├── test_acceptance.py        # 71 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, missing status/reason in expect → checks skipped
 ├── test_ros2_bridge.py       # 35 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2()
 └── test_signing.py           # 57 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch
 ```
 
-Run: `python -m pytest` — 611 tests, all passing.
+Run: `python -m pytest` — 615 tests, all passing.
 
 ---
 

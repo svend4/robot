@@ -478,3 +478,20 @@ def test_validate_station_no_required_services_field(tmp_path):
     # Station check ran (not skipped) — manifest.yaml and skill.json both exist
     assert 'Station check skipped' not in result.output
     assert 'COMPATIBLE' in result.output or 'INCOMPATIBLE' in result.output
+
+
+# ── _load_ctx: both --robot-class AND --service flags together ────────────────
+
+def test_validate_robot_class_and_service_both_applied():
+    # Exercises both `if robot_class is not None:` and `if services:` branches
+    # in _load_ctx simultaneously (only one service → missing others → compat fail)
+    result = runner.invoke(cli, [
+        'validate', 'examples/etd.pickplace.basic',
+        '--runtime-context', 'runtime_context.json',
+        '--robot-class', 'humanoid',
+        '--service', 'perception.object_pose',
+    ])
+    # robot_class='humanoid' is set; available_services=['perception.object_pose'] is set
+    # Many required services missing → compat errors → exit 1
+    assert result.exit_code == 1
+    assert 'FAIL' in result.output

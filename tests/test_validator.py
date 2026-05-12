@@ -628,3 +628,18 @@ def test_semantic_missing_constraints_key_payload_valid(tmp_path):
     report = ETDReferenceValidator(ctx).validate_package(dst)
     # payload_max is None → payload_within_constraints = True → not an error source
     assert not any('payload_within_constraints' in e for e in report.errors)
+
+
+# ── Missing 'compatibility' key → or {} fallback → compat = {} (line 228) ────
+
+def test_compat_missing_compatibility_key_or_fallback(tmp_path):
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'no_compat_key'
+    shutil.copytree(src, dst)
+    manifest = yaml.safe_load((dst / 'manifest.yaml').read_text())
+    manifest.pop('compatibility', None)
+    (dst / 'manifest.yaml').write_text(yaml.dump(manifest))
+    ctx = _base_ctx()
+    report = ETDReferenceValidator(ctx).validate_package(dst)
+    # compat = {} → compat.get('robotClass', []) = [] → robot_class_mismatch
+    assert 'robot_class_mismatch' in report.compatibility['errors']
