@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.57.0 — INDEX.md descriptions updated to match expanded docs
+
+- Updated `docs/INDEX.md` roadmap, productization, funding, due-diligence,
+  and marketplace-architecture entries to reflect their expanded content.
+
+---
+
+## 0.56.0 — Five stub docs expanded to full content
+
+- `technical-due-diligence-checklist.md`: 9 verifiable sections (safety boundary,
+  signing, schema, station compat, failure scenarios, coverage, API, dependencies,
+  code quality)
+- `marketplace-architecture.md`: component diagram, install flow, license tiers,
+  safety enforcement at three checkpoints
+- `roadmap-v0.2.md`: v0.5.0 done, v0.6.0 hardening, v0.7.0 OEM bridge,
+  v1.0.0 production marketplace, long-term vision
+- `productization-notes.md`: positioning, target segments, differentiators,
+  4-phase go-to-market, risks/mitigations
+- `funding-pitch-outline.md`: full pitch structure — problem, solution, traction,
+  market, business model, ask, why now
+
+---
+
+## 0.55.0 — Four stub docs expanded to full technical reference
+
+- `architecture.md`: layered stack diagram, all components, ETD mapping system,
+  execution flow, station compatibility, safety invariants
+- `atlas-integration-notes.md`: all 9 primitives with gate conditions, CHS
+  profiles table, handover timeout, integration boundary
+- `package-format.md`: every package file with schema examples, naming
+  conventions, validation levels A–D
+- `use-cases-automotive.md`: one section per skill with automotive context,
+  profiles, gate conditions; platform/station mapping table
+
+---
+
+## 0.54.0 — Hyundai integration notes + Atlas expansion + INDEX corrections
+
+- Added `docs/hyundai-integration-notes.md`: all three Hyundai platforms
+  (WIA welding, MobED AMR, VEX exoskeleton) — primitives, ETD layer roles,
+  integration boundaries, safety model, middleware contract
+- Updated `docs/INDEX.md`: new hyundai doc linked, test counts corrected
+  (160→689, acceptance 39→98)
+- Updated `README.md`: hyundai-integration-notes referenced in key docs list
+
+---
+
 ## 0.53.0 — ROS2 client 93%→98%: feedback callback + sys.path.insert branch (689 tests)
 
 ### Coverage additions

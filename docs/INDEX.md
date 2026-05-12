@@ -21,10 +21,10 @@ Grouped by topic below.
 
 | File | Summary |
 |---|---|
-| [roadmap-v0.2.md](roadmap-v0.2.md) | Immediate next milestones: JSON Schema, signing, simulator cert, REST API |
-| [productization-notes.md](productization-notes.md) | Notes on turning the PoC into a shippable product |
-| [funding-pitch-outline.md](funding-pitch-outline.md) | Thesis and pitch structure for investor conversations |
-| [technical-due-diligence-checklist.md](technical-due-diligence-checklist.md) | Due-diligence checklist for technical reviewers and investors |
+| [roadmap-v0.2.md](roadmap-v0.2.md) | Full roadmap: v0.5.0 done items, v0.6.0 hardening (audit log, revocation, fleet rollout), v0.7.0 OEM bridge, v1.0.0 production marketplace |
+| [productization-notes.md](productization-notes.md) | Positioning, target segments, key differentiators, 4-phase go-to-market, risks and mitigations |
+| [funding-pitch-outline.md](funding-pitch-outline.md) | Problem/solution/traction/market/business model/ask/why-now pitch structure |
+| [technical-due-diligence-checklist.md](technical-due-diligence-checklist.md) | 9-section checklist with verifiable commands — safety, signing, schema, station compat, failure scenarios, coverage, API, dependencies, code quality |
 
 ---
 
@@ -32,7 +32,7 @@ Grouped by topic below.
 
 | File | Summary |
 |---|---|
-| [marketplace-architecture.md](marketplace-architecture.md) | Skill store architecture: index, policy, entitlement, signing |
+| [marketplace-architecture.md](marketplace-architecture.md) | Skill store architecture: component diagram, install flow, license tiers, safety enforcement at three checkpoints |
 | [marketplace-commercial-policy.md](marketplace-commercial-policy.md) | Policy rules: what is required/blocked for each license model |
 | [marketplace-commercial-model.md](marketplace-commercial-model.md) | Revenue model: open-source core + commercial skill tiers |
 | [marketplace-protection-model.md](marketplace-protection-model.md) | Package protection: signing, sandboxing, audit trails |
