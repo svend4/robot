@@ -399,3 +399,19 @@ def test_store_missing_licensing_policy_falls_back_to_empty_dict(tmp_path):
     # Deliberately do NOT copy licensing_policy.json
     store = SkillStore(tmp_path)
     assert store.licensing_policy == {}
+
+
+# ── _compat_level: non-dict compatibility with no .level attr → 'D' default ──
+
+def test_compat_level_non_dict_no_level_attr_falls_back_to_d(store):
+    """Non-dict compatibility object without .level → getattr default 'D'."""
+    class _CompatNoLevel:
+        pass  # no .level attribute
+
+    class _ReportWithNonDictCompat:
+        compatibility = _CompatNoLevel()
+        valid = True
+        errors = []
+
+    level = store._compat_level(_ReportWithNonDictCompat())
+    assert level == 'D'

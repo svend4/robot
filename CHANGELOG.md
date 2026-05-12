@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.36.0 — adapter branch coverage: exo gain/mode, cobot speed, assembly threshold, infra fallbacks (622 tests)
+
+### Coverage additions
+- `tests/test_acceptance.py` (71 → 75 tests):
+  - **Exo `adapt_gain` below fatigue threshold**: `fatigue_pct=50 < threshold=70` →
+    `if fatigue_pct >= ctx.fatigue_threshold_pct` is False → `final_gain` stays 1.0,
+    `assist.mode_switched` NOT published
+  - **Exo `engage_assist` mode='reach'**: falls through both `if mode == 'overhead':`
+    and `elif mode == 'lumbar':` → neither overhead nor lumbar event published, but
+    `assist.torque_applied` IS published; skill completes
+  - **Cobot `social_approach` missing `human_in_safety_radius` key**: `human.get(...)`
+    returns None → falsy → `speed_factor = 0.8` (not 0.4); confirmed via
+    `command.skill_intent` capture; skill completes
+  - **Assembly `vision_align` confidence exactly at threshold**: `confidence=0.90` with
+    `alignment_confidence_min=0.90` → strict `<` check → `0.90 < 0.90` is False →
+    not aborted → skill completes
+- `tests/test_station_profiles.py` (37 → 38 tests):
+  - **Empty `required_services` with non-empty `available_services`**:
+    `missing_services = []` → `if missing_services:` is False → no incompatibility
+    from services → `compatible=True`
+- `tests/test_marketplace.py` (36 → 37 tests):
+  - **`_compat_level` non-dict `compatibility` with no `.level` attr**:
+    `getattr(compatibility, "level", "D")` returns default `"D"` (the `else` branch
+    of `isinstance(compatibility, dict)` with an object lacking the attribute)
+- `tests/test_api.py` (30 → 31 tests):
+  - **`/store/install` `available_services` override branch**: non-empty list →
+    `if req.available_services:` True → `ctx.available_services` replaced; contrast
+    with empty list (branch skipped, default full services retained)
+
+### Test totals by module (622 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 56 |
+| `test_api.py` | 31 |
+| `test_cli.py` | 43 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 38 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 215 |
+| `test_acceptance.py` | 75 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 57 |
+
+---
+
 ## 0.35.0 — validator compat fallback, CLI dual flags, acceptance runner expect branches (615 tests)
 
 ### Coverage additions

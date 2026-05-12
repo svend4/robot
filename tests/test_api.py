@@ -368,3 +368,33 @@ def test_sign_package_exception_returns_500(tmp_path):
         })
     assert r.status_code == 500
     assert 'signing failed' in r.json()['detail']
+
+
+# ── POST /store/install: available_services overrides ctx.available_services ──
+
+def test_install_available_services_overrides_context():
+    """Non-empty available_services replaces ctx.available_services before validation.
+
+    Contrast: empty list (falsy) → branch skipped → default full services → allowed.
+    Non-empty incomplete list → branch taken → ctx gets subset → missing services → fails.
+    """
+    # Branch NOT taken (empty list): default full services → validation passes
+    r_no_override = client.post('/store/install', json={
+        'skill_id': 'etd.pickplace.basic',
+        'robot_class': 'humanoid',
+        'runtime_version': '0.1.0',
+        'available_services': [],
+    })
+    assert r_no_override.status_code == 200
+    assert r_no_override.json()['allowed'] is True
+
+    # Branch TAKEN (incomplete list): ctx.available_services overridden → missing services
+    r_override = client.post('/store/install', json={
+        'skill_id': 'etd.pickplace.basic',
+        'robot_class': 'humanoid',
+        'runtime_version': '0.1.0',
+        'available_services': ['perception.object_pose'],  # incomplete: many services missing
+    })
+    assert r_override.status_code == 200
+    assert r_override.json()['allowed'] is False
+    assert r_override.json()['reason'] == 'validation_failed'

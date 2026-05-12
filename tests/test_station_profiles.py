@@ -469,3 +469,24 @@ def test_compatible_skips_service_check_when_station_has_no_services():
     )
     assert result.compatible is True
     assert result.missing_services == []
+
+
+# ── check_skill_compatible: empty required_services + non-empty available ─────
+
+def test_compatible_empty_required_services_with_nonempty_available_passes():
+    """Skill requires no services: missing_services=[] even when station has services."""
+    p = StationProfile(
+        station_id='rich_station', allowed_skill_families=['manipulator'],
+        max_payload_kg=20.0, requires_human_aware=False,
+        available_services=['perception.object_pose', 'force_control.contact_feedback'],
+    )
+    result = check_skill_compatible(
+        p,
+        skill_family='manipulator',
+        payload_kg=5.0,
+        requires_human_aware=False,
+        required_services=[],
+    )
+    assert result.compatible is True
+    assert result.missing_services == []
+    assert result.reason == 'station_compatible'

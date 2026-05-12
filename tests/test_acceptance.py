@@ -784,3 +784,76 @@ def test_run_test_no_reason_in_expect_skips_reason_check():
     r = _run_test(_make_run_fn('aborted', reason='some_unexpected_reason'), test_spec, 'etd.test.skill')
     assert r.passed is True
     assert r.failure_message is None
+
+
+# ── Vest exoskeleton: adapt_gain below fatigue threshold → final_gain stays 1.0
+
+def test_exo_adapt_gain_below_fatigue_threshold_stays_at_full_gain():
+    """fatigue_pct=50 < threshold=70: adapt_gain branch not taken, final_gain=1.0."""
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    # intent mode='overhead' so detect_intent passes; fatigue_pct=50 < 70
+    mw = _AdapterMW(
+        intent={'confidence': 0.95, 'mode': 'overhead', 'direction': 'up'},
+        fatigue={'fatigue_pct': 50, 'session_sec': 300},
+    )
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'completed'
+    assert result['final_gain'] == 1.0
+    event_names = [e['event'] for e in mw.events]
+    assert 'assist.mode_switched' not in event_names
+
+
+# ── Vest exoskeleton: engage_assist mode='reach' → no overhead/lumbar event ──
+
+def test_exo_engage_assist_reach_mode_skips_overhead_and_lumbar_events():
+    """mode='reach' falls through both if/elif in engage_assist, torque still applied."""
+    run_fn = _load_run('etd.hyundai.vest_exoskeleton')
+    mw = _AdapterMW(
+        intent={'confidence': 0.95, 'mode': 'reach', 'direction': 'forward'},
+        fatigue={'fatigue_pct': 10, 'session_sec': 0},
+    )
+    result = run_fn({'profileId': 'overhead_assembly'}, middleware=mw)
+    assert result['status'] == 'completed'
+    event_names = [e['event'] for e in mw.events]
+    assert 'assist.overhead_mode_entered' not in event_names
+    assert 'assist.lumbar_mode_entered' not in event_names
+    assert 'assist.torque_applied' in event_names
+
+
+# ── Cobot safeassist: human_in_safety_radius key absent → speed_factor=0.8 ───
+
+def test_cobot_social_approach_missing_safety_radius_key_uses_fast_speed():
+    """When safety state has no human_in_safety_radius key, speed_factor=0.8 (not 0.4)."""
+    run_fn = _load_run('etd.cobot.safeassist')
+
+    published_intents = []
+
+    class _CaptureMW(_AdapterMW):
+        def publish(self, topic, msg):
+            if topic == 'command.skill_intent':
+                published_intents.append(msg)
+            super().publish(topic, msg)
+
+    # Safety state lacks 'human_in_safety_radius' → .get() returns None → falsy
+    mw = _CaptureMW(
+        after_n_safety_reads=0,
+        then_safety={'human_in_forbidden_zone': False, 'human_ready_signal': True},
+    )
+    result = run_fn({'chsProfile': 'handover_assist'}, middleware=mw)
+    assert result['status'] == 'completed'
+    social_intents = [i for i in published_intents if i.get('primitive') == 'social_approach']
+    assert len(social_intents) == 1
+    assert social_intents[0]['speed_factor'] == 0.8
+
+
+# ── Assembly precision: vision_align confidence == threshold → not aborted ───
+
+def test_assembly_vision_align_confidence_at_exact_threshold_passes():
+    """confidence=0.90 with threshold=0.90: strict-less check means NOT aborted."""
+    run_fn = _load_run('etd.assembly.precision')
+    # part_alignment override: confidence exactly equals peg_in_hole threshold (0.90)
+    mw = _AdapterMW(part_alignment={'confidence': 0.90, 'offset_mm': 0.0, 'aligned': True})
+    result = run_fn({'chsProfile': 'peg_in_hole'}, middleware=mw)
+    assert result['status'] == 'completed'
+    event_names = [e['event'] for e in mw.events]
+    assert 'skill.aborted' not in event_names
