@@ -324,3 +324,18 @@ def test_install_mobed_with_compatible_station():
     assert body['station_compatible'] is True
     assert 'station_warnings' in body
     assert 'station_missing_services' in body
+
+
+def test_install_nonexistent_skill_with_valid_station():
+    """Valid station_id + unknown skill_id: entry=None branch skips station check."""
+    r = client.post('/store/install', json={
+        'skill_id': 'etd.does.not.exist',
+        'robot_class': 'humanoid',
+        'available_services': [],
+        'station_id': 'weld_station_a',
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body['allowed'] is False
+    assert body['reason'] == 'skill_not_found'
+    assert 'station_compatible' not in body

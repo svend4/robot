@@ -170,18 +170,18 @@ A package that requests any forbidden capability is blocked at validation.
 ```
 tests/
 ├── test_validator.py         # 47 — semantic checks, main() pretty/json/fallback ctx, score degradation
-├── test_api.py               # 27 — REST endpoints incl. absolute path, family filters, station install
+├── test_api.py               # 28 — REST endpoints incl. station+nonexistent-skill branch, absolute path
 ├── test_cli.py               # 40 — stations command, install not-found, _check_station_entry(None)
-├── test_marketplace.py       # 33 — validation_failed reason, adapters/__init__ + sim/__init__ exports
+├── test_marketplace.py       # 35 — skill_store __main__ block, validation_failed reason, __init__ exports
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
-├── test_sim_modules.py       # 204 — visualizer.main(), ascii_timeline edges, _plot_gantt ImportError, FakeMiddleware
+├── test_sim_modules.py       # 205 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s
 ├── test_acceptance.py        # 46 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, main() CLI
 ├── test_ros2_bridge.py       # 34 — server/client main(--dry-run), no-middleware branches, all-8 parametrized
 └── test_signing.py           # 56 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip
 ```
 
-Run: `python -m pytest` — 561 tests, all passing.
+Run: `python -m pytest` — 565 tests, all passing.
 
 ---
 

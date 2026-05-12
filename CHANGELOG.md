@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.27.0 — __main__ blocks and API station+nonexistent-skill branch (565 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (204 → 205 tests):
+  - `sim/event_replay.py` `__main__` block via `runpy.run_path` — verifies JSON output
+    with `skill_id`, `envelopes`, `first='skill.started'`, `last='skill.completed'`
+- `tests/test_marketplace.py` (33 → 35 tests):
+  - `marketplace/skill_store.py` `__main__` block via `runpy.run_path` — verifies 8
+    install decision JSON objects printed, each with `skillId` and `allowed` fields
+- `tests/test_api.py` (27 → 28 tests):
+  - `POST /store/install` with valid `station_id` + unknown `skill_id` — exercises the
+    `if entry:` branch inside the station check loop; confirms `station_compatible` absent
+    from response when skill entry is not found
+
+### Test totals by module (565 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 205 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **565** |
+
+---
+
 ## 0.26.0 — generate/sign/verify script main() functions (561 tests)
 
 ### Coverage additions

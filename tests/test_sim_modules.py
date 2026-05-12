@@ -72,6 +72,19 @@ def test_aborted_lifecycle_ends_with_abort():
     assert log[-1]['data']['reason'] == 'human_in_forbidden_zone'
 
 
+# ── sim/event_replay.py __main__ block ───────────────────────────────────────
+
+def test_event_replay_module_main_prints_json(capsys):
+    import runpy
+    runpy.run_path(str(ROOT / 'sim' / 'event_replay.py'), run_name='__main__')
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data['skill_id'] == 'etd.pickplace.basic'
+    assert data['envelopes'] > 0
+    assert data['first'] == 'skill.started'
+    assert data['last'] == 'skill.completed'
+
+
 def test_aborted_lifecycle_no_completed_event():
     log = aborted_lifecycle('etd.x', ['approach'])
     assert not any(e['event'] == 'skill.completed' for e in log)

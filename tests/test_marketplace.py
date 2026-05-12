@@ -358,3 +358,31 @@ def test_sim_package_exports():
     assert callable(sim.nominal_lifecycle)
     assert sim.FakeMiddleware is not None
     assert callable(sim.run_all_scenarios)
+
+
+# ── marketplace/skill_store.py __main__ block ─────────────────────────────────
+
+def test_skill_store_module_main_prints_eight_decisions(capsys):
+    import runpy
+    runpy.run_path(str(ROOT / 'marketplace' / 'skill_store.py'), run_name='__main__')
+    out = capsys.readouterr().out
+    parsed_count = out.count('"skillId"')
+    assert parsed_count == 8
+
+
+def test_skill_store_module_main_all_have_allowed_field(capsys):
+    import runpy, json as _json
+    runpy.run_path(str(ROOT / 'marketplace' / 'skill_store.py'), run_name='__main__')
+    out = capsys.readouterr().out
+    blocks = [b.strip() for b in out.strip().split('\n}\n') if b.strip()]
+    decisions = []
+    for block in blocks:
+        if not block.startswith('{'):
+            block = '{' + block
+        if not block.endswith('}'):
+            block += '}'
+        decisions.append(_json.loads(block))
+    assert len(decisions) == 8
+    for d in decisions:
+        assert 'skillId' in d
+        assert 'allowed' in d
