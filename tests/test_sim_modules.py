@@ -697,6 +697,7 @@ def test_print_suite_verbose_shows_status(capsys):
 
 from sim.visualizer import (
     PrimitiveTrace, SkillTrace, TracingMiddleware, _bar, ascii_timeline, run_traced,
+    main as _viz_main, _plot_gantt,
 )
 
 
@@ -1508,3 +1509,120 @@ def test_report_runner_main_writes_files(monkeypatch, capsys):
     capsys.readouterr()
     assert (ROOT / 'reports' / 'report_summary.json').exists()
     assert (ROOT / 'reports' / 'report_summary.md').exists()
+
+
+# ── visualizer.main() ─────────────────────────────────────────────────────────
+
+def test_visualizer_main_all_skills_outputs_timeline(capsys, monkeypatch):
+    import random
+    random.seed(42)
+    monkeypatch.setattr(_sys, 'argv', ['visualizer.py'])
+    _viz_main()
+    out = capsys.readouterr().out
+    assert 'ETD Skill Execution Timeline' in out
+    assert 'etd.pickplace.basic' in out
+    assert 'etd.hyundai.wia_welding' in out
+
+
+def test_visualizer_main_single_skill(capsys, monkeypatch):
+    import random
+    random.seed(42)
+    monkeypatch.setattr(_sys, 'argv', ['visualizer.py', '--skill', 'etd.pickplace.basic'])
+    _viz_main()
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'ETD Skill Execution Timeline' in out
+    assert 'etd.hyundai.wia_welding' not in out
+
+
+def test_visualizer_main_single_skill_with_profile(capsys, monkeypatch):
+    import random
+    random.seed(42)
+    monkeypatch.setattr(_sys, 'argv', [
+        'visualizer.py', '--skill', 'etd.pickplace.basic', '--profile', 'fragile_item',
+    ])
+    _viz_main()
+    out = capsys.readouterr().out
+    assert 'etd.pickplace.basic' in out
+    assert 'fragile_item' in out
+
+
+def test_visualizer_main_error_branch(capsys, monkeypatch):
+    monkeypatch.setattr(_sys, 'argv', ['visualizer.py', '--skill', 'etd.does.not.exist'])
+    _viz_main()
+    out = capsys.readouterr().out
+    assert 'ERROR:' in out
+
+
+# ── ascii_timeline() edge cases ───────────────────────────────────────────────
+
+def test_ascii_timeline_no_primitives():
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1, status='completed')
+    trace.events = [{'event': 'skill.started'}]
+    trace.result = {}
+    out = ascii_timeline([trace])
+    assert 'etd.x' in out
+    assert 'ETD Skill Execution Timeline' in out
+
+
+def test_ascii_timeline_no_result_keys_omits_result_line():
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1, status='completed')
+    trace.primitives.append(PrimitiveTrace(name='init', start=t0, end=t0 + 0.05, status='ok'))
+    trace.events = []
+    trace.result = {'some_other_key': True}
+    out = ascii_timeline([trace])
+    assert 'Result:' not in out
+
+
+def test_ascii_timeline_empty_result_omits_result_line():
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1, status='completed')
+    trace.events = []
+    trace.result = {}
+    out = ascii_timeline([trace])
+    assert 'Result:' not in out
+
+
+def test_ascii_timeline_running_status_icon():
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1, status='completed')
+    trace.primitives.append(PrimitiveTrace(name='move', start=t0, end=t0 + 0.05, status='running'))
+    trace.events = []
+    trace.result = {}
+    out = ascii_timeline([trace])
+    assert '…' in out
+
+
+def test_ascii_timeline_unknown_status_shows_question_mark():
+    import time
+    t0 = time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1, status='completed')
+    trace.primitives.append(PrimitiveTrace(name='move', start=t0, end=t0 + 0.05, status='mystery_status'))
+    trace.events = []
+    trace.result = {}
+    out = ascii_timeline([trace])
+    assert '?' in out
+
+
+# ── _plot_gantt() ImportError branch ─────────────────────────────────────────
+
+def test_plot_gantt_no_matplotlib_prints_message(capsys, monkeypatch):
+    import sys, builtins
+    for key in list(sys.modules.keys()):
+        if 'matplotlib' in key:
+            monkeypatch.delitem(sys.modules, key, raising=False)
+    real_import = builtins.__import__
+    def _block_matplotlib(name, *args, **kwargs):
+        if name == 'matplotlib' or name.startswith('matplotlib.'):
+            raise ImportError(f'No module named {name!r}')
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, '__import__', _block_matplotlib)
+    _plot_gantt([])
+    out = capsys.readouterr().out
+    assert 'matplotlib not installed' in out

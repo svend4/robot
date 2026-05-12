@@ -175,13 +175,13 @@ tests/
 ├── test_marketplace.py       # 33 — validation_failed reason, adapters/__init__ + sim/__init__ exports
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 37 — all severity mappings, filter rules, callback/timestamp, replay
-├── test_sim_modules.py       # 194 — run_sim_demo/run_assembly_demo, FakeMiddleware edges, all main()s
+├── test_sim_modules.py       # 204 — visualizer.main(), ascii_timeline edges, _plot_gantt ImportError, FakeMiddleware
 ├── test_acceptance.py        # 46 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, main() CLI
 ├── test_ros2_bridge.py       # 34 — server/client main(--dry-run), no-middleware branches, all-8 parametrized
 └── test_signing.py           # 47 — _package_digest missing files, sign/verify partial, release_package.main()
 ```
 
-Run: `python -m pytest` — 542 tests, all passing.
+Run: `python -m pytest` — 552 tests, all passing.
 
 ---
 

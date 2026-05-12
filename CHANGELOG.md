@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.25.0 — visualizer.main(), ascii_timeline edges, _plot_gantt ImportError (552 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (194 → 204 tests):
+  - `visualizer.main()` with no args — all 8 skills, ASCII timeline output verified
+  - `visualizer.main(--skill ...)` — single skill mode, other skills absent from output
+  - `visualizer.main(--skill ... --profile ...)` — custom profile in output
+  - `visualizer.main()` error branch — nonexistent skill prints `ERROR:` and continues
+  - `ascii_timeline()` with empty `trace.primitives` — no crash, header still present
+  - `ascii_timeline()` with result dict missing all summary keys — no `Result:` line
+  - `ascii_timeline()` with empty result dict — no `Result:` line
+  - `ascii_timeline()` with primitive `status='running'` — `'…'` icon in output
+  - `ascii_timeline()` with unknown primitive status — `'?'` fallback icon in output
+  - `_plot_gantt()` `ImportError` branch — matplotlib mocked absent, prints install hint
+
+### Test totals by module (552 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 47 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 33 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 204 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 47 |
+| **Total** | **552** |
+
+---
+
 ## 0.24.0 — ROS2 main() dry-run, validation_failed reason, package __init__ exports (542 tests)
 
 ### Coverage additions
