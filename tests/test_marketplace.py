@@ -473,3 +473,77 @@ def test_load_revoked_returns_set_of_skill_ids(tmp_path):
     assert 'etd.a.skill' in store._revoked
     assert 'etd.b.skill' in store._revoked
     assert 'etd.c.other' not in store._revoked
+
+
+# ── Audit logging (v0.6.0) ────────────────────────────────────────────────────
+
+def test_validate_for_install_writes_audit_entry_on_allowed(tmp_path):
+    """validate_for_install writes an 'allowed' audit entry for a passing skill."""
+    import shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    # Copy the signed package so signature check passes
+    import shutil as _sh
+    (tmp_path / 'examples').mkdir()
+    _sh.copytree(ROOT / 'examples' / 'etd.pickplace.basic',
+                 tmp_path / 'examples' / 'etd.pickplace.basic')
+    store = SkillStore(tmp_path)
+    store.audit_log._path = tmp_path / 'logs' / 'audit.jsonl'
+    store.audit_log._path.parent.mkdir(parents=True, exist_ok=True)
+    ctx = default_runtime_context()
+    decision = store.validate_for_install('etd.pickplace.basic', ctx,
+                                          station_id='assembly_a', operator_id='op1')
+    entries = store.audit_log.read_entries()
+    assert len(entries) == 1
+    e = entries[0]
+    assert e['skill_id'] == 'etd.pickplace.basic'
+    assert e['station_id'] == 'assembly_a'
+    assert e['operator_id'] == 'op1'
+    assert e['result'] == ('allowed' if decision.allowed else 'blocked')
+    assert 'timestamp' in e
+
+
+def test_validate_for_install_writes_audit_entry_on_revoked(tmp_path):
+    """validate_for_install writes a 'blocked' audit entry for a revoked skill."""
+    import json, shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    (mp / 'revoked.json').write_text(json.dumps({
+        'revoked': [{'skillId': 'etd.pickplace.basic', 'reason': 'test',
+                     'revokedAt': '2026-01-01T00:00:00Z', 'revokedBy': 'test'}]
+    }))
+    store = SkillStore(tmp_path)
+    store.audit_log._path = tmp_path / 'logs' / 'audit.jsonl'
+    store.audit_log._path.parent.mkdir(parents=True, exist_ok=True)
+    ctx = RuntimeContext(runtime_version='0.1.0', robot_class='humanoid', available_services=[])
+    store.validate_for_install('etd.pickplace.basic', ctx)
+    entries = store.audit_log.read_entries()
+    assert len(entries) == 1
+    assert entries[0]['result'] == 'blocked'
+    assert entries[0]['reason'] == 'skill_revoked'
+
+
+# ── Signature verification at install time (v0.6.0) ───────────────────────────
+
+def test_validate_for_install_blocks_unsigned_package(tmp_path):
+    """validate_for_install returns signature_invalid when package has no sig file."""
+    import json, shutil
+    mp = tmp_path / 'marketplace'
+    mp.mkdir()
+    shutil.copy(ROOT / 'marketplace' / 'skill_store_index.json', mp / 'skill_store_index.json')
+    shutil.copy(ROOT / 'marketplace' / 'marketplace_policy.json', mp / 'marketplace_policy.json')
+    (tmp_path / 'examples').mkdir()
+    shutil.copytree(ROOT / 'examples' / 'etd.pickplace.basic',
+                    tmp_path / 'examples' / 'etd.pickplace.basic')
+    sig = tmp_path / 'examples' / 'etd.pickplace.basic' / 'package.sig'
+    if sig.exists():
+        sig.unlink()
+    store = SkillStore(tmp_path)
+    ctx = RuntimeContext(runtime_version='0.1.0', robot_class='humanoid', available_services=[])
+    decision = store.validate_for_install('etd.pickplace.basic', ctx)
+    assert decision.allowed is False
+    assert decision.reason == 'signature_invalid'

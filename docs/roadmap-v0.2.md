@@ -23,18 +23,19 @@ All items below were delivered in the prototype:
 
 **Goal**: make the runtime safe to deploy in a real pilot workcell.
 
-- [ ] **Audit logging.** Every `validate_for_install`, skill execution start,
-  and abort event written to a structured log (JSON Lines). Log includes
-  `skill_id`, `station_id`, `timestamp`, `operator_id`, `result`.
+- [x] **Audit logging.** Every `validate_for_install` written as JSON Lines to
+  `logs/etd_audit.jsonl`. Fields: `skill_id`, `station_id`, `timestamp`,
+  `operator_id`, `result`, `reason`, `validation_level`. `AuditLog` class in
+  `marketplace/audit_log.py`; `audit-log` CLI command for inspection.
 - [x] **Package revocation.** Marketplace supports a `revoked.json` blocklist.
   Revoked skill IDs cannot be installed or executed regardless of entitlement.
   `SkillStore._revoked` set loaded at init; `validate_for_install` returns
   `skill_revoked` before any validation for blocked IDs.
 - [ ] **Fleet rollout policy.** Staged rollout: `canary` (1 station) →
   `pilot` (N stations) → `production`. Rollout state tracked per skill version.
-- [ ] **Signature verification at install time.** `verify_signature.py` called
-  automatically by `validate_for_install`; packages without a valid signature
-  are blocked (currently optional).
+- [x] **Signature verification at install time.** `verify_package()` called
+  silently by `validate_for_install` when `requiresSignature=True`. Missing or
+  invalid signature returns `reason="signature_invalid"` before schema validation.
 - [ ] **Runtime context schema.** Formal JSON Schema for `runtime_context.json`
   so OEM integrators can validate their context files before use.
 - [x] **Health check endpoint.** `GET /health` returning validator version,

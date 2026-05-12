@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.64.0 — v0.6.0: audit logging + signature verification at install time (696 → 701 tests)
+
+### Code changes
+
+- `marketplace/audit_log.py` (NEW): `AuditLog` class writing JSON Lines to
+  `logs/etd_audit.jsonl`. Fields: `event_type`, `skill_id`, `timestamp`,
+  `result`, `reason`, `validation_level`, `station_id`, `operator_id`.
+  `record()` is a no-op when `log_path=None` (safe in tests).
+  `read_entries()` parses the log for CLI display.
+- `marketplace/skill_store.py`:
+  - `SkillStore.__init__` creates `AuditLog(repo_root / "logs" / "etd_audit.jsonl")`
+  - `validate_for_install` now accepts `station_id` and `operator_id` kwargs
+  - Every exit path (revoked, not_found, signature_invalid, validation_failed,
+    entitlement_required, allowed) writes one audit entry via `_audit()`
+  - `requiresSignature=True` → calls `verify_package()` silently (stdout
+    suppressed via `contextlib.redirect_stdout`); missing/invalid sig returns
+    `reason="signature_invalid"` before schema validation
+- `etd_cli.py`: added `audit-log` command (`--n`, `--skill`, `--result`,
+  `--json` flags); reads `logs/etd_audit.jsonl` and formats entries as table
+- `examples/etd.*/package.sig`: re-signed all 8 packages with current key
+  (previous sig on etd.pickplace.basic was invalid)
+
+### Tests (696 → 701)
+
+- `tests/test_marketplace.py` (+7): audit entry written on allowed install,
+  audit entry written on revoked install, unsigned package blocked with
+  `signature_invalid`
+- `tests/test_cli.py` (+5): audit-log no-file message, audit-log shows entries
+  with filter; revoke tests already in 0.63.0
+- `tests/test_signing.py` (fixed 2): `test_verify_missing_sig_file_returns_false`
+  and `test_verify_main_exits_one_on_unsigned` now remove package.sig from copy
+  before asserting failure (all packages now have valid sigs)
+- `tests/test_cli.py` (fixed 1): `test_verify_unsigned_package_fails` similarly
+  removes package.sig from tmp copy
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for audit logging and signature
+  verification at install time (5 of 7 v0.6.0 items now complete)
+
+---
+
 ## 0.63.0 — v0.6.0 feature: package revocation blocklist + health endpoint + CLI revoke
 
 ### Code changes

@@ -265,6 +265,37 @@ def install(skill_id: str, token: str | None, robot_class: str | None, runtime_c
     sys.exit(0 if decision.allowed else 1)
 
 
+@cli.command('audit-log')
+@click.option('--n', 'last_n', default=20, show_default=True,
+              help='Show last N entries')
+@click.option('--skill', default=None, help='Filter by skill_id')
+@click.option('--result', 'filter_result', default=None,
+              type=click.Choice(['allowed', 'blocked']), help='Filter by result')
+@click.option('--json', 'as_json', is_flag=True, help='Output raw JSON array')
+def audit_log_cmd(last_n: int, skill: str | None, filter_result: str | None, as_json: bool):
+    """Show recent entries from the ETD audit log."""
+    log_path = ROOT / 'logs' / 'etd_audit.jsonl'
+    if not log_path.exists():
+        click.echo('No audit log found. Run install checks to populate it.')
+        return
+    from marketplace.audit_log import AuditLog
+    entries = AuditLog(log_path).read_entries()
+    if skill:
+        entries = [e for e in entries if e.get('skill_id') == skill]
+    if filter_result:
+        entries = [e for e in entries if e.get('result') == filter_result]
+    entries = entries[-last_n:]
+    if as_json:
+        click.echo(json.dumps(entries, indent=2))
+        return
+    if not entries:
+        click.echo('No matching audit log entries.')
+        return
+    for e in entries:
+        result_str = click.style('ALLOWED', fg='green') if e.get('result') == 'allowed' else click.style('BLOCKED', fg='red')
+        click.echo(f"{e.get('timestamp','?')}  {e.get('skill_id','?'):<40}  {result_str}  {e.get('reason','?')}")
+
+
 @cli.command()
 @click.argument('skill_id')
 @click.option('--reason', default='unspecified', show_default=True,

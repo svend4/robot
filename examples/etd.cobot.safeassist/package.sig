@@ -10,6 +10,6 @@
     "telemetry/events.json",
     "tests/acceptance_tests.yaml"
   ],
-  "signature": "a3ef2fa8419bb7840defab06dfbab1d0fb5ecc392918f5a088ec6b9923166287cf88dde5116e49d967b90865021205c3f3096cd9b1949e8a437e18aa681ecb06",
+  "signature": "e67cb4ddf87d0dd76ed2378543e277e2b01320ce71f430384d089f6fb2301026ecb7f238c8466fbf88bcbda916226d53d103d6233ca070abbd16e07893850e00",
   "verify_key": "4923efa35de7898dd4d74f0566a5fc102c7904b6937f13fc3752014c362a8dbd"
 }

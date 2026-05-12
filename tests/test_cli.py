@@ -221,6 +221,9 @@ def test_verify_unsigned_package_fails(tmp_path):
     src = ROOT / 'examples' / 'etd.pickplace.basic'
     dst = tmp_path / 'unsigned_pkg'
     shutil.copytree(src, dst)
+    sig = dst / 'package.sig'
+    if sig.exists():
+        sig.unlink()
     result = runner.invoke(cli, ['verify', str(dst)])
     assert result.exit_code == 1
 
@@ -720,3 +723,37 @@ def test_revoke_duplicate_is_idempotent(tmp_path):
     assert 'already' in result.output
     data = json.loads(out.read_text())
     assert len(data['revoked']) == 1
+
+
+# ── audit-log command (v0.6.0) ────────────────────────────────────────────────
+
+def test_audit_log_no_file(monkeypatch, tmp_path):
+    """audit-log with no log file prints a helpful message."""
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    result = runner.invoke(cli, ['audit-log'])
+    assert result.exit_code == 0
+    assert 'No audit log' in result.output
+
+
+def test_audit_log_shows_entries(tmp_path, monkeypatch):
+    """audit-log reads and displays entries from the log file."""
+    import json as _json
+    log_dir = tmp_path / 'logs'
+    log_dir.mkdir()
+    log_path = log_dir / 'etd_audit.jsonl'
+    entries = [
+        {'event_type': 'install_check', 'skill_id': 'etd.pickplace.basic',
+         'timestamp': '2026-05-12T10:00:00Z', 'result': 'allowed',
+         'reason': 'install_allowed', 'validation_level': 'A',
+         'station_id': 'assembly_a', 'operator_id': None},
+        {'event_type': 'install_check', 'skill_id': 'etd.bad.skill',
+         'timestamp': '2026-05-12T10:01:00Z', 'result': 'blocked',
+         'reason': 'skill_revoked', 'validation_level': 'D',
+         'station_id': None, 'operator_id': None},
+    ]
+    log_path.write_text('\n'.join(_json.dumps(e) for e in entries) + '\n')
+    monkeypatch.setattr('etd_cli.ROOT', tmp_path)
+    result = runner.invoke(cli, ['audit-log'])
+    assert result.exit_code == 0
+    assert 'etd.pickplace.basic' in result.output
+    assert 'etd.bad.skill' in result.output

@@ -110,6 +110,9 @@ def test_verify_missing_sig_file_returns_false(tmp_path):
     src = ROOT / 'examples' / 'etd.pickplace.basic'
     dst = tmp_path / 'unsigned'
     shutil.copytree(src, dst)
+    sig = dst / 'package.sig'
+    if sig.exists():
+        sig.unlink()
     assert verify_package(dst) is False
 
 
@@ -594,6 +597,9 @@ def test_verify_main_exits_one_on_unsigned(tmp_path, monkeypatch):
     src = ROOT / 'examples' / 'etd.pickplace.basic'
     dst = tmp_path / 'etd.pickplace.basic'
     shutil.copytree(src, dst)
+    sig = dst / 'package.sig'
+    if sig.exists():
+        sig.unlink()
     monkeypatch.setattr(_sys, 'argv', ['verify_signature.py', str(dst)])
     with pytest.raises(SystemExit) as exc_info:
         _vs_main()

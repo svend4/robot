@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from etd_reference_validator import ETDReferenceValidator, RuntimeContext
+from marketplace.audit_log import AuditLog
 
 
 @dataclass
@@ -64,6 +65,7 @@ class SkillStore:
         self.policy = self._load_json(self.policy_path)
         self.licensing_policy = self._load_json(self.licensing_policy_path) if self.licensing_policy_path.exists() else {}
         self._revoked: set[str] = self._load_revoked()
+        self.audit_log = AuditLog(repo_root / "logs" / "etd_audit.jsonl")
 
     def _load_revoked(self) -> set[str]:
         if not self.revocation_path.exists():
@@ -97,9 +99,22 @@ class SkillStore:
         skill_id: str,
         runtime_context: RuntimeContext,
         entitlement_token: Optional[str] = None,
+        station_id: Optional[str] = None,
+        operator_id: Optional[str] = None,
     ) -> InstallDecision:
+        def _audit(decision: InstallDecision) -> InstallDecision:
+            self.audit_log.record(
+                skill_id=decision.skillId,
+                result='allowed' if decision.allowed else 'blocked',
+                reason=decision.reason,
+                validation_level=decision.validationLevel,
+                station_id=station_id,
+                operator_id=operator_id,
+            )
+            return decision
+
         if self.is_revoked(skill_id):
-            return InstallDecision(
+            return _audit(InstallDecision(
                 skillId=skill_id,
                 allowed=False,
                 reason="skill_revoked",
@@ -107,11 +122,11 @@ class SkillStore:
                 licenseModel="unknown",
                 pricingModel="unknown",
                 requiresEntitlement=False,
-            )
+            ))
 
         entry = self.get_entry(skill_id)
         if entry is None:
-            return InstallDecision(
+            return _audit(InstallDecision(
                 skillId=skill_id,
                 allowed=False,
                 reason="skill_not_found",
@@ -119,15 +134,37 @@ class SkillStore:
                 licenseModel="unknown",
                 pricingModel="unknown",
                 requiresEntitlement=False,
-            )
+            ))
 
         package_path = self.repo_root / entry.packagePath
+
+        if entry.requiresSignature:
+            try:
+                import io
+                import contextlib
+                from scripts.verify_signature import verify_package as _verify
+                _buf = io.StringIO()
+                with contextlib.redirect_stdout(_buf):
+                    sig_ok = _verify(package_path)
+            except Exception:
+                sig_ok = False
+            if not sig_ok:
+                return _audit(InstallDecision(
+                    skillId=entry.skillId,
+                    allowed=False,
+                    reason="signature_invalid",
+                    validationLevel="D",
+                    licenseModel=entry.licenseModel,
+                    pricingModel=entry.pricingModel,
+                    requiresEntitlement=entry.requiresEntitlement,
+                ))
+
         validator = ETDReferenceValidator(runtime_context)
         report = validator.validate_package(package_path)
         level = self._compat_level(report)
 
         if level not in {"A", "B"} or not report.valid:
-            return InstallDecision(
+            return _audit(InstallDecision(
                 skillId=entry.skillId,
                 allowed=False,
                 reason="validation_failed",
@@ -135,10 +172,10 @@ class SkillStore:
                 licenseModel=entry.licenseModel,
                 pricingModel=entry.pricingModel,
                 requiresEntitlement=entry.requiresEntitlement,
-            )
+            ))
 
         if entry.requiresEntitlement and not entitlement_token:
-            return InstallDecision(
+            return _audit(InstallDecision(
                 skillId=entry.skillId,
                 allowed=False,
                 reason="entitlement_required",
@@ -146,9 +183,9 @@ class SkillStore:
                 licenseModel=entry.licenseModel,
                 pricingModel=entry.pricingModel,
                 requiresEntitlement=True,
-            )
+            ))
 
-        return InstallDecision(
+        return _audit(InstallDecision(
             skillId=entry.skillId,
             allowed=True,
             reason="install_allowed",
@@ -156,7 +193,7 @@ class SkillStore:
             licenseModel=entry.licenseModel,
             pricingModel=entry.pricingModel,
             requiresEntitlement=entry.requiresEntitlement,
-        )
+        ))
 
     def validate_listing(self, skill_id: str, runtime_context: RuntimeContext) -> Dict[str, Any]:
         entry_payload = self.find_skill(skill_id)
