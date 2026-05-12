@@ -801,6 +801,63 @@ def test_ascii_timeline_multiple_traces():
     assert 'etd.b' in out
 
 
+# ── ascii_timeline: if trace.result: False + if summary_keys: False ────────────
+
+def test_ascii_timeline_empty_result_omits_result_line():
+    """trace.result={} → if trace.result: False → no 'Result:' line in output."""
+    import time as _time
+    t0 = _time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1,
+                       status='completed', result={})  # empty dict → falsy
+    out = ascii_timeline([trace])
+    assert 'Result:' not in out
+
+
+def test_ascii_timeline_no_summary_keys_in_result_omits_result_line():
+    """trace.result is truthy but none of the summary keys present → summary_keys=[] → no 'Result:' line."""
+    import time as _time
+    t0 = _time.time()
+    trace = SkillTrace(skill_id='etd.x', profile='p', start=t0, end=t0 + 0.1,
+                       status='completed',
+                       result={'duration_ms': 42, 'at_primitive': 'grasp'})  # no summary keys
+    out = ascii_timeline([trace])
+    assert 'Result:' not in out
+
+
+def test_ascii_timeline_zero_duration_uses_fallback_total():
+    """total_duration=0 → 'total = 0.0 or 1.0' = 1.0 → no ZeroDivisionError in bar rendering."""
+    import time as _time
+    t0 = _time.time()
+    # end == start → total_duration = 0.0 → fallback to 1.0
+    trace = SkillTrace(skill_id='etd.zero', profile='p', start=t0, end=t0,
+                       status='completed', result={})
+    out = ascii_timeline([trace])   # must not raise ZeroDivisionError
+    assert 'etd.zero' in out
+
+
+# ── run_traced: open primitive cleaned up at end ──────────────────────────────
+
+def test_run_traced_closes_open_primitive_at_end(monkeypatch):
+    """If run_fn returns without closing the last primitive, run_traced sets its end time."""
+    import sim.visualizer as _viz
+
+    def _fake_load_adapter_run(skill_id):
+        def _fake_run(job_ctx, middleware=None):
+            if middleware:
+                middleware.publish('telemetry.events',
+                                  {'event': 'primitive.entered', 'primitive': 'open_prim'})
+                # intentionally NO primitive.exited → _current_primitive stays set
+            return {'status': 'completed'}
+        return _fake_run
+
+    monkeypatch.setattr(_viz, '_load_adapter_run', _fake_load_adapter_run)
+    trace = _viz.run_traced('etd.test.open', 'default')
+    # run_traced must have closed the open primitive via: if mw._current_primitive: ...end = trace.end
+    assert len(trace.primitives) == 1
+    assert trace.primitives[0].end == trace.end
+    assert trace.primitives[0].end > 0
+
+
 # ── TracingMiddleware.publish ─────────────────────────────────────────────────
 
 def _make_mw():

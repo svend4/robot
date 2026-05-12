@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.43.0 — ascii_timeline empty-result/no-summary-keys/zero-duration, run_traced open-primitive cleanup (649 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (220 → 224 tests):
+  - **`ascii_timeline` `if trace.result:` False branch**: `trace.result = {}` (empty dict) →
+    falsy → inner block skipped → no "Result:" line in output
+  - **`ascii_timeline` `if summary_keys:` False branch**: result is truthy but contains no
+    known summary keys (`pass_qc`, `payload_kg`, `confidence`, `handover_accepted`) →
+    `summary_keys = []` → falsy → "Result:" line omitted
+  - **`ascii_timeline` zero-duration `or 1.0` fallback**: `end == start` →
+    `total_duration = 0.0` → `total = 0.0 or 1.0 = 1.0` → no ZeroDivisionError in bar rendering
+  - **`run_traced` open-primitive cleanup**: monkeypatched `_load_adapter_run` returns a
+    function that publishes `primitive.entered` but no `primitive.exited` → after `run_fn()`
+    returns, `if mw._current_primitive:` True → `mw._current_primitive.end = trace.end`
+
+### Test totals by module (649 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 59 |
+| `test_api.py` | 33 |
+| `test_cli.py` | 45 |
+| `test_marketplace.py` | 37 |
+| `test_station_profiles.py` | 39 |
+| `test_orbit_bridge.py` | 38 |
+| `test_sim_modules.py` | 224 |
+| `test_acceptance.py` | 85 |
+| `test_ros2_bridge.py` | 35 |
+| `test_signing.py` | 58 |
+
+---
+
 ## 0.42.0 — test_id name/unknown fallback, _load_run default entrypoint, pick_context path-not-exists (646 tests)
 
 ### Coverage additions
