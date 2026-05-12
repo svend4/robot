@@ -188,6 +188,32 @@ def test_package_digest_differs_between_packages():
     assert _package_digest(pick) != _package_digest(asm)
 
 
+def test_package_digest_skips_missing_files(tmp_path):
+    """_package_digest silently skips files that do not exist."""
+    import shutil
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_partial'
+    shutil.copytree(src, dst)
+    (dst / 'capabilities.json').unlink()
+    # Should not raise; digest computed over remaining files
+    d = _package_digest(dst)
+    assert len(d) == 32
+    # Digest differs from the full-package digest
+    assert d != _package_digest(ROOT / 'examples' / 'etd.pickplace.basic')
+
+
+def test_sign_verify_roundtrip_partial_files(tmp_path, keypair):
+    """Signing and verifying still works when optional signed files are absent."""
+    import shutil
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_nosig_files'
+    shutil.copytree(src, dst)
+    (dst / 'capabilities.json').unlink()
+    sign_package(dst, sk_path)
+    assert verify_package(dst) is True
+
+
 # ── generic_oem_adapter ───────────────────────────────────────────────────────
 
 from adapters.generic_oem_adapter import to_oem_request

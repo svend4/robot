@@ -290,3 +290,39 @@ def test_install_decision_level_a_for_free_skill(store, base_ctx):
     decision = store.validate_for_install('etd.pickplace.basic', base_ctx)
     assert decision.validationLevel == 'A'
     assert decision.requiresEntitlement is False
+
+
+def test_install_decision_level_b_still_allowed(store):
+    """Level B (missing optional services) is still install-allowed."""
+    from etd_reference_validator import RuntimeContext
+    ctx = RuntimeContext(
+        runtime_version='0.1.0',
+        robot_class='humanoid',
+        available_services=[
+            'perception.object_pose', 'manipulation.arm_control',
+            'workflow.job_context', 'state.robot_pose', 'state.arm_state',
+            'state.wrist_state', 'state.safety_state', 'safety.zone_monitor',
+            'vision.barcode_scan', 'quality.photo_capture',
+            # intentionally omit optional: perception.part_alignment, telemetry.metrics
+        ],
+    )
+    decision = store.validate_for_install('etd.pickplace.basic', ctx)
+    assert decision.validationLevel == 'B'
+    assert decision.allowed is True
+    assert decision.reason == 'install_allowed'
+
+
+def test_validate_listing_level_b_install_allowed(store):
+    from etd_reference_validator import RuntimeContext
+    ctx = RuntimeContext(
+        runtime_version='0.1.0',
+        robot_class='humanoid',
+        available_services=[
+            'perception.object_pose', 'manipulation.arm_control',
+            'workflow.job_context', 'state.robot_pose', 'state.arm_state',
+            'state.wrist_state', 'state.safety_state', 'safety.zone_monitor',
+        ],
+    )
+    result = store.validate_listing('etd.pickplace.basic', ctx)
+    assert result['validationLevel'] == 'B'
+    assert result['installAllowed'] is True

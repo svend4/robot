@@ -172,16 +172,16 @@ tests/
 ├── test_validator.py         # 43 — semantic check failures, missing files, schema None, score degradation
 ├── test_api.py               # 27 — REST endpoints incl. absolute path, family filters, station install
 ├── test_cli.py               # 33 — _load_ctx fallback, robot-class override, station JSON, pretty errors
-├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
+├── test_marketplace.py       # 31 — level-B install allowed, validate_listing level-B, SkillStore edges
 ├── test_station_profiles.py  # 37 — compatibility checker, optional fields, no-services branch, API, CLI
 ├── test_orbit_bridge.py      # 30 — orbit event bridge severity/filter/callback/timestamp
-├── test_sim_modules.py       # 156 — FakeMiddleware fail_rate/cancel/complete edge cases, visualizer, demo runner
+├── test_sim_modules.py       # 179 — scenario_runner._pick_context, generator unknown-family, replay edges
 ├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
 ├── test_ros2_bridge.py       # 27 — ETDSkillActionServer/Client, no-middleware branches, all-8 parametrized
-└── test_signing.py           # 38 — Ed25519 sign/verify, no-key branch, keypair gen, _zip_dir
+└── test_signing.py           # 41 — _package_digest missing files, sign/verify with partial package
 ```
 
-Run: `python -m pytest` — 428 tests, all passing.
+Run: `python -m pytest` — 448 tests, all passing.
 
 ---
 

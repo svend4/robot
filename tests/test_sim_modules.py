@@ -1158,3 +1158,107 @@ def test_rr_pick_context_base_fallback():
     contexts = _load_contexts(ROOT)
     ctx = _rr_pick_context('etd.pickplace.basic', contexts)
     assert ctx is contexts['base']
+
+
+# ── scenario_runner._pick_context ─────────────────────────────────────────────
+
+from sim.scenario_runner import _pick_context as _sr_pick_context
+
+
+def test_sr_pick_context_atlas():
+    p = _sr_pick_context('etd.atlas.humanoid_walkfetch')
+    assert 'atlas' in p.name
+
+
+def test_sr_pick_context_humanoid():
+    p = _sr_pick_context('etd.some.humanoid_skill')
+    assert 'atlas' in p.name
+
+
+def test_sr_pick_context_wia():
+    p = _sr_pick_context('etd.hyundai.wia_welding')
+    assert 'wia' in p.name
+
+
+def test_sr_pick_context_mobed():
+    p = _sr_pick_context('etd.hyundai.mobed_transport')
+    assert 'mobed' in p.name
+
+
+def test_sr_pick_context_amr():
+    p = _sr_pick_context('etd.some.amr_logistics')
+    assert 'mobed' in p.name
+
+
+def test_sr_pick_context_vest():
+    p = _sr_pick_context('etd.hyundai.vest_exoskeleton')
+    assert 'exo' in p.name
+
+
+def test_sr_pick_context_exo():
+    p = _sr_pick_context('etd.some.exo_device')
+    assert 'exo' in p.name
+
+
+def test_sr_pick_context_default():
+    p = _sr_pick_context('etd.pickplace.basic')
+    assert p.name == 'runtime_context.json'
+
+
+# ── RobotStateGenerator._table() unknown-family fallback ─────────────────────
+
+def test_generator_unknown_family_uses_pickplace_table():
+    gen = RobotStateGenerator(skill_id='etd.some.unknown_skill_type')
+    prims = gen.primitives()
+    assert 'approach' in prims   # _PICKPLACE primitive
+
+
+def test_generator_unknown_family_at_returns_state():
+    gen = RobotStateGenerator(skill_id='etd.unknown.xyz')
+    state = gen.at('approach')
+    assert state['skill_specific'].get('arm') == 'moving'
+
+
+# ── replay() edge cases ───────────────────────────────────────────────────────
+
+def test_replay_dict_event_missing_skill_id_uses_default():
+    msgs = replay([{'event': 'skill.started'}], skill_id='etd.default.skill')
+    assert msgs[0]['skill_id'] == 'etd.default.skill'
+
+
+def test_replay_mixed_string_and_dict_events():
+    events = [
+        'skill.started',                              # str
+        {'event': 'skill.completed', 'skill_id': 'etd.custom.x'},  # dict with own id
+    ]
+    msgs = replay(events, skill_id='etd.fallback')
+    assert len(msgs) == 2
+    assert msgs[0]['skill_id'] == 'etd.fallback'
+    assert msgs[1]['skill_id'] == 'etd.custom.x'
+
+
+def test_replay_dict_event_with_data_forwarded():
+    msgs = replay([{'event': 'skill.completed', 'data': {'items': 7}}])
+    assert msgs[0]['data']['items'] == 7
+
+
+def test_replay_dict_event_with_timestamp_ms():
+    msgs = replay([{'event': 'skill.started', 'timestamp_ms': 99_000}],
+                  min_severity='debug')
+    assert msgs[0]['timestamp_ms'] == 99_000
+
+
+# ── nominal_lifecycle / aborted_lifecycle edge cases ─────────────────────────
+
+def test_nominal_lifecycle_empty_primitives():
+    log = nominal_lifecycle('etd.x', [])
+    events = [e['event'] for e in log]
+    assert events == ['skill.started', 'skill.completed']
+    assert len(log) == 2
+
+
+def test_aborted_lifecycle_empty_primitives():
+    log = aborted_lifecycle('etd.x', [])
+    events = [e['event'] for e in log]
+    assert events == ['skill.started', 'skill.aborted']
+    assert len(log) == 2

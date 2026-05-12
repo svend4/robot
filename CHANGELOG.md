@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.19.0 — Generator fallback, scenario_runner dispatch, replay edges, level-B install (448 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (156 → 179 tests):
+  - `scenario_runner._pick_context()` — all 8 keyword branches (atlas, humanoid, wia,
+    mobed, amr, vest, exo, default fallback to runtime_context.json) tested directly
+  - `RobotStateGenerator._table()` fallback — unknown skill family returns `_PICKPLACE`
+    table; `at('approach')` on unknown-family skill returns correct arm state
+  - `replay()` dict event without `skill_id` key → `setdefault` fills in the provided
+    default; mixed string+dict event list with own skill_id overriding the default;
+    dict event with `data` forwarded; dict event with `timestamp_ms` forwarded
+  - `nominal_lifecycle()` with empty primitives → `[skill.started, skill.completed]`
+  - `aborted_lifecycle()` with empty primitives → `[skill.started, skill.aborted]`
+- `tests/test_marketplace.py` (28 → 31 tests):
+  - `validate_for_install()` at level B (missing optional services) → `allowed=True`,
+    `reason='install_allowed'`, `validationLevel='B'`
+  - `validate_listing()` at level B → `installAllowed=True`
+- `tests/test_signing.py` (38 → 41 tests):
+  - `_package_digest()` when a signed file is missing → does not raise; digest still
+    32 bytes; differs from full-package digest
+  - `sign_package()` + `verify_package()` round-trip on a package with a deleted file
+    → signature still validates correctly for remaining files
+
+### Test totals by module (448 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 43 |
+| `test_api.py` | 27 |
+| `test_cli.py` | 33 |
+| `test_marketplace.py` | 31 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 179 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 27 |
+| `test_signing.py` | 41 |
+
+---
+
 ## 0.18.0 — FakeMiddleware edge cases, ROS2 bridge no-middleware paths (428 tests)
 
 ### Coverage additions
