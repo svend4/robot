@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.0 — keypair generator tests (232 tests)
+
+### Coverage additions
+- `tests/test_signing.py` extended with 7 `generate_keypair` tests:
+  - `test_generate_creates_key_files`: both hex files written to `out_dir`
+  - `test_generate_private_key_is_32_bytes_hex`: 32-byte Ed25519 private key
+  - `test_generate_public_key_is_32_bytes_hex`: 32-byte Ed25519 public key
+  - `test_generate_private_key_permissions`: private key file is `chmod 600`
+  - `test_generate_keypair_is_usable_for_signing`: generated key signs + verifies a real package
+  - `test_generate_creates_output_dir_if_absent`: nested directory auto-created
+  - `test_generate_keys_are_different`: two calls produce distinct keypairs
+
+### Test totals by module (232 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 17 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 17 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 42 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 15 |
+| `test_signing.py` | 34 |
+
+---
+
 ## 0.7.0 — Signing pipeline tests and OEM adapter coverage (225 tests)
 
 ### New test module

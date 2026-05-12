@@ -178,10 +178,10 @@ tests/
 ├── test_sim_modules.py       # 42 — event_replay, state_generator, middleware, scenarios
 ├── test_acceptance.py        #  8 — wraps 39 YAML acceptance scenarios (all packages)
 ├── test_ros2_bridge.py       # 15 — ETDSkillActionServer without ROS 2 installation
-└── test_signing.py           # 27 — Ed25519 sign/verify, round-trip all 8 packages, OEM gate
+└── test_signing.py           # 34 — Ed25519 sign/verify, round-trip all 8 packages, OEM gate, keypair gen
 ```
 
-Run: `python -m pytest` — 225 tests, all passing.
+Run: `python -m pytest` — 232 tests, all passing.
 
 ---
 

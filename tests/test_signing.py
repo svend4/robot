@@ -211,3 +211,60 @@ def test_oem_request_empty_payload_allowed():
     req = to_oem_request({})
     assert req['bounded'] is True
     assert req['payload'] == {}
+
+
+# ── generate_keypair ──────────────────────────────────────────────────────────
+
+from generate_keypair import generate
+
+
+def test_generate_creates_key_files(tmp_path):
+    generate(tmp_path / 'keys')
+    assert (tmp_path / 'keys' / 'etd_signing_key.hex').exists()
+    assert (tmp_path / 'keys' / 'etd_verify_key.hex').exists()
+
+
+def test_generate_private_key_is_32_bytes_hex(tmp_path):
+    generate(tmp_path / 'keys')
+    raw = bytes.fromhex((tmp_path / 'keys' / 'etd_signing_key.hex').read_text())
+    assert len(raw) == 32
+
+
+def test_generate_public_key_is_32_bytes_hex(tmp_path):
+    generate(tmp_path / 'keys')
+    raw = bytes.fromhex((tmp_path / 'keys' / 'etd_verify_key.hex').read_text())
+    assert len(raw) == 32
+
+
+def test_generate_private_key_permissions(tmp_path):
+    import stat
+    generate(tmp_path / 'keys')
+    mode = (tmp_path / 'keys' / 'etd_signing_key.hex').stat().st_mode
+    assert stat.S_IMODE(mode) == 0o600
+
+
+def test_generate_keypair_is_usable_for_signing(tmp_path):
+    generate(tmp_path / 'keys')
+    sk_path = tmp_path / 'keys' / 'etd_signing_key.hex'
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'etd.pickplace.basic'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    assert verify_package(dst) is True
+
+
+def test_generate_creates_output_dir_if_absent(tmp_path):
+    nested = tmp_path / 'a' / 'b' / 'c'
+    assert not nested.exists()
+    generate(nested)
+    assert nested.exists()
+
+
+def test_generate_keys_are_different(tmp_path):
+    out1 = tmp_path / 'keys1'
+    out2 = tmp_path / 'keys2'
+    generate(out1)
+    generate(out2)
+    sk1 = (out1 / 'etd_signing_key.hex').read_text()
+    sk2 = (out2 / 'etd_signing_key.hex').read_text()
+    assert sk1 != sk2
