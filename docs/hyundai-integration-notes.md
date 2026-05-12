@@ -272,3 +272,75 @@ All three skills declare `fallbackSkill: etd.safe_stop_and_retreat` and
 `immediate_abort`). On any abort, ETD publishes `skill.aborted` with a
 `reason` field before returning. The OEM platform's fallback controller
 takes over once the skill returns.
+
+---
+
+## Hyundai robot ecosystem — broader context
+
+The three ETD-integrated platforms sit within a larger Hyundai Motor Group
+robotics portfolio. Understanding the full ecosystem helps with integration
+decisions and future skill package planning.
+
+### Hyundai WIA H-Motion family (beyond the welding cobot)
+
+In addition to the H-Motion cobot used for arc welding, Hyundai WIA's
+H-Motion line includes:
+
+- **H-Motion AMR** — autonomous mobile robot carrying up to **1.5 tonnes**
+  (distinct from MobED; heavier industrial logistics use case)
+- **Parking Robot** — operates in pairs; drives under a vehicle, lifts the
+  wheels, and moves cars up to **3.4 tonnes** at up to **1.2 m/s**
+
+These platforms share the H-Motion brand but serve different workcell roles
+than the welding cobot.
+
+### MobED (Mobile Eccentric Droid)
+
+MobED is a Hyundai Robotics LAB platform with independent wheel-steering,
+LiDAR-camera fusion, and autonomous navigation. In March 2026, Hyundai
+launched the **MobED Alliance** to commercialize the platform for logistics
+and service applications. The `etd.hyundai.mobed_transport` skill targets
+the MobED (≤ 100 kg payload) rather than the heavier H-Motion AMR.
+
+### Wearable robotics — X-ble family
+
+Beyond the VEX/H-MEX exoskeleton covered by `etd.hyundai.vest_exoskeleton`,
+Hyundai's wearable line includes:
+
+- **X-ble Shoulder** — industrial shoulder-unloading exoskeleton for
+  overhead work; in March 2026 became the **first wearable robot in South
+  Korea to receive KS certification**
+- **X-ble MEX** — medical exoskeleton for patients and people with limited
+  mobility; targets medical and rehabilitation walking assistance
+
+The `vest_exoskeleton` skill targets VEX/H-MEX. X-ble Shoulder represents
+a potential future ETD skill package for shoulder-specific assist tasks.
+
+### Service robots (Hyundai Robotics LAB)
+
+- **ACR (Automatic Charging Robot)** — autonomous EV charging robot shown
+  at CES 2026 as part of the autonomous mobility / EV infrastructure ecosystem
+- **DAL-e / DAL-e Delivery** — service and delivery robots
+- **Safety Inspection** — autonomous inspection robot
+
+These platforms are not covered by current ETD skill packages but represent
+natural extension targets.
+
+### Software platform — Edge Brain
+
+In January 2026, Hyundai Motor Group announced **Edge Brain**: proprietary
+robotics software developed by Hyundai Robotics LAB in partnership with DEEPX.
+Edge Brain targets on-device AI inference for robot platforms. Combined with
+Boston Dynamics' **Orbit** (enterprise fleet orchestration, MES/WMS
+integration), the Hyundai Motor Group software stack spans:
+
+```
+Orbit (fleet orchestration, enterprise APIs) — Boston Dynamics
+ETD (skill packages, task context, application layer)
+Edge Brain (on-device AI inference) — Hyundai Robotics LAB + DEEPX
+OEM control stack (balance, locomotion, safety) — platform-specific
+```
+
+ETD targets the application layer between Orbit/MES and the OEM control
+stack — this positioning is consistent across all Hyundai Motor Group
+platforms.

@@ -10,6 +10,52 @@ any certified safety, balance, locomotion, or collision subsystem.
 > This skill covers the application-layer intent emission for such tasks.
 > The OEM locomotion and balance core remain under Boston Dynamics /
 > Hyundai certified control at all times.
+>
+> Hyundai Motor Group acquired 80% of Boston Dynamics in 2021 and is
+> building a new US robot factory with capacity up to 30,000 units/year.
+> At CES 2026, Hyundai announced its AI Robotics Strategy and committed
+> to Atlas deployment starting with sequencing, then expanding to assembly
+> and other operations.
+
+---
+
+## Atlas platform specifications
+
+| Spec | Value |
+|---|---|
+| Degrees of freedom | 56 |
+| Arm reach | 2.3 m |
+| Peak instantaneous payload | 50 kg |
+| Autonomous battery swap | Yes |
+| Barcode scanning | Supported |
+| Fleet orchestration | Boston Dynamics Orbit (MES/WMS integration) |
+| Skill fleet deployment | When one robot learns a skill, it deploys to the entire Atlas fleet |
+
+---
+
+## ETD layer in the Boston Dynamics stack
+
+Boston Dynamics already structures Atlas into layered concerns:
+
+```
+┌──────────────────────────────────────────────┐
+│      Orbit (enterprise fleet orchestration)  │
+│  MES/WMS/ERP integration, APIs, webhooks     │
+├──────────────────────────────────────────────┤
+│      ETD Application Layer (this skill)      │
+│  task context, skill intent, primitives      │
+├──────────────────────────────────────────────┤
+│  Boston Dynamics: application-specific skills│
+│  autonomy, perception, object recognition    │
+├──────────────────────────────────────────────┤
+│  Boston Dynamics: whole-body control, safety │
+│  balance core, locomotion core, servo loops  │
+└──────────────────────────────────────────────┘
+```
+
+ETD occupies the layer between Orbit (enterprise orchestration) and the
+OEM autonomy/perception stack. It receives `job_context` from Orbit/MES
+and emits `command.skill_intent` downward to the Boston Dynamics stack.
 
 ---
 
