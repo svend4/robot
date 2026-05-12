@@ -51,6 +51,9 @@ def test_store_list_skills_returns_dicts(store):
     ids = {s['skillId'] for s in skills}
     assert 'etd.pickplace.basic' in ids
     assert 'etd.atlas.humanoid_walkfetch' in ids
+    assert 'etd.hyundai.wia_welding' in ids
+    assert 'etd.hyundai.mobed_transport' in ids
+    assert 'etd.hyundai.vest_exoskeleton' in ids
 
 
 # ── find_skill / get_entry ────────────────────────────────────────────────────
@@ -138,6 +141,39 @@ def test_validate_listing_returns_all_fields(store, base_ctx):
     for key in ('skillId', 'version', 'licenseModel', 'pricingModel',
                 'requiresEntitlement', 'validationLevel', 'installAllowed', 'reason'):
         assert key in result, f'Missing key: {key}'
+
+
+# ── Hyundai package install decisions ────────────────────────────────────────
+
+def test_install_vest_exo_no_token_denied(store):
+    ctx = load_runtime_context(ROOT / 'runtime_context_exo.json')
+    decision = store.validate_for_install('etd.hyundai.vest_exoskeleton', ctx)
+    assert decision.allowed is False
+    assert decision.reason == 'entitlement_required'
+
+
+def test_install_vest_exo_with_token_allowed(store):
+    ctx = load_runtime_context(ROOT / 'runtime_context_exo.json')
+    decision = store.validate_for_install(
+        'etd.hyundai.vest_exoskeleton', ctx, entitlement_token='demo-entitlement-token'
+    )
+    assert decision.allowed is True
+
+
+def test_install_wia_welding_with_token_allowed(store):
+    ctx = load_runtime_context(ROOT / 'runtime_context_wia.json')
+    decision = store.validate_for_install(
+        'etd.hyundai.wia_welding', ctx, entitlement_token='valid-token'
+    )
+    assert decision.allowed is True
+
+
+def test_install_mobed_transport_with_token_allowed(store):
+    ctx = load_runtime_context(ROOT / 'runtime_context_mobed.json')
+    decision = store.validate_for_install(
+        'etd.hyundai.mobed_transport', ctx, entitlement_token='valid-token'
+    )
+    assert decision.allowed is True
 
 
 # ── default_runtime_context ────────────────────────────────────────────────────
