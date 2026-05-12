@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.14.0 — _run_test branches, _print_suite, and verify_signature coverage (301 tests)
+
+### Coverage additions
+- `tests/test_sim_modules.py` (67 → 80 tests):
+  - `_run_test()` failure branches: status mismatch, reason mismatch, missing
+    result_key, result_key present (all four paths in the expect-checking logic)
+  - `run_suite()` with no `acceptance_tests.yaml` → empty SuiteResult, `suite='(no tests)'`
+  - `_print_suite()`: all-passing (shows ✓, no FAIL), with failure (shows ✗, FAIL message),
+    verbose mode (shows `status=` and `reason=` for passing tests)
+- `tests/test_signing.py` (37 → 38 tests):
+  - `test_verify_sig_doc_missing_verify_key_returns_false` — `verify_key` stripped
+    from sig doc and no matching key file → `if not verify_hex:` branch returns False
+
+### Test totals by module (301 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 29 |
+| `test_api.py` | 21 |
+| `test_cli.py` | 26 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 30 |
+| `test_sim_modules.py` | 80 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 19 |
+| `test_signing.py` | 38 |
+
+---
+
 ## 0.13.0 — Acceptance runner, orbit bridge, and validate_examples coverage (292 tests)
 
 ### Coverage additions

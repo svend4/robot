@@ -134,6 +134,20 @@ def test_verify_wrong_public_key_returns_false(tmp_path, keypair):
     assert verify_package(dst, pub_key_path=wrong_vk_path) is False
 
 
+def test_verify_sig_doc_missing_verify_key_returns_false(tmp_path, keypair):
+    sk_path, _ = keypair
+    src = ROOT / 'examples' / 'etd.pickplace.basic'
+    dst = tmp_path / 'pkg_nokey'
+    shutil.copytree(src, dst)
+    sign_package(dst, sk_path)
+    # Strip verify_key from sig doc, and pass a nonexistent pub_key_path
+    sig_doc = json.loads((dst / 'package.sig').read_text())
+    sig_doc.pop('verify_key', None)
+    (dst / 'package.sig').write_text(json.dumps(sig_doc))
+    # pub_key_path points to a nonexistent file → falls back to sig_doc verify_key (now empty)
+    assert verify_package(dst, pub_key_path=tmp_path / 'no_such_key.hex') is False
+
+
 # ── sign + verify round-trip for all 8 packages ───────────────────────────────
 
 _ALL_PKGS = [

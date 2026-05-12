@@ -404,7 +404,9 @@ def test_print_results_mixed_pass_fail(capsys):
 
 # ── sim.acceptance_runner — AcceptanceMiddleware and SuiteResult ──────────────
 
-from sim.acceptance_runner import AcceptanceMiddleware, SuiteResult, _run_test
+import sim.acceptance_runner as _acc_mod
+from sim.acceptance_runner import AcceptanceMiddleware, SuiteResult, _run_test, run_suite, _print_suite
+_AccTestResult = _acc_mod.TestResult   # alias avoids pytest collecting it as a test class
 
 
 def test_acceptance_middleware_publish_records_telemetry():
@@ -501,3 +503,105 @@ def test_pick_context_exo():
 def test_pick_context_base_fallback():
     contexts = _load_contexts(ROOT)
     assert _pick_context('etd.pickplace.basic', contexts) is contexts['base']
+
+
+# ── _run_test failure branches ────────────────────────────────────────────────
+
+def _make_run_fn(status, reason=None, extra_keys=()):
+    def _run(job_ctx, middleware):
+        result = {'status': status}
+        if reason is not None:
+            result['reason'] = reason
+        for k in extra_keys:
+            result[k] = True
+        return result
+    return _run
+
+
+def test_run_test_status_mismatch():
+    test_spec = {'id': 't', 'profile': 'small_box',
+                 'expect': {'status': 'aborted'}}
+    result = _run_test(_make_run_fn('completed'), test_spec, 'etd.x')
+    assert result.passed is False
+    assert 'status' in result.failure_message
+
+
+def test_run_test_reason_mismatch():
+    test_spec = {'id': 't', 'profile': 'small_box',
+                 'expect': {'status': 'aborted', 'reason': 'payload_overload'}}
+    result = _run_test(_make_run_fn('aborted', reason='human_in_forbidden_zone'),
+                       test_spec, 'etd.x')
+    assert result.passed is False
+    assert 'reason' in result.failure_message
+
+
+def test_run_test_result_key_missing():
+    test_spec = {'id': 't', 'profile': 'small_box',
+                 'expect': {'status': 'completed', 'result_keys': ['payload_kg']}}
+    result = _run_test(_make_run_fn('completed'), test_spec, 'etd.x')
+    assert result.passed is False
+    assert 'payload_kg' in result.failure_message
+
+
+def test_run_test_result_key_present():
+    test_spec = {'id': 't', 'profile': 'small_box',
+                 'expect': {'status': 'completed', 'result_keys': ['weight']}}
+    result = _run_test(_make_run_fn('completed', extra_keys=('weight',)),
+                       test_spec, 'etd.x')
+    assert result.passed is True
+
+
+# ── run_suite no tests file ───────────────────────────────────────────────────
+
+def test_run_suite_no_tests_file():
+    suite = run_suite('etd.nonexistent.skill')
+    assert suite.total == 0
+    assert suite.passed == 0
+    assert suite.suite == '(no tests)'
+    assert suite.success is True
+
+
+# ── _print_suite output ───────────────────────────────────────────────────────
+
+def _make_suite(passed_count, failed_count, with_reason=False):
+    results = []
+    for i in range(passed_count):
+        results.append(_AccTestResult(
+            test_id=f'pass_{i}', description='', passed=True,
+            status='completed', reason='done' if with_reason else None,
+            failure_message=None,
+        ))
+    for i in range(failed_count):
+        results.append(_AccTestResult(
+            test_id=f'fail_{i}', description='', passed=False,
+            status='aborted', reason=None, failure_message='expected completed got aborted',
+        ))
+    return SuiteResult(
+        skill_id='etd.x', suite='test_suite',
+        total=passed_count + failed_count,
+        passed=passed_count, failed=failed_count,
+        results=results,
+    )
+
+
+def test_print_suite_all_passing(capsys):
+    _print_suite(_make_suite(2, 0), verbose=False)
+    out = capsys.readouterr().out
+    assert '✓' in out
+    assert '2/2' in out
+    assert 'FAIL' not in out
+
+
+def test_print_suite_with_failure(capsys):
+    _print_suite(_make_suite(1, 1), verbose=False)
+    out = capsys.readouterr().out
+    assert '✗' in out
+    assert 'FAIL' in out
+    assert 'expected completed got aborted' in out
+
+
+def test_print_suite_verbose_shows_status(capsys):
+    _print_suite(_make_suite(1, 0, with_reason=True), verbose=True)
+    out = capsys.readouterr().out
+    assert 'status=' in out
+    assert 'reason=' in out
