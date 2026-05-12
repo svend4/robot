@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.28.0 — validator _JSONSCHEMA_AVAILABLE=False and engine-exception branches (570 tests)
+
+### Coverage additions
+- `tests/test_validator.py` (47 → 52 tests):
+  - `_jsonschema_validate()` returns `[]` when `_JSONSCHEMA_AVAILABLE` is monkeypatched False
+  - `validate_package()` adds `'jsonschema not installed'` warning when unavailable
+  - `validate_package()` uses `isinstance(doc, dict)` fallback for schema results when unavailable
+  - `_jsonschema_validate()` `except Exception` handler: passing `schema=None` forces
+    `AttributeError` in `Draft202012Validator`, caught and returned as `'schema engine error'`
+  - `_load()` `.yml` extension branch via `tmp_path / 'config.yml'`
+
+### Test totals by module (570 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 52 |
+| `test_api.py` | 28 |
+| `test_cli.py` | 40 |
+| `test_marketplace.py` | 35 |
+| `test_station_profiles.py` | 37 |
+| `test_orbit_bridge.py` | 37 |
+| `test_sim_modules.py` | 205 |
+| `test_acceptance.py` | 46 |
+| `test_ros2_bridge.py` | 34 |
+| `test_signing.py` | 56 |
+| **Total** | **570** |
+
+---
+
 ## 0.27.0 — __main__ blocks and API station+nonexistent-skill branch (565 tests)
 
 ### Coverage additions

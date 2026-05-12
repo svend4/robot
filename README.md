@@ -169,7 +169,7 @@ A package that requests any forbidden capability is blocked at validation.
 
 ```
 tests/
-├── test_validator.py         # 47 — semantic checks, main() pretty/json/fallback ctx, score degradation
+├── test_validator.py         # 52 — _JSONSCHEMA_AVAILABLE=False branches, engine exception, .yml load
 ├── test_api.py               # 28 — REST endpoints incl. station+nonexistent-skill branch, absolute path
 ├── test_cli.py               # 40 — stations command, install not-found, _check_station_entry(None)
 ├── test_marketplace.py       # 35 — skill_store __main__ block, validation_failed reason, __init__ exports
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 56 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip
 ```
 
-Run: `python -m pytest` — 565 tests, all passing.
+Run: `python -m pytest` — 570 tests, all passing.
 
 ---
 

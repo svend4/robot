@@ -532,3 +532,52 @@ def test_validator_main_exits_nonzero_on_invalid(tmp_path, monkeypatch, capsys):
     assert exc_info.value.code != 0
     out = capsys.readouterr().out
     assert 'FAIL' in out
+
+
+# ── _JSONSCHEMA_AVAILABLE = False branches ────────────────────────────────────
+
+import etd_reference_validator as _val_module
+from etd_reference_validator import _jsonschema_validate
+
+
+def test_jsonschema_validate_returns_empty_when_unavailable(monkeypatch):
+    monkeypatch.setattr(_val_module, '_JSONSCHEMA_AVAILABLE', False)
+    result = _jsonschema_validate({'key': 'value'}, {'type': 'object'})
+    assert result == []
+
+
+def test_validate_package_warns_when_jsonschema_unavailable(monkeypatch):
+    monkeypatch.setattr(_val_module, '_JSONSCHEMA_AVAILABLE', False)
+    ctx = load_runtime_context(ROOT / 'runtime_context.json')
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.pickplace.basic'
+    )
+    assert any('jsonschema not installed' in w for w in report.warnings)
+
+
+def test_validate_package_isinstance_fallback_when_no_jsonschema(monkeypatch):
+    monkeypatch.setattr(_val_module, '_JSONSCHEMA_AVAILABLE', False)
+    ctx = load_runtime_context(ROOT / 'runtime_context.json')
+    report = ETDReferenceValidator(ctx).validate_package(
+        ROOT / 'examples' / 'etd.pickplace.basic'
+    )
+    for key, val in report.schema.items():
+        assert val is True, f'schema[{key}] should be True via isinstance fallback'
+
+
+# ── _jsonschema_validate exception handler ────────────────────────────────────
+
+def test_jsonschema_validate_catches_engine_exception():
+    errors = _jsonschema_validate({'key': 'val'}, None)
+    assert len(errors) == 1
+    assert 'schema engine error' in errors[0]
+
+
+# ── _load .yml extension ──────────────────────────────────────────────────────
+
+def test_load_yml_extension(tmp_path):
+    from etd_reference_validator import _load as _val_load
+    p = tmp_path / 'config.yml'
+    p.write_text('key: value\ncount: 3\n')
+    result = _val_load(p)
+    assert result == {'key': 'value', 'count': 3}
