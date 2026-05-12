@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.9.0 — SkillStore coverage completions (243 tests)
+
+### Coverage additions in `tests/test_marketplace.py` (17 → 28 tests)
+- `StoreEntry.from_dict()` compatibility shims:
+  - `test_store_entry_compat_requires_activation` — `requiresActivation` → `requiresEntitlement`
+  - `test_store_entry_compat_source_available_false/true` — `sourceAvailable` → `sourceAvailability`
+  - `test_store_entry_explicit_fields_take_precedence_over_compat`
+- `get_entry()` missing-skill path: `test_get_entry_not_found`
+- `validate_listing()` edge cases:
+  - `test_validate_listing_skill_not_found` — unknown skill → `installAllowed: False`
+  - `test_validate_listing_commercial_uses_demo_token` — auto-injects demo token for entitlement-gated skills
+  - `test_validate_listing_free_skill_install_allowed` — all fields present
+- `_compat_level()` non-dict branch: `test_compat_level_non_dict_compatibility`, `test_compat_level_missing_attribute_returns_d`
+- `InstallDecision` fields: `test_install_decision_level_a_for_free_skill`
+
+### Test totals by module (243 total)
+| Module | Tests |
+|---|---|
+| `test_validator.py` | 17 |
+| `test_api.py` | 18 |
+| `test_cli.py` | 20 |
+| `test_marketplace.py` | 28 |
+| `test_station_profiles.py` | 33 |
+| `test_orbit_bridge.py` | 28 |
+| `test_sim_modules.py` | 42 |
+| `test_acceptance.py` | 8 |
+| `test_ros2_bridge.py` | 15 |
+| `test_signing.py` | 34 |
+
+---
+
 ## 0.8.0 — keypair generator tests (232 tests)
 
 ### Coverage additions

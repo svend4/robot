@@ -172,7 +172,7 @@ tests/
 ├── test_validator.py         # 17 — schema validation, compat levels, all 8 packages
 ├── test_api.py               # 18 — REST endpoints incl. vest_exo and version check
 ├── test_cli.py               # 20 — CLI commands incl. all 4 Hyundai packages
-├── test_marketplace.py       # 17 — SkillStore list/find/install for all packages
+├── test_marketplace.py       # 28 — SkillStore list/find/install, compat shims, validate_listing
 ├── test_station_profiles.py  # 33 — compatibility checker, exo_assembly_a, API, CLI
 ├── test_orbit_bridge.py      # 28 — orbit event bridge severity/filter/callback
 ├── test_sim_modules.py       # 42 — event_replay, state_generator, middleware, scenarios
@@ -181,7 +181,7 @@ tests/
 └── test_signing.py           # 34 — Ed25519 sign/verify, round-trip all 8 packages, OEM gate, keypair gen
 ```
 
-Run: `python -m pytest` — 232 tests, all passing.
+Run: `python -m pytest` — 243 tests, all passing.
 
 ---
 
