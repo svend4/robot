@@ -178,6 +178,18 @@ All items below were delivered in the prototype:
   CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
   `etd fleet status`, `etd fleet deployments [--json]`.
   61 tests in `tests/test_fleet_manager.py`.
+- [x] **Skill execution scheduler.** Interval and one-shot scheduling of
+  skill executions on fleet nodes, with job lifecycle management, due-job
+  detection, run history, and REST + CLI layer.
+  `marketplace/scheduler.py`: `ScheduledJob` (interval/once types, status
+  lifecycle active→paused|done, `from_dict`/`to_dict`), `JobRunResult`,
+  `SkillScheduler` (`add_job()` with validation, `list_jobs(status/skill/node)`,
+  `pause_job()`/`resume_job()`, `due_jobs(_now?)` rolling detection,
+  `record_run()` advances `next_run_at` for intervals / marks `done` for
+  once-jobs; persists to `jobs.json`). `api/scheduler.py`: FastAPI router
+  at `/scheduler` (create/list/get/delete/pause/resume/due/record-run).
+  CLI: `etd schedule add|list|remove|pause|resume|due|run`.
+  64 tests in `tests/test_scheduler.py`.
 - [x] **Execution quota & rate limiting.** Per-skill (and optionally per-node)
   hourly and daily execution limits with rolling-window counters, wildcard
   policies, burst allowance, and telemetry-independent tracking.

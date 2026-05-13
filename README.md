@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1675 pytest tests
+├── tests/                              # 1739 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -118,6 +118,14 @@ python etd_cli.py fleet status --json
 python etd_cli.py fleet deployments
 python etd_cli.py fleet deployments --skill etd.pickplace.basic --json
 
+# Execution scheduler
+python etd_cli.py schedule add etd.pickplace.basic --node robot-01 --interval 30
+python etd_cli.py schedule add etd.inspect.vision --node robot-01 --type once --run-at 2026-06-01T08:00:00+00:00
+python etd_cli.py schedule list --status active
+python etd_cli.py schedule due
+python etd_cli.py schedule run <job-id> --success --duration-ms 1200
+python etd_cli.py schedule pause <job-id>
+
 # Execution quota & rate limiting
 python etd_cli.py quota set etd.pickplace.basic --max-per-hour 60 --max-per-day 500
 python etd_cli.py quota set etd.pickplace.basic --node robot-01 --max-per-hour 10
@@ -155,6 +163,9 @@ uvicorn api.app:app --reload
 # POST http://localhost:8000/compose/validate  {"composed": {"skillId": "...", "steps": [...]}}
 # POST http://localhost:8000/compose/run       {"composed": {"skillId": "...", "steps": [...]}}
 # GET  http://localhost:8000/compose/examples
+# POST http://localhost:8000/scheduler/jobs  {"skill_id": "etd.pick", "node_id": "r01", "interval_minutes": 30}
+# GET  http://localhost:8000/scheduler/due
+# POST http://localhost:8000/scheduler/jobs/{id}/run  {"success": true, "duration_ms": 1200}
 # POST http://localhost:8000/quota/policies  {"skill_id": "etd.pickplace.basic", "max_per_hour": 60}
 # POST http://localhost:8000/quota/check     {"skill_id": "etd.pickplace.basic", "node_id": "r01"}
 # GET  http://localhost:8000/quota/usage?skill_id=etd.pickplace.basic
@@ -291,11 +302,12 @@ tests/
 ├── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
 ├── test_api_extensions.py    # 51 — /platform/list (count/structure/atlas), /platform/platform/{id} (found/404/families), /platform/check (compatible/incompatible/topic-remappings/family-mismatch), /platform/matrix (30-pairs/no-self/with-skill/family-filter), /fleet/nodes (list/register-201/list-after/get/get-404/delete/delete-404/heartbeat/heartbeat-404), /fleet/deployments (deploy-201/completed/structure/list/get/get-404/filter-skill), /fleet/status (200/structure), /compose/validate (valid/invalid-no-steps/self-ref/skill-id), /compose/run (200/success/step-results/multi-step/structure), /compose/examples (list/structure/validate/run/404s)
 ├── test_telemetry_analytics.py # 70 — ExecutionEvent (dict/round-trip/defaults), ExecutionRecord (make/succeeded/events/round-trip), _percentile (empty/single/median/p100/p0), TelemetryStore (count/record/persist/query-filters/limit/newest-first/skill_ids/node_ids/clear/malformed-skipped/parent-dirs/since), TelemetryAnalyzer (stats-none/counts/rate/durations/failures/percentiles/to_dict/summary, node_stats-empty/populated, recent_failures/limit-zero, anomalies-insufficient/zero-stdev/outlier/sorted/skill-filter, report-structure/empty), REST API /telemetry (record-201/explicit-ids, list-200/empty/filter-skill/status/limit, stats-404/200/structure, report-200/structure/empty, anomalies-200/structure/detects/z_score/skill-filter)
+├── test_scheduler.py           # 64 — ScheduledJob (to_dict/round-trip/defaults/JobRunResult), add_job (interval-next-run/once-run-at/validation-raises), CRUD (get/list-filters/newest-first/remove/count/persist/create-dir/corrupt-empty), pause/resume (transitions/wrong-status-false/unknown-false), due_jobs (future/past/paused/done/sorted), record_run (count/last-run/interval-advance/once-done/success-flag/result/unknown-None), REST API /scheduler (create-201/422, list-200/filter, get/delete/pause-409/resume-409/due/record-run-200/404)
 ├── test_quota_manager.py       # 58 — QuotaPolicy (dict/round-trip/specificity-4-cases/defaults), QuotaManager policies (set/get/list/remove/update/persist/create-dir), check (no-policy/disabled/under|at-hourly/burst/hourly-window/daily-limit/daily-window/remaining/no-limit-None/policy_matched/wildcard-matches/specific-overrides-wildcard/node-specific/to_dict), usage (record/empty/filter-skill|node/persist/clear-all/by-skill/returns-count), REST API /quota (policy-CRUD/check-no-policy|structure|blocks-after-record/record-201|in-usage/usage-200|empty|filter|clear)
 └── test_ab_testing.py          # 66 — ABVariant (dict/round-trip/defaults), ABExperiment (make/to_dict/round-trip/get_variant/route/route-zero-weight/route-raises-paused|concluded|all-zero/pause-resume-conclude/transitions/raise-twice), ABExperimentStore (save/get/list/filter/delete/persist/update/newest-first/parent-dirs/corrupt-empty), ABAnalyzer (compare-structure/no-data/with-data, recommend-None/success-rate-wins/duration-tiebreak/to_dict), REST API /ab (create-201/has-id/one-variant-422, list-200/empty/after/filter, get-found/404, delete-200/404/then-404, pause-200/404/409, resume-200/409, conclude-200/409-twice, route-200/paused-409, results-200/structure/404, recommend-200/no-data-None/404)
 ```
 
-Run: `python -m pytest` — 1675 tests, all passing.
+Run: `python -m pytest` — 1739 tests, all passing.
 
 ---
 

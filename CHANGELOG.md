@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.83.0 — Skill execution scheduler (1675 → 1739 tests)
+
+Interval and one-shot scheduling of skill executions on fleet nodes, with
+job lifecycle management, due-job detection, and run history.
+
+### Code changes
+
+- `marketplace/scheduler.py` (NEW):
+  - `ScheduledJob`: fields — `job_id`, `skill_id`, `node_id`, `station_id`,
+    `schedule_type` (`'interval'`|`'once'`), `interval_minutes`, `run_at`,
+    `status` (`'active'`|`'paused'`|`'done'`), `created_at`, `next_run_at`,
+    `last_run_at`, `run_count`, `last_run_success`, `metadata`.
+    Full `to_dict()`/`from_dict()` round-trip.
+  - `JobRunResult`: `job_id`, `ran_at`, `success`, `duration_ms`, `error`.
+  - `SkillScheduler`:
+    - `add_job(skill_id, node_id, schedule_type, interval_minutes, run_at?,
+      metadata?, _now?)` — validates params, computes `next_run_at` (interval:
+      now + interval_minutes; once: run_at), persists.
+    - `get_job(job_id)`, `list_jobs(status?, skill_id?, node_id?)` sorted
+      newest-first, `remove_job(job_id)`.
+    - `pause_job(job_id)` / `resume_job(job_id)` — return bool (False if
+      wrong status or unknown).
+    - `due_jobs(_now?)` — active jobs with `next_run_at ≤ now`, sorted by
+      `next_run_at`.
+    - `record_run(job_id, success, duration_ms, error, _now?)` — increments
+      `run_count`, sets `last_run_at`/`last_run_success`; interval jobs
+      advance `next_run_at`; once jobs become `'done'` with
+      `next_run_at=None`. Returns `JobRunResult` or `None` if unknown.
+    - Persists to `jobs.json`; parent dirs created; corrupt file loads empty.
+- `api/scheduler.py` (NEW): FastAPI router at `/scheduler`:
+  - `POST /scheduler/jobs` → 201; 422 on invalid params.
+  - `GET  /scheduler/jobs?status=&skill_id=&node_id=` — filtered list.
+  - `GET  /scheduler/jobs/{id}` — get one; 404.
+  - `DELETE /scheduler/jobs/{id}` — remove; 404.
+  - `PUT  /scheduler/jobs/{id}/pause` — 409 if not active.
+  - `PUT  /scheduler/jobs/{id}/resume` — 409 if not paused.
+  - `GET  /scheduler/due` — due jobs right now.
+  - `POST /scheduler/jobs/{id}/run` `{success, duration_ms?, error?}` — record run; 404.
+- `api/app.py`: mounts `_scheduler_router`; version bumped to `0.83.0`.
+- `etd_cli.py`: new `schedule` command group:
+  - `etd schedule add SKILL --node N [--type interval|once] [--interval M] [--run-at ISO]`
+  - `etd schedule list [--status …] [--skill S] [--node N] [--json]`
+  - `etd schedule remove JOB_ID`
+  - `etd schedule pause JOB_ID` / `resume JOB_ID`
+  - `etd schedule due [--json]`
+  - `etd schedule run JOB_ID [--success/--failed] [--duration-ms D]`
+
+### Tests (1675 → 1739, +64)
+
+- `tests/test_scheduler.py` (+64, NEW):
+  - `TestScheduledJob`: to\_dict keys, round-trip, from\_dict defaults,
+    JobRunResult to\_dict.
+  - `TestAddJob`: creates job, interval sets next\_run, once sets run\_at,
+    once without run\_at raises, invalid type raises, zero interval raises,
+    run\_count=0, metadata stored.
+  - `TestSchedulerCRUD`: get found/None, list all/filter-status/skill/node,
+    newest-first, remove existing/unknown, job\_count, persists, creates
+    dir, corrupt loads empty.
+  - `TestPauseResume`: pause active, pause-paused-false, pause-unknown,
+    resume paused, resume-active-false, resume-unknown.
+  - `TestDueJobs`: not due when future, due when past, paused not due,
+    done not due, sorted order.
+  - `TestRecordRun`: increments count, sets last\_run, advances interval
+    next\_run, once→done, sets last\_run\_success, returns result, unknown→None.
+  - REST API: create-201/has-id/once-missing-run\_at-422, list-200/empty/
+    after/filter, get-found/404, delete-200/404, pause-200/409/404,
+    resume-200/409, due-200/empty, record-run-200/increments/404.
+
 ## 0.82.0 — Execution quota & rate limiting (1617 → 1675 tests)
 
 Per-skill / per-node hourly and daily execution limits with rolling-window

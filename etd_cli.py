@@ -1170,6 +1170,173 @@ def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
             )
 
 
+# ── scheduler ────────────────────────────────────────────────────────────────
+
+_DEFAULT_SCHED_DIR = str(Path(__file__).resolve().parent / 'scheduler')
+
+
+@cli.group()
+def schedule():
+    """Skill execution scheduler: add, list, pause, and record jobs."""
+
+
+@schedule.command('add')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', required=True, help='Target robot node ID')
+@click.option('--station', 'station_id', default='default', show_default=True)
+@click.option('--type', 'schedule_type',
+              type=click.Choice(['interval', 'once']), default='interval',
+              show_default=True)
+@click.option('--interval', 'interval_minutes', default=60, type=int,
+              show_default=True, help='Interval in minutes (interval jobs)')
+@click.option('--run-at', 'run_at', default=None,
+              help='ISO 8601 datetime for one-shot jobs')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def schedule_add(skill_id: str, node_id: str, station_id: str,
+                 schedule_type: str, interval_minutes: int,
+                 run_at: Optional[str], sched_dir: str, as_json: bool):
+    """Schedule a skill execution on a node."""
+    import json as _json
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    try:
+        job = sched.add_job(
+            skill_id=skill_id,
+            node_id=node_id,
+            station_id=station_id,
+            schedule_type=schedule_type,
+            interval_minutes=interval_minutes,
+            run_at=run_at,
+        )
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(_json.dumps(job.to_dict(), indent=2))
+    else:
+        info = (f'every {interval_minutes}m'
+                if schedule_type == 'interval' else f'once at {run_at}')
+        click.echo(click.style(
+            f'Scheduled: {job.job_id[:8]}  {skill_id} → {node_id}  [{info}]',
+            fg='green'))
+
+
+@schedule.command('list')
+@click.option('--status', 'status_filter',
+              type=click.Choice(['active', 'paused', 'done']), default=None)
+@click.option('--skill', 'skill_id', default=None)
+@click.option('--node', 'node_id', default=None)
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def schedule_list(status_filter: Optional[str], skill_id: Optional[str],
+                  node_id: Optional[str], sched_dir: str, as_json: bool):
+    """List scheduled jobs."""
+    import json as _json
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    jobs = sched.list_jobs(status=status_filter, skill_id=skill_id,
+                           node_id=node_id)
+    if as_json:
+        click.echo(_json.dumps([j.to_dict() for j in jobs], indent=2))
+    else:
+        if not jobs:
+            click.echo('No scheduled jobs found.')
+            return
+        for j in jobs:
+            interval = (f'/{j.interval_minutes}m'
+                        if j.schedule_type == 'interval' else '/once')
+            click.echo(
+                f'[{j.status:<7}] {j.job_id[:8]}  '
+                f'{j.skill_id} → {j.node_id}{interval}  '
+                f'runs={j.run_count}  next={j.next_run_at or "-"}'
+            )
+
+
+@schedule.command('remove')
+@click.argument('job_id')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+def schedule_remove(job_id: str, sched_dir: str):
+    """Remove a scheduled job."""
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    removed = sched.remove_job(job_id)
+    if removed:
+        click.echo(f'Removed: {job_id}')
+    else:
+        click.echo(click.style(f'Job not found: {job_id}', fg='yellow'))
+        raise SystemExit(1)
+
+
+@schedule.command('pause')
+@click.argument('job_id')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+def schedule_pause(job_id: str, sched_dir: str):
+    """Pause an active scheduled job."""
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    ok = sched.pause_job(job_id)
+    if ok:
+        click.echo(f'Paused: {job_id}')
+    else:
+        click.echo(click.style(f'Cannot pause job: {job_id}', fg='yellow'))
+        raise SystemExit(1)
+
+
+@schedule.command('resume')
+@click.argument('job_id')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+def schedule_resume(job_id: str, sched_dir: str):
+    """Resume a paused scheduled job."""
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    ok = sched.resume_job(job_id)
+    if ok:
+        click.echo(f'Resumed: {job_id}')
+    else:
+        click.echo(click.style(f'Cannot resume job: {job_id}', fg='yellow'))
+        raise SystemExit(1)
+
+
+@schedule.command('due')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def schedule_due(sched_dir: str, as_json: bool):
+    """List jobs that are due to run right now."""
+    import json as _json
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    jobs = sched.due_jobs()
+    if as_json:
+        click.echo(_json.dumps([j.to_dict() for j in jobs], indent=2))
+    else:
+        if not jobs:
+            click.echo('No jobs due.')
+            return
+        for j in jobs:
+            click.echo(f'{j.job_id[:8]}  {j.skill_id} → {j.node_id}')
+
+
+@schedule.command('run')
+@click.argument('job_id')
+@click.option('--success/--failed', default=True)
+@click.option('--duration-ms', 'duration_ms', default=0, type=int)
+@click.option('--error', 'error', default='')
+@click.option('--sched-dir', default=_DEFAULT_SCHED_DIR, show_default=True)
+def schedule_run(job_id: str, success: bool, duration_ms: int,
+                 error: str, sched_dir: str):
+    """Record a completed run result for a scheduled job."""
+    from marketplace.scheduler import SkillScheduler
+    sched = SkillScheduler(Path(sched_dir))
+    result = sched.record_run(job_id, success=success,
+                              duration_ms=duration_ms, error=error)
+    if result is None:
+        click.echo(click.style(f'Job not found: {job_id}', fg='yellow'))
+        raise SystemExit(1)
+    status_str = 'success' if success else 'failed'
+    click.echo(f'Recorded run: {job_id[:8]}  [{status_str}]  {duration_ms} ms')
+
+
 # ── quota ─────────────────────────────────────────────────────────────────────
 
 _DEFAULT_QUOTA_DIR = str(Path(__file__).resolve().parent / 'quota')
