@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1430 pytest tests
+├── tests/                              # 1481 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -123,6 +123,16 @@ uvicorn api.app:app --reload
 # GET  http://localhost:8000/store/skills
 # POST http://localhost:8000/store/install  {"skillId": "etd.pickplace.basic"}
 # GET  http://localhost:8000/store/stations
+# GET  http://localhost:8000/platform/list
+# POST http://localhost:8000/platform/check  {"skill_info": {...}, "source": "atlas", "target": "unitree_g1"}
+# POST http://localhost:8000/platform/matrix  {"families": ["humanoid"]}
+# GET  http://localhost:8000/fleet/nodes
+# POST http://localhost:8000/fleet/nodes  {"node_id": "r01", "station_id": "ws-01", "platform_id": "atlas"}
+# POST http://localhost:8000/fleet/deployments  {"skill_id": "etd.pickplace.basic", "version": "0.1.0", "target_node_ids": ["r01"]}
+# GET  http://localhost:8000/fleet/status
+# POST http://localhost:8000/compose/validate  {"composed": {"skillId": "...", "steps": [...]}}
+# POST http://localhost:8000/compose/run       {"composed": {"skillId": "...", "steps": [...]}}
+# GET  http://localhost:8000/compose/examples
 
 # Acceptance tests (39 scenarios, all 8 packages)
 python sim/acceptance_runner.py
@@ -243,10 +253,11 @@ tests/
 ├── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
 ├── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
 ├── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
-└── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
+├── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
+└── test_api_extensions.py    # 51 — /platform/list (count/structure/atlas), /platform/platform/{id} (found/404/families), /platform/check (compatible/incompatible/topic-remappings/family-mismatch), /platform/matrix (30-pairs/no-self/with-skill/family-filter), /fleet/nodes (list/register-201/list-after/get/get-404/delete/delete-404/heartbeat/heartbeat-404), /fleet/deployments (deploy-201/completed/structure/list/get/get-404/filter-skill), /fleet/status (200/structure), /compose/validate (valid/invalid-no-steps/self-ref/skill-id), /compose/run (200/success/step-results/multi-step/structure), /compose/examples (list/structure/validate/run/404s)
 ```
 
-Run: `python -m pytest` — 1430 tests, all passing.
+Run: `python -m pytest` — 1481 tests, all passing.
 
 ---
 

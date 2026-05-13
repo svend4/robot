@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.79.0 — REST API for cross-platform, fleet, and composer (1430 → 1481 tests)
+
+Extends the FastAPI REST layer to cover all features added in v0.75–v0.78.
+
+### Code changes
+
+- `api/cross_platform.py` (NEW): FastAPI router at `/platform`:
+  - `GET  /platform/list` — all registered platforms (array of `to_dict()`)
+  - `GET  /platform/platform/{id}` — single platform; 404 if unknown
+  - `POST /platform/check` `{skill_info, source, target}` — full compat check
+    with `missing_primitives`, `topic_remappings`, `missing_capability_flags`
+  - `POST /platform/matrix` `{skill_info?, families?}` — NxN matrix rows
+- `api/fleet.py` (NEW): FastAPI router at `/fleet`:
+  - `GET  /fleet/nodes` — list all nodes
+  - `POST /fleet/nodes` → 201 — register/replace node
+  - `GET  /fleet/nodes/{id}` — get node; 404 if unknown
+  - `DELETE /fleet/nodes/{id}` — unregister; 404 if unknown
+  - `PUT  /fleet/nodes/{id}/heartbeat` `{status, installed_skills?}` → updated node; 404 if unknown
+  - `POST /fleet/deployments` → 201 — deploy skill; supports skill_info + source_platform for compat gating
+  - `GET  /fleet/deployments?skill_id=&status=` — filtered list
+  - `GET  /fleet/deployments/{id}` — single deployment; 404 if unknown
+  - `GET  /fleet/status` — `FleetHealthSnapshot.to_dict()`
+- `api/composer.py` (NEW): FastAPI router at `/compose`:
+  - `POST /compose/validate` `{composed}` — issues list + `valid` bool
+  - `POST /compose/run` `{composed}` — dry-run with mock executor
+  - `GET  /compose/examples` — list composed skill packages in `examples/`
+  - `GET  /compose/examples/{name}/validate` — validate a named example; 404
+  - `GET  /compose/examples/{name}/run` — run a named example; 404
+- `api/app.py`: mounts all three new routers; version bumped to `0.79.0`.
+
+### Tests (1430 → 1481, +51)
+
+- `tests/test_api_extensions.py` (+51, NEW):
+  - `TestPlatformList`: 200, 6 platforms, atlas present, structure.
+  - `TestPlatformGet`: known/404/unitree_g1 families.
+  - `TestPlatformCheck`: compatible 200, result fields, incompatible (H1),
+    topic remappings present, family mismatch.
+  - `TestPlatformMatrix`: 200, 30 pairs, no self-pairs, with skill info, family
+    filter → 6 pairs.
+  - `TestFleetNodes`: list empty, register 201, list after register, get found/
+    404, delete/delete-404, heartbeat updates status, heartbeat 404.
+  - `TestFleetDeployments`: deploy 201, completed status, result structure,
+    list 200, get found, get 404, list filter by skill_id.
+  - `TestFleetStatus`: 200, structure keys.
+  - `TestComposeValidate`: valid 200, valid result, invalid-no-steps, self-ref
+    cycle, response has skill_id.
+  - `TestComposeRun`: 200, success status, step results, multi-step (3 steps),
+    result structure.
+  - `TestComposeExamples`: list, structure (fetch_inspect_place/step_count=3),
+    validate example, run example, validate 404, run 404.
+
 ## 0.78.0 — Fleet management (1369 → 1430 tests)
 
 Fleet-level coordination layer above the per-robot OnRobotStore.
