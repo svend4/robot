@@ -178,6 +178,17 @@ All items below were delivered in the prototype:
   CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
   `etd fleet status`, `etd fleet deployments [--json]`.
   61 tests in `tests/test_fleet_manager.py`.
+- [x] **Execution quota & rate limiting.** Per-skill (and optionally per-node)
+  hourly and daily execution limits with rolling-window counters, wildcard
+  policies, burst allowance, and telemetry-independent tracking.
+  `marketplace/quota_manager.py`: `QuotaPolicy` (skill_id/node_id wildcards,
+  max_per_hour/day, burst_allowance, specificity scoring), `QuotaCheckResult`
+  (allowed, reason, remaining counts), `QuotaManager` (set/get/list/remove
+  policy, check with rolling windows, record execution, usage summary,
+  clear_usage; persists to `policies.json` + `usage.json`).
+  `api/quota.py`: FastAPI router at `/quota` (set/list/get/delete policies,
+  check, record, usage, clear). CLI: `etd quota set|list|remove|check|usage`.
+  58 tests in `tests/test_quota_manager.py`.
 - [x] **Skill A/B testing framework.** Compare skill versions in production
   with weighted routing and telemetry-driven winner recommendation.
   `marketplace/ab_testing.py`: `ABVariant` (skill_id/version/weight/label),

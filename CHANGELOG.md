@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.82.0 — Execution quota & rate limiting (1617 → 1675 tests)
+
+Per-skill / per-node hourly and daily execution limits with rolling-window
+counters, wildcard policies, burst allowance, and full REST + CLI layer.
+
+### Code changes
+
+- `marketplace/quota_manager.py` (NEW):
+  - `QuotaPolicy`: rule with `skill_id` / `node_id` (both support `'*'`
+    wildcard), `max_per_hour`, `max_per_day`, `burst_allowance`, `enabled`.
+    `specificity` property: exact skill+node=3, skill only=2, node only=1,
+    both wildcard=0 (used for priority matching).
+  - `QuotaCheckResult`: `allowed`, `reason`
+    (`ok`/`hourly_limit`/`daily_limit`/`disabled`/`no_policy`),
+    `policy_matched`, `used_last_hour`, `used_last_day`, `remaining_hour`,
+    `remaining_day`.
+  - `QuotaManager`: `set_policy()`, `get_policy()`, `list_policies()`,
+    `remove_policy()`; `check(skill_id, node_id, _now?)` — rolling-window
+    count via `_match_policy()` (highest specificity wins), burst adds to
+    effective limit; `record(skill_id, node_id, timestamp?)` — appends
+    timestamp and prunes entries > 7 days; `usage(skill_id?, node_id?)` —
+    per-key rolling stats; `clear_usage(skill_id?, node_id?)`.
+    Persists to `policies.json` + `usage.json`; creates parent dirs.
+- `api/quota.py` (NEW): FastAPI router at `/quota`:
+  - `POST /quota/policies` → 201 — create/update policy.
+  - `GET  /quota/policies` — list all.
+  - `GET  /quota/policies/{skill_id}?node_id=` — get one; 404.
+  - `DELETE /quota/policies/{skill_id}?node_id=` — remove; 404.
+  - `POST /quota/check` `{skill_id, node_id?}` — `QuotaCheckResult.to_dict()`.
+  - `GET  /quota/usage?skill_id=&node_id=` — filtered usage rows.
+  - `POST /quota/record` → 201 — record one execution.
+  - `DELETE /quota/usage?skill_id=&node_id=` — clear counters.
+- `api/app.py`: mounts `_quota_router`; version bumped to `0.82.0`.
+- `etd_cli.py`: new `quota` command group:
+  - `etd quota set SKILL_ID [--node N] [--max-per-hour H] [--max-per-day D] [--burst B] [--disabled]`
+  - `etd quota list [--json]`
+  - `etd quota remove SKILL_ID [--node N]`
+  - `etd quota check SKILL_ID [--node N] [--json]`
+  - `etd quota usage [--skill S] [--node N] [--json]`
+
+### Tests (1617 → 1675, +58)
+
+- `tests/test_quota_manager.py` (+58, NEW):
+  - `TestQuotaPolicy`: dict keys, round-trip, specificity (4 cases), defaults.
+  - `TestQuotaManagerPolicies`: empty list, set+get, unknown None, list all,
+    remove existing/unknown, update replaces, persists, creates dir.
+  - `TestQuotaManagerCheck`: no-policy allowed, disabled blocked, under/at
+    hourly limit, burst extends limit, hourly window excludes old, daily limit
+    blocked, daily window excludes old, remaining counts, no-limit=None,
+    policy_matched field, wildcard matches any skill, specific overrides
+    wildcard, node-specific policy, to_dict.
+  - `TestQuotaManagerUsage`: record increments, empty, filter skill/node,
+    persists, clear all, clear by skill, clear returns count.
+  - REST API: policy create-201/has-id, list-200/empty/after, get-found/404,
+    delete-200/404; check no-policy-allowed/structure/after-record-blocks;
+    record-201/appears-in-usage; usage-200/empty/filter/clear.
+
 ## 0.81.0 — Skill A/B testing framework (1551 → 1617 tests)
 
 Weighted variant routing, experiment lifecycle management, and telemetry-driven

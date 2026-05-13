@@ -1170,6 +1170,141 @@ def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
             )
 
 
+# ── quota ─────────────────────────────────────────────────────────────────────
+
+_DEFAULT_QUOTA_DIR = str(Path(__file__).resolve().parent / 'quota')
+
+
+@cli.group()
+def quota():
+    """Execution quota & rate limiting: policies, checks, and usage."""
+
+
+@quota.command('set')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--max-per-hour', 'max_per_hour', default=None, type=int)
+@click.option('--max-per-day', 'max_per_day', default=None, type=int)
+@click.option('--burst', 'burst_allowance', default=0, type=int, show_default=True)
+@click.option('--disabled', is_flag=True, help='Create policy in disabled state')
+@click.option('--quota-dir', default=_DEFAULT_QUOTA_DIR, show_default=True)
+def quota_set(skill_id: str, node_id: str, max_per_hour: Optional[int],
+              max_per_day: Optional[int], burst_allowance: int,
+              disabled: bool, quota_dir: str):
+    """Create or update a quota policy for a skill."""
+    from marketplace.quota_manager import QuotaManager, QuotaPolicy
+    mgr = QuotaManager(Path(quota_dir))
+    policy = QuotaPolicy(
+        skill_id=skill_id,
+        node_id=node_id,
+        max_per_hour=max_per_hour,
+        max_per_day=max_per_day,
+        burst_allowance=burst_allowance,
+        enabled=not disabled,
+    )
+    mgr.set_policy(policy)
+    parts = [f'skill={skill_id}', f'node={node_id}']
+    if max_per_hour is not None:
+        parts.append(f'max/h={max_per_hour}')
+    if max_per_day is not None:
+        parts.append(f'max/d={max_per_day}')
+    if burst_allowance:
+        parts.append(f'burst={burst_allowance}')
+    click.echo(click.style('Policy set: ' + '  '.join(parts), fg='green'))
+
+
+@quota.command('list')
+@click.option('--quota-dir', default=_DEFAULT_QUOTA_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def quota_list(quota_dir: str, as_json: bool):
+    """List all quota policies."""
+    import json as _json
+    from marketplace.quota_manager import QuotaManager
+    mgr = QuotaManager(Path(quota_dir))
+    policies = mgr.list_policies()
+    if as_json:
+        click.echo(_json.dumps([p.to_dict() for p in policies], indent=2))
+    else:
+        if not policies:
+            click.echo('No policies defined.')
+            return
+        for p in policies:
+            status = '' if p.enabled else ' [DISABLED]'
+            parts = [f'{p.skill_id}  node={p.node_id}']
+            if p.max_per_hour is not None:
+                parts.append(f'max/h={p.max_per_hour}')
+            if p.max_per_day is not None:
+                parts.append(f'max/d={p.max_per_day}')
+            if p.burst_allowance:
+                parts.append(f'burst={p.burst_allowance}')
+            click.echo('  '.join(parts) + status)
+
+
+@quota.command('remove')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--quota-dir', default=_DEFAULT_QUOTA_DIR, show_default=True)
+def quota_remove(skill_id: str, node_id: str, quota_dir: str):
+    """Remove a quota policy."""
+    from marketplace.quota_manager import QuotaManager
+    mgr = QuotaManager(Path(quota_dir))
+    removed = mgr.remove_policy(skill_id, node_id)
+    if removed:
+        click.echo(f'Removed policy: {skill_id}  node={node_id}')
+    else:
+        click.echo(click.style(f'No policy found: {skill_id}', fg='yellow'))
+        raise SystemExit(1)
+
+
+@quota.command('check')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--quota-dir', default=_DEFAULT_QUOTA_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def quota_check(skill_id: str, node_id: str, quota_dir: str, as_json: bool):
+    """Check whether an execution is allowed under the current policy."""
+    import json as _json
+    from marketplace.quota_manager import QuotaManager
+    mgr = QuotaManager(Path(quota_dir))
+    result = mgr.check(skill_id, node_id)
+    if as_json:
+        click.echo(_json.dumps(result.to_dict(), indent=2))
+    else:
+        color = 'green' if result.allowed else 'red'
+        click.echo(click.style(f'{"ALLOWED" if result.allowed else "BLOCKED"}  reason={result.reason}', fg=color))
+        click.echo(f'  Used last hour: {result.used_last_hour}   '
+                   f'remaining: {result.remaining_hour}')
+        click.echo(f'  Used last day:  {result.used_last_day}   '
+                   f'remaining: {result.remaining_day}')
+    raise SystemExit(0 if result.allowed else 1)
+
+
+@quota.command('usage')
+@click.option('--skill', 'skill_id', default=None)
+@click.option('--node', 'node_id', default=None)
+@click.option('--quota-dir', default=_DEFAULT_QUOTA_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def quota_usage(skill_id: Optional[str], node_id: Optional[str],
+                quota_dir: str, as_json: bool):
+    """Show rolling-window execution usage."""
+    import json as _json
+    from marketplace.quota_manager import QuotaManager
+    mgr = QuotaManager(Path(quota_dir))
+    rows = mgr.usage(skill_id=skill_id, node_id=node_id)
+    if as_json:
+        click.echo(_json.dumps(rows, indent=2))
+    else:
+        if not rows:
+            click.echo('No usage recorded.')
+            return
+        for r in rows:
+            click.echo(
+                f'{r["skill_id"]:40s}  node={r["node_id"]:12s}  '
+                f'h={r["used_last_hour"]:4d}  d={r["used_last_day"]:4d}  '
+                f'total={r["total_recorded"]}'
+            )
+
+
 # ── ab testing ───────────────────────────────────────────────────────────────
 
 _DEFAULT_AB_STORE = str(Path(__file__).resolve().parent / 'ab' / 'experiments.json')
