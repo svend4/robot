@@ -1,5 +1,72 @@
 # Changelog
 
+## 0.81.0 — Skill A/B testing framework (1551 → 1617 tests)
+
+Weighted variant routing, experiment lifecycle management, and telemetry-driven
+winner recommendation for comparing skill versions in production.
+
+### Code changes
+
+- `marketplace/ab_testing.py` (NEW):
+  - `ABVariant`: one arm of an experiment — `skill_id`, `version`, `weight`,
+    `label`; `to_dict()` / `from_dict()`.
+  - `ABExperiment`: named experiment with ≥ 2 variants and status lifecycle
+    (`active` → `paused` | `concluded`).  `make()` factory auto-generates
+    UUID + timestamp.  `route()` performs normalised weighted random selection
+    (raises `ValueError` when not active or all weights zero).  `pause()`,
+    `resume()`, `conclude(winner_label?)` lifecycle methods.  Full round-trip
+    serialisation.
+  - `ABExperimentStore`: JSON-backed single-file store keyed by
+    `experiment_id`.  `save()`, `get()`, `list_experiments(status?)`,
+    `delete()`, `experiment_count`.  Parent dirs created on first write;
+    corrupt file loads empty.
+  - `VariantResult`: per-variant telemetry stats struct with `to_dict()`.
+  - `ABAnalyzer`: `compare(exp)` — returns dict with per-variant
+    `execution_count`, `success_rate`, `mean_duration_ms`, `p95_ms`.
+    `recommend_winner(exp)` — ranks by `(success_rate, -mean_duration_ms)`,
+    returns label of best performer (or None if no data).
+- `api/ab_testing.py` (NEW): FastAPI router at `/ab`:
+  - `POST /ab/experiments` → 201; 422 if fewer than 2 variants.
+  - `GET  /ab/experiments?status=` — filtered list.
+  - `GET  /ab/experiments/{id}` — get one; 404.
+  - `DELETE /ab/experiments/{id}` — delete; 404.
+  - `PUT  /ab/experiments/{id}/pause` — 409 if not active.
+  - `PUT  /ab/experiments/{id}/resume` — 409 if not paused.
+  - `POST /ab/experiments/{id}/conclude` `{winner_label?}` — 409 if already concluded.
+  - `GET  /ab/experiments/{id}/route` — chosen variant; 409 if not active.
+  - `GET  /ab/experiments/{id}/results` — `ABAnalyzer.compare()` output.
+  - `GET  /ab/experiments/{id}/recommend` — `{recommended_winner: label|null}`.
+- `api/app.py`: mounts `_ab_router`; version bumped to `0.81.0`.
+- `etd_cli.py`: new `ab` command group:
+  - `etd ab create --name N --variant SKILL:VER:WEIGHT:LABEL [--variant ...]`
+  - `etd ab list [--status active|paused|concluded] [--json]`
+  - `etd ab status EXPERIMENT_ID [--json]`
+  - `etd ab route EXPERIMENT_ID`
+  - `etd ab results EXPERIMENT_ID [--json]`
+  - `etd ab recommend EXPERIMENT_ID`
+  - `etd ab conclude EXPERIMENT_ID [--winner LABEL]`
+  - `etd ab pause EXPERIMENT_ID`
+  - `etd ab resume EXPERIMENT_ID`
+
+### Tests (1551 → 1617, +66)
+
+- `tests/test_ab_testing.py` (+66, NEW):
+  - `TestABVariant`: dict keys, round-trip, defaults.
+  - `TestABExperiment`: make factory, to\_dict, round-trip, get\_variant
+    found/not-found, route returns variant, route respects zero-weight,
+    route raises when paused/concluded/all-zero, pause/resume/conclude
+    transitions, pause-twice/resume-active/conclude-twice raise, no winner.
+  - `TestABExperimentStore`: empty count, save+get, unknown returns None,
+    list all, filter by status, delete, delete unknown, persistence, update
+    existing, sorted newest-first, creates parent dirs, corrupt file empty.
+  - `TestABAnalyzer`: compare structure, no-data zero counts, with data
+    success rate, recommend None no-data, higher success rate wins, lower
+    duration breaks tie, variant result to\_dict.
+  - REST API: create 201, has id, one-variant 422; list 200/empty/after/
+    filter; get found/404; delete 200/404/then-404; pause 200/404/409,
+    resume 200/409, conclude 200/409-twice; route 200/paused-409; results
+    200/structure/404; recommend 200/no-data-None/404.
+
 ## 0.80.0 — Skill execution telemetry analytics (1481 → 1551 tests)
 
 Persistent per-skill execution recording, duration statistics, and z-score

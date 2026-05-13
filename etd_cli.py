@@ -1170,6 +1170,234 @@ def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
             )
 
 
+# ── ab testing ───────────────────────────────────────────────────────────────
+
+_DEFAULT_AB_STORE = str(Path(__file__).resolve().parent / 'ab' / 'experiments.json')
+
+
+@cli.group()
+def ab():
+    """A/B testing: create, route, analyse, and conclude experiments."""
+
+
+@ab.command('create')
+@click.option('--name', required=True, help='Experiment name')
+@click.option('--variant', 'variants', multiple=True, required=True,
+              metavar='SKILL:VERSION:WEIGHT:LABEL',
+              help='Variant spec (repeat for each arm)')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def ab_create(name: str, variants: tuple, store_path: str, as_json: bool):
+    """Create a new A/B experiment.
+
+    Each --variant is SKILL:VERSION:WEIGHT:LABEL,
+    e.g. --variant etd.pick:0.1.0:0.5:control
+    """
+    import json as _json
+    from marketplace.ab_testing import ABExperiment, ABVariant, ABExperimentStore
+    parsed = []
+    for v in variants:
+        parts = v.split(':')
+        if len(parts) < 2:
+            click.echo(click.style(f'Bad variant spec: {v!r}', fg='red'))
+            raise SystemExit(1)
+        skill_id, version = parts[0], parts[1]
+        weight = float(parts[2]) if len(parts) > 2 else 1.0
+        label = parts[3] if len(parts) > 3 else ''
+        parsed.append(ABVariant(skill_id=skill_id, version=version,
+                                weight=weight, label=label))
+    exp = ABExperiment.make(name=name, variants=parsed)
+    ABExperimentStore(Path(store_path)).save(exp)
+    if as_json:
+        click.echo(_json.dumps(exp.to_dict(), indent=2))
+    else:
+        click.echo(click.style(f'Created: {exp.experiment_id}  "{exp.name}"', fg='green'))
+        for v in exp.variants:
+            click.echo(f'  [{v.label or "variant"}]  {v.skill_id} v{v.version}  w={v.weight}')
+
+
+@ab.command('list')
+@click.option('--status', 'status_filter', default=None,
+              type=click.Choice(['active', 'paused', 'concluded']))
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def ab_list(status_filter: Optional[str], store_path: str, as_json: bool):
+    """List A/B experiments."""
+    import json as _json
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exps = store.list_experiments(status=status_filter)
+    if as_json:
+        click.echo(_json.dumps([e.to_dict() for e in exps], indent=2))
+    else:
+        if not exps:
+            click.echo('No experiments found.')
+            return
+        for e in exps:
+            click.echo(f'[{e.status:<10}] {e.experiment_id[:8]}  "{e.name}"  '
+                       f'{len(e.variants)} variants')
+
+
+@ab.command('status')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def ab_status(experiment_id: str, store_path: str, as_json: bool):
+    """Show details for one experiment."""
+    import json as _json
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(_json.dumps(exp.to_dict(), indent=2))
+    else:
+        click.echo(f'{exp.name}  [{exp.status}]')
+        click.echo(f'ID: {exp.experiment_id}')
+        for v in exp.variants:
+            click.echo(f'  [{v.label or "variant"}]  {v.skill_id} v{v.version}  w={v.weight}')
+        if exp.winner_label:
+            click.echo(f'Winner: {exp.winner_label}')
+
+
+@ab.command('route')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+def ab_route(experiment_id: str, store_path: str):
+    """Print the chosen variant for one execution (weighted random)."""
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    try:
+        v = exp.route()
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    click.echo(f'{v.skill_id}:{v.version}  [{v.label}]')
+
+
+@ab.command('results')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+@click.option('--telemetry', 'tel_path',
+              default=str(Path(__file__).resolve().parent / 'telemetry' / 'executions.jsonl'),
+              show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def ab_results(experiment_id: str, store_path: str, tel_path: str, as_json: bool):
+    """Compare variant results from telemetry data."""
+    import json as _json
+    from marketplace.ab_testing import ABExperimentStore, ABAnalyzer
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    analyzer = ABAnalyzer(TelemetryStore(Path(tel_path)))
+    cmp = analyzer.compare(exp)
+    if as_json:
+        click.echo(_json.dumps(cmp, indent=2))
+    else:
+        click.echo(f'{exp.name}  [{exp.status}]')
+        for v in cmp['variants']:
+            click.echo(
+                f'  [{v["label"] or "variant":12}]  '
+                f'{v["execution_count"]:4d} runs  '
+                f'{v["success_rate"]:.0%} ok  '
+                f'mean={v["mean_duration_ms"]:.0f} ms  '
+                f'p95={v["p95_ms"]:.0f} ms'
+            )
+
+
+@ab.command('recommend')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+@click.option('--telemetry', 'tel_path',
+              default=str(Path(__file__).resolve().parent / 'telemetry' / 'executions.jsonl'),
+              show_default=True)
+def ab_recommend(experiment_id: str, store_path: str, tel_path: str):
+    """Recommend a winner based on telemetry data."""
+    from marketplace.ab_testing import ABExperimentStore, ABAnalyzer
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    winner = ABAnalyzer(TelemetryStore(Path(tel_path))).recommend_winner(exp)
+    if winner:
+        click.echo(click.style(f'Recommended winner: {winner}', fg='green'))
+    else:
+        click.echo('No telemetry data available to recommend a winner.')
+
+
+@ab.command('conclude')
+@click.argument('experiment_id')
+@click.option('--winner', 'winner_label', default=None)
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+def ab_conclude(experiment_id: str, winner_label: Optional[str], store_path: str):
+    """Conclude an experiment, optionally setting the winner."""
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    try:
+        exp.conclude(winner_label=winner_label)
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    store.save(exp)
+    click.echo(f'Concluded: {exp.experiment_id}'
+               + (f'  winner={winner_label}' if winner_label else ''))
+
+
+@ab.command('pause')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+def ab_pause(experiment_id: str, store_path: str):
+    """Pause an active experiment."""
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    try:
+        exp.pause()
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    store.save(exp)
+    click.echo(f'Paused: {exp.experiment_id}')
+
+
+@ab.command('resume')
+@click.argument('experiment_id')
+@click.option('--store', 'store_path', default=_DEFAULT_AB_STORE, show_default=True)
+def ab_resume(experiment_id: str, store_path: str):
+    """Resume a paused experiment."""
+    from marketplace.ab_testing import ABExperimentStore
+    store = ABExperimentStore(Path(store_path))
+    exp = store.get(experiment_id)
+    if exp is None:
+        click.echo(click.style(f'Not found: {experiment_id}', fg='yellow'))
+        raise SystemExit(1)
+    try:
+        exp.resume()
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    store.save(exp)
+    click.echo(f'Resumed: {exp.experiment_id}')
+
+
 # ── telemetry ─────────────────────────────────────────────────────────────────
 
 _DEFAULT_TELEMETRY_STORE = str(Path(__file__).resolve().parent / 'telemetry' / 'executions.jsonl')

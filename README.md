@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1551 pytest tests
+├── tests/                              # 1617 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -118,6 +118,14 @@ python etd_cli.py fleet status --json
 python etd_cli.py fleet deployments
 python etd_cli.py fleet deployments --skill etd.pickplace.basic --json
 
+# A/B testing
+python etd_cli.py ab create --name "speed trial" --variant etd.pick:0.1.0:0.5:control --variant etd.pick:0.2.0:0.5:treatment
+python etd_cli.py ab list --status active
+python etd_cli.py ab route <experiment-id>
+python etd_cli.py ab results <experiment-id> --json
+python etd_cli.py ab recommend <experiment-id>
+python etd_cli.py ab conclude <experiment-id> --winner treatment
+
 # Telemetry analytics
 python etd_cli.py telemetry record --skill etd.pickplace.basic --node robot-01 --status success --duration-ms 1200
 python etd_cli.py telemetry stats etd.pickplace.basic
@@ -140,6 +148,12 @@ uvicorn api.app:app --reload
 # POST http://localhost:8000/compose/validate  {"composed": {"skillId": "...", "steps": [...]}}
 # POST http://localhost:8000/compose/run       {"composed": {"skillId": "...", "steps": [...]}}
 # GET  http://localhost:8000/compose/examples
+# POST http://localhost:8000/ab/experiments  {"name": "speed trial", "variants": [...]}
+# GET  http://localhost:8000/ab/experiments?status=active
+# GET  http://localhost:8000/ab/experiments/{id}/route
+# GET  http://localhost:8000/ab/experiments/{id}/results
+# GET  http://localhost:8000/ab/experiments/{id}/recommend
+# POST http://localhost:8000/ab/experiments/{id}/conclude  {"winner_label": "treatment"}
 # POST http://localhost:8000/telemetry/executions  {"skill_id": "etd.pickplace.basic", "node_id": "r01", "status": "success", "total_duration_ms": 1200}
 # GET  http://localhost:8000/telemetry/stats/etd.pickplace.basic
 # GET  http://localhost:8000/telemetry/report
@@ -266,10 +280,11 @@ tests/
 ├── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
 ├── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
 ├── test_api_extensions.py    # 51 — /platform/list (count/structure/atlas), /platform/platform/{id} (found/404/families), /platform/check (compatible/incompatible/topic-remappings/family-mismatch), /platform/matrix (30-pairs/no-self/with-skill/family-filter), /fleet/nodes (list/register-201/list-after/get/get-404/delete/delete-404/heartbeat/heartbeat-404), /fleet/deployments (deploy-201/completed/structure/list/get/get-404/filter-skill), /fleet/status (200/structure), /compose/validate (valid/invalid-no-steps/self-ref/skill-id), /compose/run (200/success/step-results/multi-step/structure), /compose/examples (list/structure/validate/run/404s)
-└── test_telemetry_analytics.py # 70 — ExecutionEvent (dict/round-trip/defaults), ExecutionRecord (make/succeeded/events/round-trip), _percentile (empty/single/median/p100/p0), TelemetryStore (count/record/persist/query-filters/limit/newest-first/skill_ids/node_ids/clear/malformed-skipped/parent-dirs/since), TelemetryAnalyzer (stats-none/counts/rate/durations/failures/percentiles/to_dict/summary, node_stats-empty/populated, recent_failures/limit-zero, anomalies-insufficient/zero-stdev/outlier/sorted/skill-filter, report-structure/empty), REST API /telemetry (record-201/explicit-ids, list-200/empty/filter-skill/status/limit, stats-404/200/structure, report-200/structure/empty, anomalies-200/structure/detects/z_score/skill-filter)
+├── test_telemetry_analytics.py # 70 — ExecutionEvent (dict/round-trip/defaults), ExecutionRecord (make/succeeded/events/round-trip), _percentile (empty/single/median/p100/p0), TelemetryStore (count/record/persist/query-filters/limit/newest-first/skill_ids/node_ids/clear/malformed-skipped/parent-dirs/since), TelemetryAnalyzer (stats-none/counts/rate/durations/failures/percentiles/to_dict/summary, node_stats-empty/populated, recent_failures/limit-zero, anomalies-insufficient/zero-stdev/outlier/sorted/skill-filter, report-structure/empty), REST API /telemetry (record-201/explicit-ids, list-200/empty/filter-skill/status/limit, stats-404/200/structure, report-200/structure/empty, anomalies-200/structure/detects/z_score/skill-filter)
+└── test_ab_testing.py          # 66 — ABVariant (dict/round-trip/defaults), ABExperiment (make/to_dict/round-trip/get_variant/route/route-zero-weight/route-raises-paused|concluded|all-zero/pause-resume-conclude/transitions/raise-twice), ABExperimentStore (save/get/list/filter/delete/persist/update/newest-first/parent-dirs/corrupt-empty), ABAnalyzer (compare-structure/no-data/with-data, recommend-None/success-rate-wins/duration-tiebreak/to_dict), REST API /ab (create-201/has-id/one-variant-422, list-200/empty/after/filter, get-found/404, delete-200/404/then-404, pause-200/404/409, resume-200/409, conclude-200/409-twice, route-200/paused-409, results-200/structure/404, recommend-200/no-data-None/404)
 ```
 
-Run: `python -m pytest` — 1551 tests, all passing.
+Run: `python -m pytest` — 1617 tests, all passing.
 
 ---
 

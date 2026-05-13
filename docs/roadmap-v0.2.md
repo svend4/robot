@@ -178,6 +178,17 @@ All items below were delivered in the prototype:
   CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
   `etd fleet status`, `etd fleet deployments [--json]`.
   61 tests in `tests/test_fleet_manager.py`.
+- [x] **Skill A/B testing framework.** Compare skill versions in production
+  with weighted routing and telemetry-driven winner recommendation.
+  `marketplace/ab_testing.py`: `ABVariant` (skill_id/version/weight/label),
+  `ABExperiment` (`make()` factory, `route()` weighted random, lifecycle:
+  pause/resume/conclude, serialisation), `ABExperimentStore` (JSON-backed,
+  save/get/list/delete/persist), `VariantResult`, `ABAnalyzer` (`compare()`
+  variant-by-variant telemetry stats, `recommend_winner()` by success rate +
+  mean duration). `api/ab_testing.py`: FastAPI router at `/ab` (create/list/
+  get/delete/pause/resume/conclude/route/results/recommend). CLI: `etd ab
+  create|list|status|route|results|recommend|conclude|pause|resume`.
+  66 tests in `tests/test_ab_testing.py`.
 - [x] **Skill execution telemetry analytics.** Persistent skill execution
   recording with z-score anomaly detection and fleet-wide reporting.
   `marketplace/telemetry_analytics.py`: `ExecutionEvent`, `ExecutionRecord`
