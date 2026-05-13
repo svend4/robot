@@ -178,6 +178,18 @@ All items below were delivered in the prototype:
   CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
   `etd fleet status`, `etd fleet deployments [--json]`.
   61 tests in `tests/test_fleet_manager.py`.
+- [x] **Skill dependency resolver.** Topological install-order computation,
+  cycle detection, optional dependency support, and a persistent registry.
+  `marketplace/dependency_resolver.py`: `SkillDependency` (skill_id,
+  version_constraint, optional), `DependencyGraph` (add_skill, DFS
+  `resolve()` raises `CyclicDependencyError`, `detect_cycles()`, `transitive_deps()`,
+  `missing()`), `DependencyResolver` (`install_order`, `check_satisfied` with
+  optional-dep awareness, `dependency_tree` with cycle detection, `cycles()`),
+  `DependencyStore` (JSON-backed, register/get/remove/list/resolver()).
+  `api/dependency.py`: FastAPI router at `/deps` (register/list/get/delete
+  skills, `/order/{skill_id}` install order, `/tree/{skill_id}`, `/check`,
+  `/cycles`). CLI: `etd deps register|list|order|tree|check|cycles`.
+  59 tests in `tests/test_dependency_resolver.py`.
 - [x] **Skill execution scheduler.** Interval and one-shot scheduling of
   skill executions on fleet nodes, with job lifecycle management, due-job
   detection, run history, and REST + CLI layer.

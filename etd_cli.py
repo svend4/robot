@@ -1170,6 +1170,156 @@ def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
             )
 
 
+# ── dependency resolver ───────────────────────────────────────────────────────
+
+_DEFAULT_DEPS_DIR = str(Path(__file__).resolve().parent / 'deps')
+
+
+@cli.group()
+def deps():
+    """Skill dependency resolver: register, inspect, and verify dependencies."""
+
+
+@deps.command('register')
+@click.argument('skill_id')
+@click.option('--requires', 'requires', multiple=True,
+              metavar='SKILL_ID[:VERSION_CONSTRAINT][:optional]',
+              help='Dependency spec (repeat for multiple). Append :optional for optional deps.')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+def deps_register(skill_id: str, requires: tuple, deps_dir: str):
+    """Register dependency declarations for a skill.
+
+    Example: --requires etd.pick:>=0.1.0  --requires etd.inspect::optional
+    """
+    from marketplace.dependency_resolver import DependencyStore, SkillDependency
+    parsed = []
+    for r in requires:
+        parts = r.split(':')
+        dep_id = parts[0]
+        version_constraint = parts[1] if len(parts) > 1 else ''
+        optional = (len(parts) > 2 and parts[2].lower() == 'optional')
+        parsed.append(SkillDependency(skill_id=dep_id,
+                                      version_constraint=version_constraint,
+                                      optional=optional))
+    DependencyStore(Path(deps_dir)).register(skill_id, parsed)
+    click.echo(click.style(
+        f'Registered {len(parsed)} dep(s) for {skill_id}', fg='green'))
+
+
+@deps.command('list')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def deps_list(deps_dir: str, as_json: bool):
+    """List all registered skill dependency declarations."""
+    import json as _json
+    from marketplace.dependency_resolver import DependencyStore
+    store = DependencyStore(Path(deps_dir))
+    skills = store.list_skills()
+    if as_json:
+        data = {s: [d.to_dict() for d in (store.get(s) or [])]
+                for s in skills}
+        click.echo(_json.dumps(data, indent=2))
+    else:
+        if not skills:
+            click.echo('No dependency declarations registered.')
+            return
+        for s in skills:
+            d_list = store.get(s) or []
+            dep_str = ', '.join(
+                f'{d.skill_id}{"?" if d.optional else ""}' for d in d_list
+            ) or '(none)'
+            click.echo(f'  {s:45s}  →  {dep_str}')
+
+
+@deps.command('order')
+@click.argument('skill_id')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def deps_order(skill_id: str, deps_dir: str, as_json: bool):
+    """Print the topological install order for a skill."""
+    import json as _json
+    from marketplace.dependency_resolver import DependencyStore, CyclicDependencyError
+    store = DependencyStore(Path(deps_dir))
+    try:
+        order = store.resolver().install_order(skill_id)
+    except CyclicDependencyError as exc:
+        click.echo(click.style(f'Cycle detected: {exc}', fg='red'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(_json.dumps(order, indent=2))
+    else:
+        for i, s in enumerate(order, 1):
+            marker = ' ← install target' if s == skill_id else ''
+            click.echo(f'  {i:2d}. {s}{marker}')
+
+
+@deps.command('tree')
+@click.argument('skill_id')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def deps_tree(skill_id: str, deps_dir: str, as_json: bool):
+    """Print the dependency tree for a skill."""
+    import json as _json
+    from marketplace.dependency_resolver import DependencyStore
+
+    store = DependencyStore(Path(deps_dir))
+    tree = store.resolver().dependency_tree(skill_id)
+
+    if as_json:
+        click.echo(_json.dumps(tree, indent=2))
+    else:
+        def _render(node: dict, indent: int = 0) -> None:
+            prefix = '  ' * indent
+            opt = ' [optional]' if node.get('optional') else ''
+            cycle = ' [CYCLE]' if node.get('cycle') else ''
+            click.echo(f'{prefix}{node["skill_id"]}{opt}{cycle}')
+            for child in node.get('deps', []):
+                _render(child, indent + 1)
+        _render(tree)
+
+
+@deps.command('check')
+@click.argument('skill_id')
+@click.option('--available', 'available', default='',
+              help='Comma-separated list of available skill IDs')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def deps_check(skill_id: str, available: str, deps_dir: str, as_json: bool):
+    """Check whether all required deps of a skill are available."""
+    import json as _json
+    from marketplace.dependency_resolver import DependencyStore
+    avail_set = {s.strip() for s in available.split(',') if s.strip()}
+    store = DependencyStore(Path(deps_dir))
+    satisfied, missing = store.resolver().check_satisfied(skill_id, avail_set)
+    if as_json:
+        click.echo(_json.dumps({'satisfied': satisfied, 'missing': missing},
+                               indent=2))
+    else:
+        if satisfied:
+            click.echo(click.style('All dependencies satisfied.', fg='green'))
+        else:
+            click.echo(click.style(
+                f'Missing {len(missing)} required dep(s): '
+                + ', '.join(missing), fg='red'))
+    raise SystemExit(0 if satisfied else 1)
+
+
+@deps.command('cycles')
+@click.option('--deps-dir', default=_DEFAULT_DEPS_DIR, show_default=True)
+def deps_cycles(deps_dir: str):
+    """Detect dependency cycles in the full graph."""
+    from marketplace.dependency_resolver import DependencyStore
+    store = DependencyStore(Path(deps_dir))
+    cycles = store.resolver().cycles()
+    if not cycles:
+        click.echo(click.style('No cycles detected.', fg='green'))
+    else:
+        click.echo(click.style(f'{len(cycles)} cycle(s) detected:', fg='red'))
+        for c in cycles:
+            click.echo('  ' + ' → '.join(c))
+        raise SystemExit(1)
+
+
 # ── scheduler ────────────────────────────────────────────────────────────────
 
 _DEFAULT_SCHED_DIR = str(Path(__file__).resolve().parent / 'scheduler')

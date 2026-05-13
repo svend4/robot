@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.84.0 — Skill dependency resolver (1739 → 1798 tests)
+
+Topological install-order computation, cycle detection, optional dependency
+support, and a persistent registry with REST + CLI.
+
+### Code changes
+
+- `marketplace/dependency_resolver.py` (NEW):
+  - `CyclicDependencyError`: raised on cycle during resolution.
+  - `SkillDependency`: `skill_id`, `version_constraint` (informational),
+    `optional`; `to_dict()`/`from_dict()`.
+  - `DependencyGraph`: pure graph of `skill_id → [dep_skill_id]`.
+    `add_skill()`, `resolve(skill_id)` — iterative DFS topological sort,
+    raises `CyclicDependencyError`; `detect_cycles()` — DFS with recursion
+    stack, returns all cycles; `transitive_deps()`, `missing(skill_id, available)`.
+  - `DependencyResolver`: wraps `{skill_id: [SkillDependency]}` registry.
+    `install_order()`, `check_satisfied(skill_id, available)` — optional deps
+    excluded from missing list, `dependency_tree()` — nested dict with
+    cycle detection, `cycles()`, `from_dict()` class method.
+  - `DependencyStore`: JSON-backed persistent registry.  `register()`,
+    `get()`, `remove()`, `list_skills()`, `as_dict()`, `resolver()`,
+    `skill_count`. Creates parent dirs; corrupt file loads empty.
+- `api/dependency.py` (NEW): FastAPI router at `/deps`:
+  - `POST /deps/skills` → 201 — register deps.
+  - `GET  /deps/skills` — list all.
+  - `GET  /deps/skills/{skill_id}` — get one; 404.
+  - `DELETE /deps/skills/{skill_id}` — remove; 404.
+  - `GET  /deps/order/{skill_id}` — install order; 409 on cycle.
+  - `GET  /deps/tree/{skill_id}` — nested tree.
+  - `POST /deps/check` `{skill_id, available[]}` — satisfaction check.
+  - `GET  /deps/cycles` — cycle list.
+- `api/app.py`: mounts `_dependency_router`; version bumped to `0.84.0`.
+- `etd_cli.py`: new `deps` command group:
+  - `etd deps register SKILL_ID --requires DEP[:VER][:optional] ...`
+  - `etd deps list [--json]`
+  - `etd deps order SKILL_ID [--json]`
+  - `etd deps tree SKILL_ID [--json]`
+  - `etd deps check SKILL_ID --available a,b,c [--json]`
+  - `etd deps cycles`
+
+### Tests (1739 → 1798, +59)
+
+- `tests/test_dependency_resolver.py` (+59, NEW):
+  - `TestSkillDependency`: dict keys, round-trip, defaults, optional flag.
+  - `TestDependencyGraph`: skills listed, resolve leaf/order/unknown/cycle/
+    self-cycle, detect\_cycles none/found, transitive\_deps/leaf/cycle-empty,
+    missing none/all/partial available.
+  - `TestDependencyResolver`: install\_order leaf/deps-first, check\_satisfied
+    all-present/missing-required/optional-excluded/unknown-satisfied,
+    dependency\_tree structure/nested/cycle-flagged, from\_dict, cycles
+    clean/detected.
+  - `TestDependencyStore`: empty, register+get, unknown None, list, remove
+    existing/unknown, update replaces, persists, creates dir, corrupt empty,
+    resolver() method.
+  - REST API: register-201/has-id, list-200/empty/after, get-found/404,
+    delete-200/404, order-no-deps/with-deps/cycle-409, tree-200/structure,
+    check-satisfied/missing, cycles-none/detected.
+
 ## 0.83.0 — Skill execution scheduler (1675 → 1739 tests)
 
 Interval and one-shot scheduling of skill executions on fleet nodes, with
