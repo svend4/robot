@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.91.0 — Skill rating & review system (2187 → 2235 tests)
+
+Operators submit 1–5 star ratings with optional comments for skill packages.
+Aggregate stats (mean, count, star distribution) computed per skill. REST API
+and CLI included.
+
+### Code changes
+
+- `marketplace/skill_ratings.py` (NEW):
+  - `RatingEntry`: `rating_id` (UUID), `skill_id`, `rating` (1–5), `comment`,
+    `operator_id`, `created_at`; `to_dict()`/`from_dict()`.
+  - `RatingStats`: `skill_id`, `count`, `mean` (2 d.p.), `distribution`
+    (`{1..5: count}`); `to_dict()`.
+  - `RatingStore`: JSON-backed flat dict (`ratings.json`).
+    `add_rating()` — raises `ValueError` for out-of-range rating; auto-UUID;
+    `get_rating()`, `list_ratings(skill_id=None)`, `remove_rating()`,
+    `get_stats()` — returns `None` if no ratings, else computes `RatingStats`;
+    `rated_skills()` — sorted dedup list; `rating_count` property.
+    Creates parent dirs; corrupt file loads empty.
+- `api/skill_ratings.py` (NEW): FastAPI router at `/ratings`:
+  - `GET  /ratings` — list all (`?skill_id=` filter).
+  - `POST /ratings` — add rating (201; 422 for invalid range).
+  - `GET  /ratings/skills` — rated skill IDs.
+  - `GET  /ratings/stats/{skill_id}` — aggregate stats; 404 if no ratings.
+    Registered before `/{rating_id}` to avoid FastAPI route capture.
+  - `GET  /ratings/{rating_id}` — single entry; 404.
+  - `DELETE /ratings/{rating_id}` — remove; 404.
+- `api/app.py`: version bumped to `0.91.0`; router mounted.
+- `etd_cli.py`: `etd rating` group — `add`, `list`, `stats`, `remove`, `skills`.
+- `tests/test_skill_ratings.py` (NEW): 48 tests.
+
+---
+
 ## 0.90.0 — Skill tag system (2130 → 2187 tests)
 
 User-defined tags that can be applied to skill IDs, enabling grouping,

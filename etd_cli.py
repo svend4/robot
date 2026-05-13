@@ -2742,5 +2742,101 @@ def tag_show(skill_id: str, data_dir: str):
         click.echo(f'{skill_id}: ' + ', '.join(tags))
 
 
+
+# ── etd rating ────────────────────────────────────────────────────────────────
+
+_DEFAULT_RATINGS_DIR = str(Path(__file__).resolve().parent / 'skill_ratings_data')
+
+
+@cli.group('rating')
+def rating_group():
+    """Manage skill ratings and reviews."""
+
+
+@rating_group.command('add')
+@click.argument('skill_id')
+@click.argument('rating', type=int)
+@click.option('--comment', default='', help='Optional review comment.')
+@click.option('--operator', 'operator_id', default='anonymous', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_RATINGS_DIR, show_default=True)
+def rating_add(skill_id: str, rating: int, comment: str,
+               operator_id: str, data_dir: str):
+    """Add a 1–5 star rating for a skill."""
+    from marketplace.skill_ratings import RatingStore
+    try:
+        entry = RatingStore(Path(data_dir)).add_rating(
+            skill_id, rating, comment=comment, operator_id=operator_id,
+        )
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Rated {skill_id!r} {rating}/5  (id: {entry.rating_id})')
+
+
+@rating_group.command('list')
+@click.option('--skill', 'skill_id', default=None, help='Filter by skill ID.')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RATINGS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def rating_list(skill_id: Optional[str], data_dir: str, as_json: bool):
+    """List ratings."""
+    from marketplace.skill_ratings import RatingStore
+    entries = RatingStore(Path(data_dir)).list_ratings(skill_id=skill_id)
+    if as_json:
+        click.echo(json.dumps([e.to_dict() for e in entries], indent=2))
+    elif not entries:
+        click.echo('No ratings found.')
+    else:
+        for e in entries:
+            click.echo(f'[{e.rating}/5] {e.skill_id}  by {e.operator_id}  {e.created_at}'
+                       + (f'  "{e.comment}"' if e.comment else ''))
+
+
+@rating_group.command('stats')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RATINGS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def rating_stats(skill_id: str, data_dir: str, as_json: bool):
+    """Show aggregate rating stats for a skill."""
+    from marketplace.skill_ratings import RatingStore
+    stats = RatingStore(Path(data_dir)).get_stats(skill_id)
+    if stats is None:
+        click.echo(f'No ratings for {skill_id!r}.')
+        raise SystemExit(1)
+    if as_json:
+        click.echo(json.dumps(stats.to_dict(), indent=2))
+    else:
+        stars = ''.join('★' if i <= round(stats.mean) else '☆' for i in range(1, 6))
+        click.echo(f'{skill_id}: {stats.mean}/5.0  {stars}  ({stats.count} rating'
+                   + ('s' if stats.count != 1 else '') + ')')
+        for star in range(5, 0, -1):
+            bar = '█' * stats.distribution[star]
+            click.echo(f'  {star}★  {bar}  {stats.distribution[star]}')
+
+
+@rating_group.command('remove')
+@click.argument('rating_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RATINGS_DIR, show_default=True)
+def rating_remove(rating_id: str, data_dir: str):
+    """Delete a rating by ID."""
+    from marketplace.skill_ratings import RatingStore
+    if not RatingStore(Path(data_dir)).remove_rating(rating_id):
+        click.echo(click.style(f'Rating not found: {rating_id!r}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Deleted rating {rating_id}.')
+
+
+@rating_group.command('skills')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RATINGS_DIR, show_default=True)
+def rating_skills(data_dir: str):
+    """List all skill IDs that have at least one rating."""
+    from marketplace.skill_ratings import RatingStore
+    skills = RatingStore(Path(data_dir)).rated_skills()
+    if not skills:
+        click.echo('No rated skills.')
+    else:
+        for s in skills:
+            click.echo(s)
+
+
 if __name__ == '__main__':
     cli()

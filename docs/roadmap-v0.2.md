@@ -310,3 +310,16 @@ All items below were delivered in the prototype:
   `/by-tag/{tag_id}` registered before `/{skill_id}` to avoid FastAPI capture).
   CLI: `etd tag create|list|delete|add|remove|skills|show`.
   57 tests in `tests/test_skill_tags.py`.
+- [x] **Skill rating & review system.** Operators submit 1–5 star ratings with
+  optional comments for skill packages; aggregate statistics on demand.
+  `marketplace/skill_ratings.py`: `RatingEntry` (UUID `rating_id`, `skill_id`,
+  `rating` 1–5 validated, `comment`, `operator_id`, `created_at`), `RatingStats`
+  (`count`, `mean` 2 d.p., `distribution` {1..5: n}), `RatingStore` (`add_rating`
+  raises `ValueError` on range violation; `get_rating`; `list_ratings` with
+  optional `skill_id` filter; `remove_rating`; `get_stats` — `None` if no ratings;
+  `rated_skills()` sorted dedup; persists to `ratings.json`).
+  `api/skill_ratings.py`: FastAPI router at `/ratings` (`GET/POST ''`,
+  `GET /skills`, `GET /stats/{skill_id}` registered before `GET /{rating_id}`
+  to avoid route capture, `DELETE /{rating_id}`; 201/404/422).
+  CLI: `etd rating add|list|stats|remove|skills`.
+  48 tests in `tests/test_skill_ratings.py`.
