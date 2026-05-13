@@ -549,6 +549,226 @@
           "deployed_at": "2026-05-13T15:47:59+00:00"
         }
       ]
+    },
+    {
+      "deployment_id": "932f2b37-c839-4a2e-903c-9f03cd382e2a",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T15:58:26+00:00",
+      "completed_at": "2026-05-13T15:58:26+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T15:58:26+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "2e050543-3d93-47fa-a5d6-692786a7ce30",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T15:58:26+00:00",
+      "completed_at": "2026-05-13T15:58:26+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T15:58:26+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "627a806a-1acc-4381-bce4-87cb7599c32c",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T15:58:26+00:00",
+      "completed_at": "2026-05-13T15:58:26+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T15:58:26+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "6e912292-707a-4d92-ab23-e11f4e0234d9",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T15:58:26+00:00",
+      "completed_at": "2026-05-13T15:58:26+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T15:58:26+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "092bf540-5b67-4f5e-86fd-8d91fefb9d11",
+      "skill_id": "etd.inspect.vision",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-filter-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T15:58:26+00:00",
+      "completed_at": "2026-05-13T15:58:26+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-filter-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T15:58:26+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "73c84885-975e-417e-b408-1a289ca6828e",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T16:01:20+00:00",
+      "completed_at": "2026-05-13T16:01:20+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T16:01:20+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "8db9856f-eb82-47cf-a3cc-ede7e5bdf53d",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T16:01:20+00:00",
+      "completed_at": "2026-05-13T16:01:20+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T16:01:20+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "c84edcb3-7f79-4f73-881e-7402af9a1043",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T16:01:20+00:00",
+      "completed_at": "2026-05-13T16:01:20+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T16:01:20+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "86956867-66de-4163-bf88-55c04f6ad677",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-dep-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T16:01:20+00:00",
+      "completed_at": "2026-05-13T16:01:20+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-dep-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T16:01:20+00:00"
+        }
+      ]
+    },
+    {
+      "deployment_id": "fe25b3ce-2db1-4ff6-8a23-d24c067e2340",
+      "skill_id": "etd.inspect.vision",
+      "version": "0.1.0",
+      "target_node_ids": [
+        "api-filter-node"
+      ],
+      "status": "completed",
+      "created_at": "2026-05-13T16:01:20+00:00",
+      "completed_at": "2026-05-13T16:01:20+00:00",
+      "nodes_succeeded": 1,
+      "nodes_failed": 0,
+      "node_results": [
+        {
+          "node_id": "api-filter-node",
+          "station_id": "ws-dep",
+          "success": true,
+          "reason": "deployed",
+          "deployed_at": "2026-05-13T16:01:20+00:00"
+        }
+      ]
     }
   ]
 }
