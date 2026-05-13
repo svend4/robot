@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.94.0 — Operator notes system (2344 → 2393 tests)
+
+Timestamped, categorised free-text annotations operators can attach to any
+subject key (skill ID, node ID, station ID, or arbitrary string). Supports
+update, filtering by subject and/or category, and a sorted subjects index.
+
+### Code changes
+
+- `marketplace/operator_notes.py` (NEW):
+  - `VALID_CATEGORIES = {'info', 'warning', 'issue', 'runbook'}`
+  - `OperatorNote`: `note_id` (UUID), `subject`, `text`, `category`, `author`,
+    `created_at`, `updated_at`; `to_dict()`/`from_dict()`.
+  - `NoteStore`: JSON-backed flat dict (`notes.json`).
+    `add_note()` — raises `ValueError` for unknown category;
+    `get_note()`, `update_note(text, category)` — raises `ValueError` on bad
+    category, returns `None` if unknown; `remove_note()`;
+    `list_notes(subject, category)` — both filters independent;
+    `subjects()` — sorted deduplicated list; `note_count`.
+    Creates parent dirs; corrupt file loads empty.
+- `api/operator_notes.py` (NEW): FastAPI router at `/notes`:
+  - `GET  /notes` — list (`?subject=` `?category=`).
+  - `POST /notes` — add (201; 422 unknown category).
+  - `GET  /notes/subjects` — sorted subjects list. Registered before
+    `/{note_id}` to avoid capture.
+  - `GET  /notes/{note_id}` — single entry; 404.
+  - `PATCH /notes/{note_id}` — update text/category; 404; 422 bad category.
+  - `DELETE /notes/{note_id}` — remove; 404.
+- `api/app.py`: version bumped to `0.94.0`; router mounted.
+- `etd_cli.py`: `etd notes` group — `add`, `list`, `get`, `update`, `remove`,
+  `subjects`.
+- `tests/test_operator_notes.py` (NEW): 49 tests.
+
+---
+
 ## 0.93.0 — Skill maintenance window scheduler (2294 → 2344 tests)
 
 Named time-bounded windows during which skill executions should be blocked.

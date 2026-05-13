@@ -3031,5 +3031,113 @@ def maintenance_remove(window_id: str, data_dir: str):
     click.echo(f'Removed maintenance window {window_id}.')
 
 
+
+# ── etd notes ─────────────────────────────────────────────────────────────────
+
+_DEFAULT_NOTES_DIR = str(Path(__file__).resolve().parent / 'operator_notes_data')
+
+
+@cli.group('notes')
+def notes_group():
+    """Manage operator notes and annotations."""
+
+
+@notes_group.command('add')
+@click.argument('subject')
+@click.argument('text')
+@click.option('--category', default='info',
+              type=click.Choice(['info', 'warning', 'issue', 'runbook']),
+              show_default=True)
+@click.option('--author', default='anonymous', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+def notes_add(subject: str, text: str, category: str, author: str, data_dir: str):
+    """Add an operator note to SUBJECT."""
+    from marketplace.operator_notes import NoteStore
+    note = NoteStore(Path(data_dir)).add_note(subject, text,
+                                               category=category, author=author)
+    click.echo(f'[{category}] {subject}  by {author}  (id: {note.note_id})')
+
+
+@notes_group.command('list')
+@click.option('--subject', default=None, help='Filter by subject.')
+@click.option('--category', default=None,
+              type=click.Choice(['info', 'warning', 'issue', 'runbook']))
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def notes_list(subject: Optional[str], category: Optional[str],
+               data_dir: str, as_json: bool):
+    """List operator notes."""
+    from marketplace.operator_notes import NoteStore
+    notes = NoteStore(Path(data_dir)).list_notes(subject=subject, category=category)
+    if as_json:
+        click.echo(json.dumps([n.to_dict() for n in notes], indent=2))
+    elif not notes:
+        click.echo('No notes found.')
+    else:
+        for n in notes:
+            click.echo(f'[{n.category}] {n.subject}  by {n.author}  {n.created_at}')
+            click.echo(f'  {n.text}')
+
+
+@notes_group.command('get')
+@click.argument('note_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def notes_get(note_id: str, data_dir: str, as_json: bool):
+    """Get a note by ID."""
+    from marketplace.operator_notes import NoteStore
+    note = NoteStore(Path(data_dir)).get_note(note_id)
+    if note is None:
+        click.echo(click.style(f'Note not found: {note_id!r}', fg='red'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(json.dumps(note.to_dict(), indent=2))
+    else:
+        click.echo(f'[{note.category}] {note.subject}  by {note.author}')
+        click.echo(f'  {note.text}')
+
+
+@notes_group.command('update')
+@click.argument('note_id')
+@click.option('--text', default=None, help='New note text.')
+@click.option('--category', default=None,
+              type=click.Choice(['info', 'warning', 'issue', 'runbook']))
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+def notes_update(note_id: str, text: Optional[str], category: Optional[str],
+                 data_dir: str):
+    """Update a note's text and/or category."""
+    from marketplace.operator_notes import NoteStore
+    note = NoteStore(Path(data_dir)).update_note(note_id, text=text, category=category)
+    if note is None:
+        click.echo(click.style(f'Note not found: {note_id!r}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Updated note {note_id}.')
+
+
+@notes_group.command('remove')
+@click.argument('note_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+def notes_remove(note_id: str, data_dir: str):
+    """Delete a note by ID."""
+    from marketplace.operator_notes import NoteStore
+    if not NoteStore(Path(data_dir)).remove_note(note_id):
+        click.echo(click.style(f'Note not found: {note_id!r}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Deleted note {note_id}.')
+
+
+@notes_group.command('subjects')
+@click.option('--dir', 'data_dir', default=_DEFAULT_NOTES_DIR, show_default=True)
+def notes_subjects(data_dir: str):
+    """List all subjects that have notes."""
+    from marketplace.operator_notes import NoteStore
+    subj = NoteStore(Path(data_dir)).subjects()
+    if not subj:
+        click.echo('No subjects with notes.')
+    else:
+        for s in subj:
+            click.echo(s)
+
+
 if __name__ == '__main__':
     cli()

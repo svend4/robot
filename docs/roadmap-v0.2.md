@@ -351,3 +351,16 @@ All items below were delivered in the prototype:
   `GET /check` registered before `/{window_id}`, `GET|DELETE /{window_id}`;
   201/404/422). CLI: `etd maintenance add|list|check|remove`.
   50 tests in `tests/test_maintenance.py`.
+- [x] **Operator notes system.** Timestamped, categorised free-text annotations
+  attachable to any subject key (skill ID, node ID, station ID, or arbitrary
+  string); supports create/update/delete/filter and a subjects index.
+  `marketplace/operator_notes.py`: `VALID_CATEGORIES = {info, warning, issue,
+  runbook}`, `OperatorNote` (UUID `note_id`, `subject`, `text`, `category`,
+  `author`, `created_at`, `updated_at`), `NoteStore` (`add_note` raises
+  `ValueError` for unknown category; `update_note(text, category)` raises on
+  bad category, returns `None` if unknown; `list_notes(subject, category)`;
+  `subjects()` sorted dedup; persists to `notes.json`).
+  `api/operator_notes.py`: FastAPI router at `/notes` (`GET/POST ''`,
+  `GET /subjects` registered before `/{note_id}`, `GET|PATCH|DELETE /{note_id}`;
+  201/404/422). CLI: `etd notes add|list|get|update|remove|subjects`.
+  49 tests in `tests/test_operator_notes.py`.
