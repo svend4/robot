@@ -155,6 +155,17 @@ python etd_cli.py telemetry stats etd.pickplace.basic --json
 python etd_cli.py telemetry anomalies --skill etd.pickplace.basic --threshold 2.5
 python etd_cli.py telemetry report --json
 
+# Skill tags
+python etd_cli.py tag create safety --color red --description "Requires oversight"
+python etd_cli.py tag create production
+python etd_cli.py tag list
+python etd_cli.py tag add etd.pickplace.basic safety
+python etd_cli.py tag add etd.hyundai.wia_welding safety
+python etd_cli.py tag skills safety
+python etd_cli.py tag show etd.pickplace.basic
+python etd_cli.py tag remove etd.pickplace.basic safety
+python etd_cli.py tag delete safety
+
 # REST API
 uvicorn api.app:app --reload
 # GET  http://localhost:8000/store/skills
@@ -190,6 +201,16 @@ uvicorn api.app:app --reload
 # GET  http://localhost:8000/telemetry/stats/etd.pickplace.basic
 # GET  http://localhost:8000/telemetry/report
 # GET  http://localhost:8000/telemetry/anomalies?z_threshold=2.5
+# GET  http://localhost:8000/tags
+# POST http://localhost:8000/tags  {"tag_id": "safety", "color": "red", "description": "Requires oversight"}
+# GET  http://localhost:8000/tags/safety
+# PATCH http://localhost:8000/tags/safety  {"color": "orange"}
+# DELETE http://localhost:8000/tags/safety
+# GET  http://localhost:8000/taggings
+# GET  http://localhost:8000/taggings/etd.pickplace.basic
+# POST http://localhost:8000/taggings/etd.pickplace.basic/safety
+# DELETE http://localhost:8000/taggings/etd.pickplace.basic/safety
+# GET  http://localhost:8000/taggings/by-tag/safety
 
 # Acceptance tests (39 scenarios, all 8 packages)
 python sim/acceptance_runner.py
@@ -315,6 +336,7 @@ tests/
 ├── test_telemetry_analytics.py # 70 — ExecutionEvent (dict/round-trip/defaults), ExecutionRecord (make/succeeded/events/round-trip), _percentile (empty/single/median/p100/p0), TelemetryStore (count/record/persist/query-filters/limit/newest-first/skill_ids/node_ids/clear/malformed-skipped/parent-dirs/since), TelemetryAnalyzer (stats-none/counts/rate/durations/failures/percentiles/to_dict/summary, node_stats-empty/populated, recent_failures/limit-zero, anomalies-insufficient/zero-stdev/outlier/sorted/skill-filter, report-structure/empty), REST API /telemetry (record-201/explicit-ids, list-200/empty/filter-skill/status/limit, stats-404/200/structure, report-200/structure/empty, anomalies-200/structure/detects/z_score/skill-filter)
 ├── test_dependency_resolver.py # 59 — SkillDependency (dict/round-trip/defaults/optional), DependencyGraph (resolve-leaf/order/unknown/cycle/self-cycle, detect_cycles-none/found, transitive_deps/leaf/cycle-empty, missing-none/all/partial), DependencyResolver (install_order/check_satisfied-optional-excluded/dep_tree-nested/cycle-flagged/from_dict/cycles), DependencyStore (register/get/list/remove/update/persist/create-dir/corrupt/resolver()), REST API /deps (register-201, list/get/delete-CRUD, order-no-deps/with-deps/cycle-409, tree-200, check-satisfied/missing, cycles-none/detected)
 ├── test_skill_config.py        # 58 — _make_scope_key (default/station/differ-scopes/differ-skills), SkillConfigEntry (defaults/round-trip/to_dict/types), ConfigStore CRUD (empty/set-get/get-unknown/version-increment/preserves-created_at/remove/remove-unknown/remove_skill-all/remove-zero/leaves-others/list-all/filtered/list_skills/count), scope helpers, get_effective (empty/default/station-override/node-override/node-over-station/no-match/merge-adds-keys/no-overrides/all-three), persist/create-dir/corrupt-empty, REST API /config (list-empty/after, entries-empty/after, set-201/200/version/skill_id/scope-stored, delete-200/zero, effective-empty/default/station/node/ids, scope-get/404, delete-scope/404/leaves-others)
+├── test_skill_tags.py          # 57 — TagEntry (defaults/round-trip/to_dict-keys/from_dict-defaults), TagStore CRUD (empty/create/idempotent/get/get-unknown/update-color/update-description/update-unchanged/update-unknown/delete/delete-unknown/delete-removes-mappings/list/count), mappings (tag-skill-new/duplicate/unknown-tag-raises/untag-existing/untag-not-tagged/get-skill-tags-sorted/get-tags-empty/get-skills-by-tag-sorted/get-skills-empty/multiple-tags/list-all/excludes-empty/tagged-count), persistence (tags/mappings/create-dir/corrupt-empty), REST API /tags (list-empty/create-201/idempotent-200/tag-id/list-after/get/get-404/update/update-404/delete/delete-404/delete-removes-from-skills), /taggings (list-empty/skill-tags-empty/tag-skill-201/duplicate-200/unknown-404/untag-200/untag-404/by-tag-200/by-tag-404/list-after)
 ├── test_bulkhead.py            # 75 — _make_key, BulkheadConfig (defaults/custom/zero-raises/negative-raises/round-trip/from_dict/to_dict), BulkheadState (defaults/round-trip/to_dict), AcquireResult (to_dict), BulkheadStore (empty/get_or_create/save-get/get-unknown/remove/list/set-get-config/remove-config/persist/create-dir/corrupt-empty), Bulkhead acquire (fresh/increments/capacity/max-concurrent/totals/rejected/per-skill-config/node-specific/different-skills/skill-id), release (decrements/true/total-released/unknown/at-zero/frees-capacity), reset (clears-active/unknown/preserves-totals), misc (list-empty/after/count/get-default/remove-unknown/list-empty/persist), REST API /bulkhead (states list/get-404/get/delete/delete-404, acquire-200/increments/rejected, release-200/nothing/frees, reset-404/200, config-default/list-empty/set-201/200/422/delete/404/list)
 ├── test_retry_policy.py        # 63 — RetryConfig (defaults/round-trip/from_dict/to_dict/invalid-backoff/invalid-max-attempts/invalid-base-delay/is_retryable), delay_for_attempt (first-attempt-zero/fixed/linear/exponential/capped/jitter-range/jitter-zero), RetryPolicyStore (empty/set-get/get-unknown/list/remove/update/persist/create-dir/corrupt-empty), RetryEngine config (default/explicit/remove/list/custom-default), should_retry (success-no-retry/failed-retry/aborted-retry/max-reached/within-limit/attempt-fields/max-in-result/delay-zero/delay-positive/exp-grows/custom-retryable/to_dict), REST API /retry (default-config, list-empty/after-set, get-explicit/default/skill-id, set-201/200/422/stored, delete-200/404/returns-default, advise-success/failed/max/fields/explicit)
 ├── test_circuit_breaker.py     # 67 — _make_key, CircuitBreakerConfig (defaults/round-trip/from_dict/to_dict-keys), CircuitBreakerState (defaults/failure_rate/zero-calls/round-trip/to_dict-keys), CircuitBreakerStore (empty/get_or_create/save-get/get-unknown/remove/list/persist/corrupt-empty), CircuitBreaker closed (allow-fresh/failures-below-threshold/opens-at-threshold/opens-by-rate/rate-skipped-below-min/success-counts/failure-counts), open (rejects/opened-at-set/transitions-half-open/stays-open/node-specific), half_open (closes-after-successes/reopens-on-failure/quota-exceeded/remaining-decrements/count-reset-on-close), reset (open-to-closed/clears-failure-count/unknown-false/sets-state-change), misc (list-empty/list-after/remove/remove-unknown/breaker-count/per-skill-config/default-unaffected/persists), REST API /circuit (list-empty/after-failure, get-creates-closed/shows-state, delete/404, check-allows/rejects/skill-id, success-200/increments, failure-200/opens/count-in-response, reset-404/open-to-closed, config-get/set)
@@ -324,7 +346,7 @@ tests/
 └── test_ab_testing.py          # 66 — ABVariant (dict/round-trip/defaults), ABExperiment (make/to_dict/round-trip/get_variant/route/route-zero-weight/route-raises-paused|concluded|all-zero/pause-resume-conclude/transitions/raise-twice), ABExperimentStore (save/get/list/filter/delete/persist/update/newest-first/parent-dirs/corrupt-empty), ABAnalyzer (compare-structure/no-data/with-data, recommend-None/success-rate-wins/duration-tiebreak/to_dict), REST API /ab (create-201/has-id/one-variant-422, list-200/empty/after/filter, get-found/404, delete-200/404/then-404, pause-200/404/409, resume-200/409, conclude-200/409-twice, route-200/paused-409, results-200/structure/404, recommend-200/no-data-None/404)
 ```
 
-Run: `python -m pytest` — 2130 tests, all passing.
+Run: `python -m pytest` — 2187 tests, all passing.
 
 ---
 

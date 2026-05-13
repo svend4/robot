@@ -2616,5 +2616,131 @@ def skill_config_remove(skill_id: str, scope: Optional[str], data_dir: str):
         ))
 
 
+# ── tag ───────────────────────────────────────────────────────────────────────
+
+_DEFAULT_TAGS_DIR = str(Path(__file__).resolve().parent / 'skill_tags')
+
+
+@cli.group('tag')
+def tag_group():
+    """Skill tagging: create, delete, tag-skill, untag-skill, query."""
+
+
+@tag_group.command('create')
+@click.argument('tag_id')
+@click.option('--color', default=None, help='Optional display color')
+@click.option('--description', default='', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_create(tag_id: str, color: Optional[str], description: str,
+               data_dir: str):
+    """Create a new tag."""
+    from marketplace.skill_tags import TagStore
+    store = TagStore(Path(data_dir))
+    existed = store.get_tag(tag_id) is not None
+    store.create_tag(tag_id, color=color, description=description)
+    if existed:
+        click.echo(click.style(f'Tag {tag_id!r} already exists.', fg='yellow'))
+    else:
+        click.echo(click.style(f'Tag {tag_id!r} created.', fg='green'))
+
+
+@tag_group.command('list')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def tag_list(data_dir: str, as_json: bool):
+    """List all defined tags."""
+    import json as _json
+    from marketplace.skill_tags import TagStore
+    tags = TagStore(Path(data_dir)).list_tags()
+    if as_json:
+        click.echo(_json.dumps([t.to_dict() for t in tags], indent=2))
+    else:
+        if not tags:
+            click.echo('No tags defined.')
+            return
+        for t in tags:
+            color_str = f'  color={t.color}' if t.color else ''
+            desc_str = f'  {t.description}' if t.description else ''
+            click.echo(f'{t.tag_id:30s}{color_str}{desc_str}')
+
+
+@tag_group.command('delete')
+@click.argument('tag_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_delete(tag_id: str, data_dir: str):
+    """Delete a tag (and remove from all skills)."""
+    from marketplace.skill_tags import TagStore
+    if TagStore(Path(data_dir)).delete_tag(tag_id):
+        click.echo(click.style(f'Tag {tag_id!r} deleted.', fg='green'))
+    else:
+        click.echo(click.style(f'Tag not found: {tag_id!r}', fg='red'))
+        raise SystemExit(1)
+
+
+@tag_group.command('add')
+@click.argument('skill_id')
+@click.argument('tag_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_add(skill_id: str, tag_id: str, data_dir: str):
+    """Apply a tag to a skill."""
+    from marketplace.skill_tags import TagStore
+    try:
+        added = TagStore(Path(data_dir)).tag_skill(skill_id, tag_id)
+    except KeyError:
+        click.echo(click.style(f'Unknown tag: {tag_id!r}', fg='red'))
+        raise SystemExit(1)
+    if added:
+        click.echo(click.style(f'Tagged {skill_id} with {tag_id!r}.', fg='green'))
+    else:
+        click.echo(f'{skill_id} already has tag {tag_id!r}.')
+
+
+@tag_group.command('remove')
+@click.argument('skill_id')
+@click.argument('tag_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_remove(skill_id: str, tag_id: str, data_dir: str):
+    """Remove a tag from a skill."""
+    from marketplace.skill_tags import TagStore
+    if TagStore(Path(data_dir)).untag_skill(skill_id, tag_id):
+        click.echo(click.style(f'Removed tag {tag_id!r} from {skill_id}.', fg='green'))
+    else:
+        click.echo(click.style(
+            f'{skill_id} does not have tag {tag_id!r}.', fg='red'
+        ))
+        raise SystemExit(1)
+
+
+@tag_group.command('skills')
+@click.argument('tag_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_skills(tag_id: str, data_dir: str):
+    """List skills that have a given tag."""
+    from marketplace.skill_tags import TagStore
+    store = TagStore(Path(data_dir))
+    if store.get_tag(tag_id) is None:
+        click.echo(click.style(f'Unknown tag: {tag_id!r}', fg='red'))
+        raise SystemExit(1)
+    skills = store.get_skills_by_tag(tag_id)
+    if not skills:
+        click.echo(f'No skills tagged with {tag_id!r}.')
+    else:
+        for s in skills:
+            click.echo(s)
+
+
+@tag_group.command('show')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_TAGS_DIR, show_default=True)
+def tag_show(skill_id: str, data_dir: str):
+    """Show all tags applied to a skill."""
+    from marketplace.skill_tags import TagStore
+    tags = TagStore(Path(data_dir)).get_skill_tags(skill_id)
+    if not tags:
+        click.echo(f'No tags on {skill_id}.')
+    else:
+        click.echo(f'{skill_id}: ' + ', '.join(tags))
+
+
 if __name__ == '__main__':
     cli()

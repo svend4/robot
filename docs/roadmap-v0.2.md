@@ -296,3 +296,17 @@ All items below were delivered in the prototype:
   delete entries, effective config with query params, per-scope get/delete).
   CLI: `etd skill-config set|get|effective|list|remove`.
   58 tests in `tests/test_skill_config.py`.
+- [x] **Skill tag system.** User-defined tags applied to skill IDs for grouping,
+  filtering, and querying by arbitrary label. Both forward (skill→tags) and
+  reverse (tag→skills) lookups; idempotent tag creation; cascade delete.
+  `marketplace/skill_tags.py`: `TagEntry` (tag_id, optional color, description,
+  created_at; `to_dict`/`from_dict`), `TagStore` (`create_tag` idempotent;
+  `update_tag` returns None if unknown; `delete_tag` cascades to all skill
+  mappings via `set.discard()`; `tag_skill` raises `KeyError` for unknown tag;
+  `untag_skill`; `get_skill_tags` / `get_skills_by_tag` sorted; `list_skill_tags`
+  excludes empty; `tagged_skill_count`; persists to `tags.json`).
+  `api/skill_tags.py`: two FastAPI routers — `tags_router` at `/tags` (CRUD
+  with 201/200/404) and `taggings_router` at `/taggings` (tag/untag/by-tag;
+  `/by-tag/{tag_id}` registered before `/{skill_id}` to avoid FastAPI capture).
+  CLI: `etd tag create|list|delete|add|remove|skills|show`.
+  57 tests in `tests/test_skill_tags.py`.

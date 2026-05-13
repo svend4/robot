@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.90.0 — Skill tag system (2130 → 2187 tests)
+
+User-defined tags that can be applied to skill IDs, enabling grouping,
+filtering, and querying by arbitrary label. REST API and CLI included.
+
+### Code changes
+
+- `marketplace/skill_tags.py` (NEW):
+  - `TagEntry`: `tag_id`, `color` (optional display hint), `description`,
+    `created_at`; `to_dict()`/`from_dict()`.
+  - `TagStore`: JSON-backed store (`tags.json`).
+    `create_tag()` — idempotent (returns existing); `update_tag()` — returns
+    `None` if unknown; `delete_tag()` — removes from all skill mappings;
+    `list_tags()`, `tag_count`.
+    `tag_skill(skill_id, tag_id)` — raises `KeyError` for unknown tag; returns
+    `True` if newly added; `untag_skill()` — returns `False` if not mapped;
+    `get_skill_tags(skill_id)` (sorted); `get_skills_by_tag(tag_id)` (sorted);
+    `list_skill_tags()` (excludes empty); `tagged_skill_count()`.
+    Creates parent dirs; corrupt file loads empty.
+- `api/skill_tags.py` (NEW): two FastAPI routers:
+  - `tags_router` at `/tags`: `GET/POST ''` (201 create/200 exists),
+    `GET/PATCH/DELETE /{tag_id}` (404 unknown).
+  - `taggings_router` at `/taggings`: `GET ''` (all mappings),
+    `GET /by-tag/{tag_id}` (404 unknown tag),
+    `GET /{skill_id}` (tags on skill),
+    `POST /{skill_id}/{tag_id}` (201/200/404),
+    `DELETE /{skill_id}/{tag_id}` (404 not mapped).
+    `by-tag` route registered before `{skill_id}` to avoid FastAPI capture.
+- `api/app.py`: version bumped to `0.90.0`; both routers mounted.
+- `etd_cli.py`: `etd tag` group — `create`, `list`, `delete`, `add`,
+  `remove`, `skills`, `show`.
+- `tests/test_skill_tags.py` (NEW): 57 tests.
+
+---
+
 ## 0.89.0 — Skill configuration store (2072 → 2130 tests)
 
 Per-skill runtime configuration with three scope levels (default → station
