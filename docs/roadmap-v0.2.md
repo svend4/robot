@@ -364,3 +364,17 @@ All items below were delivered in the prototype:
   `GET /subjects` registered before `/{note_id}`, `GET|PATCH|DELETE /{note_id}`;
   201/404/422). CLI: `etd notes add|list|get|update|remove|subjects`.
   49 tests in `tests/test_operator_notes.py`.
+- [x] **Skill SLA tracker.** Per-skill SLA policies (max p95 latency ms,
+  minimum success rate) evaluated against caller-supplied execution records;
+  pure evaluation function decoupled from TelemetryStore.
+  `marketplace/sla.py`: `_percentile(values, p)`, `SLAPolicy` (`max_p95_ms`,
+  `min_success_rate` validated 0–1, `window_hours`), `SLAViolation` (field/
+  threshold/actual/message), `SLAResult` (compliant/violations/p95/rate/count),
+  `SLAStore` (`set_policy` raises `ValueError` on bad rate, returns
+  `(policy, created)`; `evaluate(skill_id, executions)` — `None` if no policy,
+  no violations on empty data, excludes entries without `total_duration_ms`
+  from latency calc; persists to `sla_policies.json`).
+  `api/sla.py`: FastAPI router at `/sla` (`GET/POST/GET/DELETE /policies`,
+  `POST /evaluate/{skill_id}`; 201/200/404/422).
+  CLI: `etd sla set|get|list|remove`.
+  53 tests in `tests/test_sla.py`.

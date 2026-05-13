@@ -3139,5 +3139,94 @@ def notes_subjects(data_dir: str):
             click.echo(s)
 
 
+
+# ── etd sla ───────────────────────────────────────────────────────────────────
+
+_DEFAULT_SLA_DIR = str(Path(__file__).resolve().parent / 'sla_data')
+
+
+@cli.group('sla')
+def sla_group():
+    """Manage skill SLA policies and evaluate compliance."""
+
+
+@sla_group.command('set')
+@click.argument('skill_id')
+@click.option('--max-p95-ms', type=int, default=None,
+              help='Maximum p95 latency in milliseconds.')
+@click.option('--min-success-rate', type=float, default=None,
+              help='Minimum success rate (0.0–1.0).')
+@click.option('--window-hours', type=int, default=24, show_default=True,
+              help='Evaluation window in hours.')
+@click.option('--dir', 'data_dir', default=_DEFAULT_SLA_DIR, show_default=True)
+def sla_set(skill_id: str, max_p95_ms: Optional[int],
+            min_success_rate: Optional[float], window_hours: int, data_dir: str):
+    """Create or update an SLA policy for a skill."""
+    from marketplace.sla import SLAStore
+    try:
+        policy, created = SLAStore(Path(data_dir)).set_policy(
+            skill_id, max_p95_ms=max_p95_ms,
+            min_success_rate=min_success_rate, window_hours=window_hours,
+        )
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    action = 'Created' if created else 'Updated'
+    parts = []
+    if max_p95_ms is not None:
+        parts.append(f'p95≤{max_p95_ms}ms')
+    if min_success_rate is not None:
+        parts.append(f'success≥{min_success_rate:.0%}')
+    click.echo(f'{action} SLA for {skill_id}: ' + (', '.join(parts) or 'no targets set'))
+
+
+@sla_group.command('get')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_SLA_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def sla_get(skill_id: str, data_dir: str, as_json: bool):
+    """Get the SLA policy for a skill."""
+    from marketplace.sla import SLAStore
+    policy = SLAStore(Path(data_dir)).get_policy(skill_id)
+    if policy is None:
+        click.echo(click.style(f'No SLA policy for {skill_id!r}', fg='red'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(json.dumps(policy.to_dict(), indent=2))
+    else:
+        click.echo(f'{skill_id}: p95≤{policy.max_p95_ms}ms  '
+                   f'success≥{policy.min_success_rate}  '
+                   f'window={policy.window_hours}h')
+
+
+@sla_group.command('list')
+@click.option('--dir', 'data_dir', default=_DEFAULT_SLA_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def sla_list(data_dir: str, as_json: bool):
+    """List all SLA policies."""
+    from marketplace.sla import SLAStore
+    policies = SLAStore(Path(data_dir)).list_policies()
+    if as_json:
+        click.echo(json.dumps([p.to_dict() for p in policies], indent=2))
+    elif not policies:
+        click.echo('No SLA policies defined.')
+    else:
+        for p in policies:
+            click.echo(f'{p.skill_id}: p95≤{p.max_p95_ms}ms  '
+                       f'success≥{p.min_success_rate}')
+
+
+@sla_group.command('remove')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_SLA_DIR, show_default=True)
+def sla_remove(skill_id: str, data_dir: str):
+    """Delete an SLA policy."""
+    from marketplace.sla import SLAStore
+    if not SLAStore(Path(data_dir)).remove_policy(skill_id):
+        click.echo(click.style(f'No SLA policy for {skill_id!r}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Removed SLA policy for {skill_id}.')
+
+
 if __name__ == '__main__':
     cli()

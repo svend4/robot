@@ -35,7 +35,7 @@ from adapters.station_profile_loader import load_all_profiles, check_skill_compa
 app = FastAPI(
     title='ETD Skill Store API',
     description='Validate, browse, and install ETD robot skill packages.',
-    version='0.94.0',
+    version='0.95.0',
     docs_url='/docs',
     redoc_url='/redoc',
 )
@@ -59,6 +59,7 @@ from api.skill_ratings import ratings_router as _ratings_router
 from api.feature_flags import flags_router as _flags_router
 from api.maintenance import maintenance_router as _maintenance_router
 from api.operator_notes import notes_router as _notes_router
+from api.sla import sla_router as _sla_router
 app.include_router(_publisher_router)
 app.include_router(_cross_platform_router)
 app.include_router(_fleet_router)
@@ -79,6 +80,7 @@ app.include_router(_ratings_router)
 app.include_router(_flags_router)
 app.include_router(_maintenance_router)
 app.include_router(_notes_router)
+app.include_router(_sla_router)
 
 _ctx_path = ROOT / 'runtime_context.json'
 _default_ctx = load_runtime_context(_ctx_path) if _ctx_path.exists() else RuntimeContext()

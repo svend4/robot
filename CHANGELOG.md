@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.95.0 — Skill SLA tracker (2393 → 2446 tests)
+
+Per-skill SLA policies (max p95 latency ms, minimum success rate) evaluated
+against caller-supplied execution records. Pure evaluation function is
+decoupled from TelemetryStore. REST API and CLI included.
+
+### Code changes
+
+- `marketplace/sla.py` (NEW):
+  - `_percentile(values, p)` — interpolating percentile helper.
+  - `SLAPolicy`: `skill_id`, `max_p95_ms` (optional), `min_success_rate`
+    (optional, validated 0–1), `window_hours`, timestamps; `to_dict()`/`from_dict()`.
+  - `SLAViolation`: `field` (`'latency_p95'|'success_rate'`), `threshold`,
+    `actual`, `message`; `to_dict()`.
+  - `SLAResult`: `skill_id`, `compliant`, `violations`, `p95_ms`,
+    `success_rate`, `sample_count`, `evaluated_at`; `to_dict()`.
+  - `SLAStore`: JSON-backed (`sla_policies.json`).
+    `set_policy()` — raises `ValueError` for out-of-range `min_success_rate`;
+    returns `(policy, created)`; `get_policy()`, `remove_policy()`,
+    `list_policies()`, `policy_count`.
+    `evaluate(skill_id, executions)` — returns `None` if no policy; computes
+    p95 from `total_duration_ms` fields, success rate from `status == 'success'`;
+    empty data produces no violations; missing duration field excluded from
+    latency calc. Creates parent dirs; corrupt file loads empty.
+- `api/sla.py` (NEW): FastAPI router at `/sla`:
+  - `GET  /sla/policies` — list all.
+  - `POST /sla/policies` — set (201/200/422).
+  - `GET  /sla/policies/{skill_id}` — get; 404.
+  - `DELETE /sla/policies/{skill_id}` — remove; 404.
+  - `POST /sla/evaluate/{skill_id}` — evaluate `{executions: [...]}`;  404.
+- `api/app.py`: version bumped to `0.95.0`; router mounted.
+- `etd_cli.py`: `etd sla` group — `set`, `get`, `list`, `remove`.
+- `tests/test_sla.py` (NEW): 53 tests.
+
+---
+
 ## 0.94.0 — Operator notes system (2344 → 2393 tests)
 
 Timestamped, categorised free-text annotations operators can attach to any
