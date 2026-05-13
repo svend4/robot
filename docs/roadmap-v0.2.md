@@ -157,5 +157,13 @@ All items below were delivered in the prototype:
   `examples/etd.composed.fetch_inspect_place/` (walk-fetch → vision QA →
   pick-and-place).  CLI: `etd compose validate|run [--json]`.
   57 tests in `tests/test_skill_composer.py`.
-- **On-robot skill store.** Embedded marketplace running on the robot's
+- [x] **On-robot skill store.** Embedded marketplace running on the robot's
   compute unit, with offline entitlement cache and mesh sync to central index.
+  `marketplace/onrobot_store.py`: `CachedEntitlement`, `EntitlementCache`
+  (JSON-backed, add/get/evict/list_skills, wildcard-station support),
+  `CachedManifest`, `SkillManifestCache` (JSON-backed, put/get/remove),
+  `MeshSyncRecord`, `MeshSync` (announce/receive_from_peer/sync_status),
+  `OfflineInstallResult`, `OnRobotStore` (install_offline, is_available_offline,
+  sync_from_central, get_offline_skills, evict_expired_entitlements).
+  CLI: `etd onrobot cache list|add|evict` and `etd onrobot sync status`.
+  66 tests in `tests/test_onrobot_store.py`.

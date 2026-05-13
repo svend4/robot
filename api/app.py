@@ -35,7 +35,7 @@ from adapters.station_profile_loader import load_all_profiles, check_skill_compa
 app = FastAPI(
     title='ETD Skill Store API',
     description='Validate, browse, and install ETD robot skill packages.',
-    version='0.76.0',
+    version='0.77.0',
     docs_url='/docs',
     redoc_url='/redoc',
 )

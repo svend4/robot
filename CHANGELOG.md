@@ -1,5 +1,84 @@
 # Changelog
 
+## 0.77.0 — On-robot embedded skill store (1303 → 1369 tests)
+
+Implements the final long-term roadmap item: on-robot embedded marketplace
+with offline entitlement cache and mesh sync.
+
+### Code changes
+
+- `marketplace/onrobot_store.py` (NEW): on-robot embedded skill store.
+  - `CachedEntitlement(skill_id, station_id, operator_org, expiry, token_str,
+    cached_at, verified_by_node)` — locally persisted token; `is_expired`
+    property; `covers(skill_id, station_id)` with wildcard station support;
+    `to_dict()` / `from_dict()`.
+  - `EntitlementCache(cache_path, node_id)` — JSON-backed entitlement store:
+    - `add(token_str, skill_id, station_id, operator_org, expiry, verify_key)`
+      — optional NaCl re-verification; rejects expired tokens; replaces
+      existing entry for same (skill_id, station_id); persists immediately.
+    - `get(skill_id, station_id)` — returns first non-expired covering entry.
+    - `evict_expired()` — prunes stale entries; returns count removed.
+    - `list_skills()` — skill IDs with at least one valid token.
+    - `entry_count` / `valid_count` properties.
+  - `CachedManifest(skill_id, version, family, primitive_order, cached_at,
+    source_node, extra)` — cached skill package metadata; `to_dict()` /
+    `from_dict()`.
+  - `SkillManifestCache(cache_path, node_id)` — JSON-backed manifest store:
+    `put()` / `get()` / `remove()` / `list_skills()` / `manifest_count`.
+    Records `source_node` on insert; persists on every mutation.
+  - `MeshSyncRecord(peer_node_id, last_sync_at, synced_skill_ids,
+    sync_count)` — per-peer sync state; `to_dict()` / `from_dict()`.
+  - `MeshSync(node_id, manifest_cache)` — in-memory fleet peer-to-peer sync:
+    `register_peer()`, `announce(skill_id)` broadcasts local manifests to all
+    peers, `receive_from_peer(peer_id)` imports pending announcements into
+    local cache and updates sync record, `sync_status()`, `peer_count`,
+    `pending_announcement_count`.
+  - `OfflineInstallResult(skill_id, station_id, success, reason, entitlement,
+    manifest)` — outcome of `install_offline()`; `__str__` shows `[OK]`/`[FAIL]`.
+  - `OnRobotStore(cache_dir, node_id)` — top-level façade:
+    - `install_offline(skill_id, station_id)` — serves from cache; fails fast
+      on missing entitlement or manifest.
+    - `is_available_offline(skill_id, station_id)` — True only if both
+      entitlement and manifest cached.
+    - `sync_from_central(entries, entitlement_tokens)` — updates both caches
+      from a central marketplace feed; skips entries with no `skillId`; rejects
+      expired tokens; returns stats dict.
+    - `get_offline_skills()` — sorted list of skills with both caches populated.
+    - `evict_expired_entitlements()` — delegates to `EntitlementCache.evict_expired()`.
+    - `summary()` / `to_dict()`.  Cache directory auto-created on init.
+- `etd_cli.py`: `onrobot` command group:
+  - `onrobot cache list [--cache-dir] [--json]` — shows `OnRobotStore.summary()`.
+  - `onrobot cache add SKILL_ID --token T --expiry E [--station] [--org]
+    [--cache-dir]` — exits 0 on success, 1 on expired/invalid.
+  - `onrobot cache evict [--cache-dir]` — evicts expired entitlements.
+  - `onrobot sync status [--cache-dir] [--json]` — shows mesh peer sync state.
+- `api/app.py`: version bumped to `0.77.0`.
+
+### Tests (1303 → 1369, +66)
+
+- `tests/test_onrobot_store.py` (+66, NEW):
+  - `TestCachedEntitlement`: expiry/not-expired, covers matching/wrong-skill/
+    wrong-station/wildcard/expired, to_dict roundtrip, from_dict defaults.
+  - `TestEntitlementCache`: empty, add+get, absent→None, expired rejected,
+    add replaces existing, evict (injected expired entry), evict no-op,
+    list_skills, list excludes expired, valid_count, persists across instances,
+    node_id recorded, wildcard station get.
+  - `TestCachedManifest`: to_dict roundtrip, from_dict defaults.
+  - `TestSkillManifestCache`: empty, put+get, put replaces, get-unknown→None,
+    remove existing/nonexistent, list_skills, persists, source_node set.
+  - `TestMeshSyncRecord`: to_dict roundtrip, from_dict defaults.
+  - `TestMeshSync`: no peers, register, announce known/unknown skill,
+    receive imports manifest, receive updates sync record, auto-register peer,
+    receive clears pending.
+  - `TestOnRobotStore`: not available offline, available after populate, install
+    success, no-entitlement fails, no-manifest fails, str result, sync manifests,
+    sync tokens, sync skips expired, sync skips missing skillId, get_offline_skills,
+    excludes manifest-only, evict, summary, to_dict, cache-dir auto-created.
+  - `TestCLIOnRobotCacheList`: list text/JSON.
+  - `TestCLIOnRobotCacheAdd`: valid token exits 0, expired exits 1.
+  - `TestCLIOnRobotCacheEvict`: evict prints count.
+  - `TestCLIOnRobotSyncStatus`: no peers text/JSON.
+
 ## 0.76.0 — Humanoid-first cross-platform marketplace (1239 → 1303 tests)
 
 Implements the long-term Humanoid-first Marketplace roadmap item.

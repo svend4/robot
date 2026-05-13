@@ -936,5 +936,104 @@ def platform_matrix(package_path: Optional[str], family_filter: Optional[str], a
         click.echo(reg.render_matrix_ascii(skill_info=skill_info, families=families))
 
 
+_DEFAULT_CACHE_DIR = str(ROOT / 'robot_cache')
+
+
+@cli.group()
+def onrobot():
+    """On-robot embedded skill store — offline cache and mesh sync."""
+
+
+@onrobot.group('cache')
+def onrobot_cache():
+    """Manage the on-robot entitlement and manifest cache."""
+
+
+@onrobot_cache.command('list')
+@click.option('--cache-dir', default=_DEFAULT_CACHE_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def onrobot_cache_list(cache_dir: str, as_json: bool):
+    """List skills available in the offline cache."""
+    import json as _json
+    from marketplace.onrobot_store import OnRobotStore
+    store = OnRobotStore(cache_dir=Path(cache_dir))
+    if as_json:
+        click.echo(_json.dumps(store.to_dict(), indent=2))
+    else:
+        click.echo(store.summary())
+        offline = store.get_offline_skills()
+        if offline:
+            click.echo('\n  Offline skills:')
+            for sid in offline:
+                click.echo(f'    • {sid}')
+        else:
+            click.echo('  (no skills fully available offline)')
+
+
+@onrobot_cache.command('add')
+@click.argument('skill_id')
+@click.option('--token', 'token_str', required=True, help='Signed entitlement token string')
+@click.option('--station', default='*', show_default=True)
+@click.option('--org', 'operator_org', default='', help='Operator org (informational)')
+@click.option('--expiry', required=True, help='Expiry datetime ISO 8601 UTC e.g. 2027-01-01T00:00:00Z')
+@click.option('--cache-dir', default=_DEFAULT_CACHE_DIR, show_default=True)
+def onrobot_cache_add(skill_id: str, token_str: str, station: str,
+                      operator_org: str, expiry: str, cache_dir: str):
+    """Cache an entitlement token for offline use."""
+    from marketplace.onrobot_store import OnRobotStore
+    store = OnRobotStore(cache_dir=Path(cache_dir))
+    ok, reason = store.entitlement_cache.add(
+        token_str=token_str,
+        skill_id=skill_id,
+        station_id=station,
+        operator_org=operator_org,
+        expiry=expiry,
+    )
+    if ok:
+        click.echo(click.style(f'Cached: {skill_id} @ {station}', fg='green'))
+    else:
+        click.echo(click.style(f'Failed to cache: {reason}', fg='red'), err=True)
+        raise SystemExit(1)
+
+
+@onrobot_cache.command('evict')
+@click.option('--cache-dir', default=_DEFAULT_CACHE_DIR, show_default=True)
+def onrobot_cache_evict(cache_dir: str):
+    """Evict expired entitlements from the local cache."""
+    from marketplace.onrobot_store import OnRobotStore
+    store = OnRobotStore(cache_dir=Path(cache_dir))
+    removed = store.evict_expired_entitlements()
+    click.echo(f'Evicted {removed} expired entitlement(s).')
+
+
+@onrobot.group('sync')
+def onrobot_sync():
+    """Manage mesh sync between fleet peers."""
+
+
+@onrobot_sync.command('status')
+@click.option('--cache-dir', default=_DEFAULT_CACHE_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def onrobot_sync_status(cache_dir: str, as_json: bool):
+    """Show mesh sync status for all registered peers."""
+    import json as _json
+    from marketplace.onrobot_store import OnRobotStore
+    store = OnRobotStore(cache_dir=Path(cache_dir))
+    rows = store.mesh.sync_status()
+    if as_json:
+        click.echo(_json.dumps(rows, indent=2))
+    else:
+        if not rows:
+            click.echo('No mesh peers registered.')
+        else:
+            for r in rows:
+                last = r.get('last_sync_at') or 'never'
+                skills = ', '.join(r.get('synced_skill_ids', [])) or '—'
+                click.echo(
+                    f"  {r['peer_node_id']:<20}  last={last}  "
+                    f"synced={r.get('sync_count', 0)}x  skills={skills}"
+                )
+
+
 if __name__ == '__main__':
     cli()

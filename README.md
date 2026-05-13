@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1303 pytest tests
+├── tests/                              # 1369 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -102,6 +102,12 @@ python etd_cli.py platform check examples/etd.atlas.humanoid_walkfetch --source 
 python etd_cli.py platform matrix
 python etd_cli.py platform matrix --skill examples/etd.atlas.humanoid_walkfetch --json
 python etd_cli.py platform matrix --family humanoid
+python etd_cli.py onrobot cache list
+python etd_cli.py onrobot cache list --json
+python etd_cli.py onrobot cache add etd.pickplace.basic --token <TOKEN> --expiry 2027-01-01T00:00:00Z
+python etd_cli.py onrobot cache evict
+python etd_cli.py onrobot sync status
+python etd_cli.py onrobot sync status --json
 
 # REST API
 uvicorn api.app:app --reload
@@ -226,10 +232,11 @@ tests/
 ├── test_ros2_bridge.py       # 43 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2(), full rclpy mock: ActionServer callback capture + invocation, client timeout/rejected/happy-path, client feedback callback invocation, local-execute sys.path.insert branch
 ├── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ├── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
-└── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
+├── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
+└── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
 ```
 
-Run: `python -m pytest` — 1303 tests, all passing.
+Run: `python -m pytest` — 1369 tests, all passing.
 
 ---
 
