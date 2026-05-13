@@ -83,8 +83,14 @@ All items below were delivered in the prototype:
 
 **Goal**: publishable, multi-vendor skill store with governed review.
 
-- [ ] **Publisher portal.** Web UI for skill package submission, review status,
-  and version management.
+- [x] **Publisher portal.** Web UI for skill package submission, review status,
+  and version management. `marketplace/publisher_portal.py`: `SubmissionRecord`
+  (full state machine: submitted → in_review → approved | rejected |
+  needs_revision), `PublisherPortal` (submit with auto-run of `ReviewPipeline`,
+  auto-approve on pass, approve/reject/request_revision/resubmit, persist to
+  `submissions.json`). `api/publisher.py`: FastAPI router at `/publisher/*`
+  (submit, list, get, approve, reject, revision, resubmit, stats). CLI:
+  `etd publisher submit|list|approve|reject|revision`.
 - [x] **Automated review pipeline.** On submission: schema validation →
   capability audit → safety boundary check → compatibility matrix generation.
   Human review required for `riskLevel: high` packages.

@@ -448,6 +448,113 @@ def versions_cmd(skill_id: str, runtime: str):
         click.echo(f'  {entry.version}  constraint={constraint}{marker}')
 
 
+@cli.group()
+def publisher():
+    """Publisher portal: submit, review, approve, and reject skill packages."""
+
+
+@publisher.command('submit')
+@click.argument('package_path')
+@click.option('--publisher', 'publisher_name', default='etd-cli', show_default=True,
+              help='Publisher identifier')
+@click.option('--json', 'as_json', is_flag=True, help='Output as JSON')
+def publisher_submit(package_path: str, publisher_name: str, as_json: bool):
+    """Submit a skill package for automated review and publication."""
+    from marketplace.publisher_portal import PublisherPortal
+    import json as _json
+    p = Path(package_path)
+    if not p.exists():
+        click.echo(f'Error: package path does not exist: {package_path}', err=True)
+        raise SystemExit(1)
+    portal = PublisherPortal(ROOT)
+    rec = portal.submit(p, publisher_name)
+    if as_json:
+        click.echo(_json.dumps(rec.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        mark = 'AUTO-APPROVED' if rec.status == 'approved' else rec.status.upper()
+        click.echo(f'Submission: {rec.submission_id}')
+        click.echo(f'  Skill   : {rec.skill_id}  v{rec.version}')
+        click.echo(f'  Status  : {mark}')
+        if rec.blocking_findings:
+            click.echo('  Blocking findings:')
+            for f_msg in rec.blocking_findings[:5]:
+                click.echo(f'    ! {f_msg}')
+    raise SystemExit(0 if rec.status == 'approved' else 2 if rec.status == 'in_review' else 1)
+
+
+@publisher.command('list')
+@click.option('--publisher', 'pub_filter', default=None, help='Filter by publisher')
+@click.option('--status', 'status_filter', default=None,
+              type=click.Choice(['submitted', 'in_review', 'approved', 'rejected', 'needs_revision']),
+              help='Filter by status')
+@click.option('--json', 'as_json', is_flag=True)
+def publisher_list(pub_filter: str | None, status_filter: str | None, as_json: bool):
+    """List all submissions (optionally filtered)."""
+    from marketplace.publisher_portal import PublisherPortal
+    import json as _json
+    portal = PublisherPortal(ROOT)
+    recs = portal.list_submissions(publisher=pub_filter, status=status_filter)
+    if as_json:
+        click.echo(_json.dumps([r.to_dict() for r in recs], indent=2, ensure_ascii=False))
+    else:
+        if not recs:
+            click.echo('No submissions found.')
+            return
+        for rec in recs:
+            click.echo(f'[{rec.status:<14}] {rec.submission_id[:8]}  {rec.skill_id}  v{rec.version}  ({rec.publisher})')
+
+
+@publisher.command('approve')
+@click.argument('submission_id')
+@click.option('--reason', default='', help='Approval note')
+@click.option('--by', 'decided_by', default='etd-cli', show_default=True)
+def publisher_approve(submission_id: str, reason: str, decided_by: str):
+    """Approve an in-review submission."""
+    from marketplace.publisher_portal import PublisherPortal
+    portal = PublisherPortal(ROOT)
+    try:
+        rec = portal.approve(submission_id, decided_by=decided_by, reason=reason)
+        click.echo(f'Approved: {rec.submission_id[:8]}  {rec.skill_id}  v{rec.version}')
+    except KeyError as exc:
+        click.echo(f'Error: {exc}', err=True)
+        raise SystemExit(1)
+    except ValueError as exc:
+        click.echo(f'Error: {exc}', err=True)
+        raise SystemExit(1)
+
+
+@publisher.command('reject')
+@click.argument('submission_id')
+@click.option('--reason', required=True, help='Rejection reason (required)')
+@click.option('--by', 'decided_by', default='etd-cli', show_default=True)
+def publisher_reject(submission_id: str, reason: str, decided_by: str):
+    """Reject an in-review submission."""
+    from marketplace.publisher_portal import PublisherPortal
+    portal = PublisherPortal(ROOT)
+    try:
+        rec = portal.reject(submission_id, reason=reason, decided_by=decided_by)
+        click.echo(f'Rejected: {rec.submission_id[:8]}  {rec.skill_id}  v{rec.version}')
+    except (KeyError, ValueError) as exc:
+        click.echo(f'Error: {exc}', err=True)
+        raise SystemExit(1)
+
+
+@publisher.command('revision')
+@click.argument('submission_id')
+@click.option('--reason', required=True, help='What needs to be fixed')
+@click.option('--by', 'decided_by', default='etd-cli', show_default=True)
+def publisher_revision(submission_id: str, reason: str, decided_by: str):
+    """Request revision on an in-review submission."""
+    from marketplace.publisher_portal import PublisherPortal
+    portal = PublisherPortal(ROOT)
+    try:
+        rec = portal.request_revision(submission_id, reason=reason, decided_by=decided_by)
+        click.echo(f'Revision requested: {rec.submission_id[:8]}  {rec.skill_id}')
+    except (KeyError, ValueError) as exc:
+        click.echo(f'Error: {exc}', err=True)
+        raise SystemExit(1)
+
+
 @cli.command('dashboard')
 @click.option('--json', 'as_json', is_flag=True, help='Output as JSON instead of ASCII')
 @click.option('--watch', 'watch_n', default=0, type=int, metavar='N',

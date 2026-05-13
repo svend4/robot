@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.74.0 — Publisher portal (1137 → 1182 tests)
+
+All v1.0.0 roadmap items now complete including the publisher portal.
+
+### Code changes
+
+- `marketplace/publisher_portal.py` (NEW): submission lifecycle management.
+  - `SubmissionRecord(submission_id, skill_id, version, package_path, publisher,
+    submitted_at, status, pipeline_passed, human_review_required, review_result,
+    blocking_findings, decision_reason, decided_at, decided_by)` — full state
+    machine: `submitted → in_review → approved | rejected | needs_revision`.
+    `to_dict()` / `from_dict()` for JSON persistence.
+  - `PublisherPortal(repo_root, submissions_path, auto_approve_on_pass=True)`:
+    - `submit(package_path, publisher)` — runs `ReviewPipeline` immediately;
+      auto-approves when all stages pass and `human_review_required=False`;
+      persists to `marketplace/submissions.json`
+    - `get_submission(id)`, `list_submissions(publisher, status, skill_id)`
+    - `approve(id, decided_by, reason)` — from `in_review` or `needs_revision`
+    - `reject(id, reason, decided_by)` — from `in_review` or `needs_revision`
+    - `request_revision(id, reason, decided_by)` — from `in_review`
+    - `resubmit(id)` — from `needs_revision`; re-runs pipeline, keeps same id
+    - State transition enforcement: wrong-status raises `ValueError`; unknown id
+      raises `KeyError`
+- `api/publisher.py` (NEW): FastAPI router at `/publisher`:
+  - `POST /publisher/submit` — 404 if path missing; auto-approve or in_review
+  - `GET  /publisher/submissions` — filterable by `publisher`, `status`, `skill_id`
+  - `GET  /publisher/submission/{id}` — 404 if unknown
+  - `POST /publisher/submission/{id}/approve` — 409 if wrong status
+  - `POST /publisher/submission/{id}/reject`
+  - `POST /publisher/submission/{id}/revision`
+  - `POST /publisher/submission/{id}/resubmit`
+  - `GET  /publisher/stats` — total, by_status, auto_approved counts
+- `api/app.py`: mounts `publisher` router; version bumped to `0.74.0`
+- `etd_cli.py`: `publisher` command group:
+  - `publisher submit PACKAGE_PATH [--publisher NAME] [--json]`
+    exits 0=auto-approved, 2=in_review, 1=error
+  - `publisher list [--publisher F] [--status F]`
+  - `publisher approve SUBMISSION_ID [--reason] [--by]`
+  - `publisher reject SUBMISSION_ID --reason REASON [--by]`
+  - `publisher revision SUBMISSION_ID --reason REASON [--by]`
+
+### Tests (1137 → 1182)
+
+- `tests/test_publisher_portal.py` (+45, NEW):
+  - `TestStatuses`, `TestSubmissionRecord`, `TestReadSkillMeta`
+  - `TestPortalSubmit`: auto-approve real package; high-risk → in_review;
+    forbidden-import → in_review; unique IDs; skill_id/version/publisher
+    recorded; no-auto-approve flag; real pickplace package; persistence across
+    portal instances
+  - `TestPortalQuery`: get/unknown-None/list-all/filter-publisher/filter-status/
+    newest-first
+  - `TestPortalDecisions`: approve/reject/revision move to correct status;
+    decided_by/reason set; wrong-status raises; unknown-id raises
+  - `TestPortalResubmit`: resubmit after revision keeps ID; wrong-status raises
+  - `TestPublisherAPI`: submit valid/404-path/list/get-404/stats/approve-404
+  - `TestPublisherCLI`: submit exits 0 or 2; `--json`; nonexistent exits 1;
+    list; approve unknown exits 1
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for Publisher portal — all roadmap items
+  from v0.5.0 through v1.0.0 are now complete
+
+---
+
 ## 0.73.0 — v1.0.0 COMPLETE: dashboard (1098 → 1137 tests)
 
 All 7/7 v1.0.0 roadmap items are now implemented and tested.
