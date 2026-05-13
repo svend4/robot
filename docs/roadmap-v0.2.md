@@ -178,3 +178,13 @@ All items below were delivered in the prototype:
   CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
   `etd fleet status`, `etd fleet deployments [--json]`.
   61 tests in `tests/test_fleet_manager.py`.
+- [x] **Skill execution telemetry analytics.** Persistent skill execution
+  recording with z-score anomaly detection and fleet-wide reporting.
+  `marketplace/telemetry_analytics.py`: `ExecutionEvent`, `ExecutionRecord`
+  (with `make()` factory), `SkillStats` (p50/p95/p99 latency, success rate,
+  common failures, `summary()`), `TelemetryStore` (JSON-Lines append-only store,
+  filtered query), `TelemetryAnalyzer` (`skill_stats`, `node_stats`,
+  `recent_failures`, `anomalies` z-score detection, `report`).
+  `api/telemetry.py`: FastAPI router at `/telemetry` (record, list, stats,
+  report, anomalies endpoints). CLI: `etd telemetry record|stats|anomalies|report`.
+  70 tests in `tests/test_telemetry_analytics.py`.

@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.80.0 — Skill execution telemetry analytics (1481 → 1551 tests)
+
+Persistent per-skill execution recording, duration statistics, and z-score
+anomaly detection with a full REST API layer.
+
+### Code changes
+
+- `marketplace/telemetry_analytics.py` (NEW):
+  - `ExecutionEvent`: one primitive-level event (`primitive`, `status`,
+    `duration_ms`, `payload`); round-trips to/from dict.
+  - `ExecutionRecord`: complete skill run with start/end timestamps, status,
+    events list; `make()` factory auto-generates UUID + timestamps.
+  - `SkillStats`: p50/p95/p99 latency percentiles, success rate, mean/min/max
+    duration, ranked common-failure reasons; `summary()` ASCII render.
+  - `TelemetryStore`: JSON-Lines–backed append-only store; filtered `query()`
+    (skill\_id, node\_id, status, since, limit); `skill_ids()`, `node_ids()`,
+    `clear()`; parent dirs created on first write.
+  - `TelemetryAnalyzer`: `skill_stats()` (returns `SkillStats` or None),
+    `node_stats()` (per-node health dict), `recent_failures()`, `anomalies()`
+    (z-score ≥ threshold, sorted by z desc, requires ≥ 2 non-zero durations),
+    `report()` (fleet-wide summary across all skills and nodes).
+- `api/telemetry.py` (NEW): FastAPI router at `/telemetry`:
+  - `POST /telemetry/executions` → 201 — record one execution (auto-ID or
+    explicit `execution_id`/`started_at`/`completed_at`).
+  - `GET  /telemetry/executions?skill_id=&node_id=&status=&since=&limit=` — query.
+  - `GET  /telemetry/stats/{skill_id}` — `SkillStats.to_dict()`; 404 if no data.
+  - `GET  /telemetry/report` — full fleet report.
+  - `GET  /telemetry/anomalies?skill_id=&z_threshold=` — outlier executions.
+- `api/app.py`: mounts `_telemetry_router`; version bumped to `0.80.0`.
+- `etd_cli.py`: new `telemetry` command group:
+  - `etd telemetry record --skill S --node N [--status ok|fail] [--duration-ms D]`
+  - `etd telemetry stats SKILL_ID [--json]`
+  - `etd telemetry anomalies [--skill S] [--threshold T] [--json]`
+  - `etd telemetry report [--json]`
+
+### Tests (1481 → 1551, +70)
+
+- `tests/test_telemetry_analytics.py` (+70, NEW):
+  - `TestExecutionEvent`: dict keys, round-trip, defaults, missing optional.
+  - `TestExecutionRecord`: make factory, succeeded property, to\_dict events,
+    round-trip, from\_dict defaults, make with events.
+  - `TestPercentile`: empty, single, median, p100, p0.
+  - `TestTelemetryStore`: count, record+count, persistence, query no-filter,
+    by skill/node/status, limit, newest-first order, skill\_ids, node\_ids,
+    clear, clear wipes file, malformed lines skipped, creates parent dirs,
+    query since.
+  - `TestTelemetryAnalyzer`: stats None for unknown, counts, success rate,
+    durations, common failures, percentiles, to\_dict, summary string, node
+    stats empty/populated, recent failures, limit=0, anomalies insufficient
+    data, zero stdev, detects outlier, sorted desc, skill filter, report
+    structure, empty report.
+  - `TestTelemetryApiRecord`: 201, has execution\_id, explicit IDs.
+  - `TestTelemetryApiList`: 200, empty, after record, filter skill/status, limit.
+  - `TestTelemetryApiStats`: 404 unknown, 200 after record, structure.
+  - `TestTelemetryApiReport`: 200, structure, empty.
+  - `TestTelemetryApiAnomalies`: 200, structure, detects outlier, has z\_score,
+    filter by skill.
+
 ## 0.79.0 — REST API for cross-platform, fleet, and composer (1430 → 1481 tests)
 
 Extends the FastAPI REST layer to cover all features added in v0.75–v0.78.

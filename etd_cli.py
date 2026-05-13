@@ -1170,5 +1170,117 @@ def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
             )
 
 
+# ── telemetry ─────────────────────────────────────────────────────────────────
+
+_DEFAULT_TELEMETRY_STORE = str(Path(__file__).resolve().parent / 'telemetry' / 'executions.jsonl')
+
+
+@cli.group()
+def telemetry():
+    """Skill execution telemetry: record, stats, anomalies, report."""
+
+
+@telemetry.command('record')
+@click.option('--skill', 'skill_id', required=True, help='Skill ID')
+@click.option('--node', 'node_id', required=True, help='Robot node ID')
+@click.option('--station', 'station_id', default='default', show_default=True)
+@click.option('--status', 'status', default='success',
+              type=click.Choice(['success', 'failed', 'aborted']), show_default=True)
+@click.option('--duration-ms', 'duration_ms', default=0, type=int, show_default=True)
+@click.option('--failure-reason', 'failure_reason', default='')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE, show_default=True)
+def telemetry_record(skill_id: str, node_id: str, station_id: str, status: str,
+                     duration_ms: int, failure_reason: str, store_path: str):
+    """Record one skill execution in the telemetry store."""
+    from marketplace.telemetry_analytics import TelemetryStore, ExecutionRecord
+    store = TelemetryStore(Path(store_path))
+    rec = ExecutionRecord.make(
+        skill_id=skill_id,
+        node_id=node_id,
+        station_id=station_id,
+        status=status,
+        total_duration_ms=duration_ms,
+        failure_reason=failure_reason,
+    )
+    store.record(rec)
+    click.echo(click.style(f'Recorded: {rec.execution_id}  [{status}]  {duration_ms} ms', fg='green'))
+
+
+@telemetry.command('stats')
+@click.argument('skill_id')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def telemetry_stats(skill_id: str, store_path: str, as_json: bool):
+    """Show aggregated stats for a skill."""
+    import json as _json
+    from marketplace.telemetry_analytics import TelemetryStore, TelemetryAnalyzer
+    store = TelemetryStore(Path(store_path))
+    analyzer = TelemetryAnalyzer(store)
+    stats = analyzer.skill_stats(skill_id)
+    if stats is None:
+        click.echo(click.style(f'No records found for skill: {skill_id}', fg='yellow'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(_json.dumps(stats.to_dict(), indent=2))
+    else:
+        click.echo(stats.summary())
+
+
+@telemetry.command('anomalies')
+@click.option('--skill', 'skill_id', default=None, help='Filter by skill ID')
+@click.option('--threshold', 'z_threshold', default=2.0, type=float, show_default=True,
+              help='Z-score threshold for anomaly detection')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def telemetry_anomalies(skill_id: Optional[str], z_threshold: float,
+                        store_path: str, as_json: bool):
+    """Detect anomalous executions by duration z-score."""
+    import json as _json
+    from marketplace.telemetry_analytics import TelemetryStore, TelemetryAnalyzer
+    store = TelemetryStore(Path(store_path))
+    analyzer = TelemetryAnalyzer(store)
+    anomalies = analyzer.anomalies(skill_id=skill_id, z_threshold=z_threshold)
+    if as_json:
+        click.echo(_json.dumps(
+            [{'execution_id': r.execution_id, 'skill_id': r.skill_id,
+              'duration_ms': r.total_duration_ms, 'z_score': z}
+             for r, z in anomalies],
+            indent=2,
+        ))
+    else:
+        if not anomalies:
+            click.echo('No anomalies detected.')
+            return
+        for rec, z in anomalies:
+            click.echo(
+                f'z={z:5.2f}  {rec.execution_id[:8]}  '
+                f'{rec.skill_id}  {rec.total_duration_ms} ms  [{rec.status}]'
+            )
+
+
+@telemetry.command('report')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def telemetry_report(store_path: str, as_json: bool):
+    """Print a full fleet telemetry report."""
+    import json as _json
+    from marketplace.telemetry_analytics import TelemetryStore, TelemetryAnalyzer
+    store = TelemetryStore(Path(store_path))
+    analyzer = TelemetryAnalyzer(store)
+    rpt = analyzer.report()
+    if as_json:
+        click.echo(_json.dumps(rpt, indent=2))
+    else:
+        click.echo(f'Generated : {rpt["generated_at"]}')
+        click.echo(f'Executions: {rpt["total_executions"]}  '
+                   f'Skills: {rpt["skill_count"]}  '
+                   f'Nodes: {rpt["node_count"]}')
+        for s in rpt['skills']:
+            click.echo(f'  {s["skill_id"]:40s}  '
+                       f'{s["execution_count"]:4d} runs  '
+                       f'{s["success_rate"]:.0%} ok  '
+                       f'p95={s["p95_ms"]:.0f} ms')
+
+
 if __name__ == '__main__':
     cli()

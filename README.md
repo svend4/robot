@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1481 pytest tests
+├── tests/                              # 1551 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -118,6 +118,13 @@ python etd_cli.py fleet status --json
 python etd_cli.py fleet deployments
 python etd_cli.py fleet deployments --skill etd.pickplace.basic --json
 
+# Telemetry analytics
+python etd_cli.py telemetry record --skill etd.pickplace.basic --node robot-01 --status success --duration-ms 1200
+python etd_cli.py telemetry stats etd.pickplace.basic
+python etd_cli.py telemetry stats etd.pickplace.basic --json
+python etd_cli.py telemetry anomalies --skill etd.pickplace.basic --threshold 2.5
+python etd_cli.py telemetry report --json
+
 # REST API
 uvicorn api.app:app --reload
 # GET  http://localhost:8000/store/skills
@@ -133,6 +140,10 @@ uvicorn api.app:app --reload
 # POST http://localhost:8000/compose/validate  {"composed": {"skillId": "...", "steps": [...]}}
 # POST http://localhost:8000/compose/run       {"composed": {"skillId": "...", "steps": [...]}}
 # GET  http://localhost:8000/compose/examples
+# POST http://localhost:8000/telemetry/executions  {"skill_id": "etd.pickplace.basic", "node_id": "r01", "status": "success", "total_duration_ms": 1200}
+# GET  http://localhost:8000/telemetry/stats/etd.pickplace.basic
+# GET  http://localhost:8000/telemetry/report
+# GET  http://localhost:8000/telemetry/anomalies?z_threshold=2.5
 
 # Acceptance tests (39 scenarios, all 8 packages)
 python sim/acceptance_runner.py
@@ -254,10 +265,11 @@ tests/
 ├── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
 ├── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
 ├── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
-└── test_api_extensions.py    # 51 — /platform/list (count/structure/atlas), /platform/platform/{id} (found/404/families), /platform/check (compatible/incompatible/topic-remappings/family-mismatch), /platform/matrix (30-pairs/no-self/with-skill/family-filter), /fleet/nodes (list/register-201/list-after/get/get-404/delete/delete-404/heartbeat/heartbeat-404), /fleet/deployments (deploy-201/completed/structure/list/get/get-404/filter-skill), /fleet/status (200/structure), /compose/validate (valid/invalid-no-steps/self-ref/skill-id), /compose/run (200/success/step-results/multi-step/structure), /compose/examples (list/structure/validate/run/404s)
+├── test_api_extensions.py    # 51 — /platform/list (count/structure/atlas), /platform/platform/{id} (found/404/families), /platform/check (compatible/incompatible/topic-remappings/family-mismatch), /platform/matrix (30-pairs/no-self/with-skill/family-filter), /fleet/nodes (list/register-201/list-after/get/get-404/delete/delete-404/heartbeat/heartbeat-404), /fleet/deployments (deploy-201/completed/structure/list/get/get-404/filter-skill), /fleet/status (200/structure), /compose/validate (valid/invalid-no-steps/self-ref/skill-id), /compose/run (200/success/step-results/multi-step/structure), /compose/examples (list/structure/validate/run/404s)
+└── test_telemetry_analytics.py # 70 — ExecutionEvent (dict/round-trip/defaults), ExecutionRecord (make/succeeded/events/round-trip), _percentile (empty/single/median/p100/p0), TelemetryStore (count/record/persist/query-filters/limit/newest-first/skill_ids/node_ids/clear/malformed-skipped/parent-dirs/since), TelemetryAnalyzer (stats-none/counts/rate/durations/failures/percentiles/to_dict/summary, node_stats-empty/populated, recent_failures/limit-zero, anomalies-insufficient/zero-stdev/outlier/sorted/skill-filter, report-structure/empty), REST API /telemetry (record-201/explicit-ids, list-200/empty/filter-skill/status/limit, stats-404/200/structure, report-200/structure/empty, anomalies-200/structure/detects/z_score/skill-filter)
 ```
 
-Run: `python -m pytest` — 1481 tests, all passing.
+Run: `python -m pytest` — 1551 tests, all passing.
 
 ---
 
