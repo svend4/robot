@@ -284,3 +284,15 @@ All items below were delivered in the prototype:
   (states list/get/delete, acquire/release/reset, config CRUD with 201/200/422).
   CLI: `etd bulkhead acquire|release|status|reset|config-set|config-list`.
   75 tests in `tests/test_bulkhead.py`.
+- [x] **Skill configuration store.** Per-skill runtime configuration with
+  three scope levels (default `*` < `station:<id>` < `node:<id>`), version
+  tracking on update, and a `get_effective()` merge function.
+  `marketplace/skill_config.py`: `SkillConfigEntry` (scope/values/version/
+  timestamps), `ConfigStore` (`set` increments version and preserves
+  `created_at`; `get`; `remove`; `remove_skill` returns count; `list_entries`;
+  `list_skills`; `get_effective` — silent skip on missing scopes; static
+  `station_scope`/`node_scope` helpers; corrupt file loads empty).
+  `api/skill_config.py`: FastAPI router at `/config` (list skills, list/set/
+  delete entries, effective config with query params, per-scope get/delete).
+  CLI: `etd skill-config set|get|effective|list|remove`.
+  58 tests in `tests/test_skill_config.py`.

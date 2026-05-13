@@ -2481,5 +2481,140 @@ def bulkhead_config_list(data_dir: str, as_json: bool):
             click.echo(f'{skill_id:40s}  max_concurrent={cfg.max_concurrent}')
 
 
+# ── skill-config ──────────────────────────────────────────────────────────────
+
+_DEFAULT_CONFIG_DIR = str(Path(__file__).resolve().parent / 'skill_configs')
+
+
+@cli.group('skill-config')
+def skill_config():
+    """Per-skill runtime configuration: set, get, effective, list, remove."""
+
+
+@skill_config.command('set')
+@click.argument('skill_id')
+@click.option('--scope', default='*', show_default=True,
+              help="'*', 'station:<id>', or 'node:<id>'")
+@click.option('--value', 'kv_pairs', multiple=True,
+              metavar='KEY=VALUE', help='Config key=value (repeatable)')
+@click.option('--dir', 'data_dir', default=_DEFAULT_CONFIG_DIR, show_default=True)
+def skill_config_set(skill_id: str, scope: str, kv_pairs, data_dir: str):
+    """Set configuration for a skill (and scope)."""
+    import ast
+    from marketplace.skill_config import ConfigStore
+    values: Dict[str, Any] = {}
+    for kv in kv_pairs:
+        if '=' not in kv:
+            click.echo(click.style(f'Invalid key=value: {kv!r}', fg='red'))
+            raise SystemExit(1)
+        k, _, v = kv.partition('=')
+        try:
+            values[k.strip()] = ast.literal_eval(v.strip())
+        except (ValueError, SyntaxError):
+            values[k.strip()] = v.strip()
+    store = ConfigStore(Path(data_dir))
+    entry = store.set(skill_id, scope, values)
+    click.echo(click.style(
+        f'Config set for {skill_id} [{scope}] v{entry.version}.', fg='green'
+    ))
+
+
+@skill_config.command('get')
+@click.argument('skill_id')
+@click.option('--scope', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_CONFIG_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def skill_config_get(skill_id: str, scope: str, data_dir: str, as_json: bool):
+    """Get one scope entry for a skill."""
+    import json as _json
+    from marketplace.skill_config import ConfigStore
+    store = ConfigStore(Path(data_dir))
+    entry = store.get(skill_id, scope)
+    if entry is None:
+        click.echo(click.style(
+            f'No config for {skill_id} [{scope}]', fg='yellow'
+        ))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(_json.dumps(entry.to_dict(), indent=2))
+    else:
+        click.echo(f'{skill_id}  scope={scope}  v{entry.version}')
+        for k, v in entry.values.items():
+            click.echo(f'  {k} = {v!r}')
+
+
+@skill_config.command('effective')
+@click.argument('skill_id')
+@click.option('--station', 'station_id', default=None, help='Station ID')
+@click.option('--node', 'node_id', default=None, help='Node ID')
+@click.option('--dir', 'data_dir', default=_DEFAULT_CONFIG_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def skill_config_effective(skill_id: str, station_id: Optional[str],
+                            node_id: Optional[str], data_dir: str,
+                            as_json: bool):
+    """Show the merged effective config for a skill."""
+    import json as _json
+    from marketplace.skill_config import ConfigStore
+    store = ConfigStore(Path(data_dir))
+    effective = store.get_effective(skill_id, station_id=station_id,
+                                    node_id=node_id)
+    if as_json:
+        click.echo(_json.dumps(effective, indent=2))
+    else:
+        if not effective:
+            click.echo('(empty config)')
+            return
+        click.echo(f'{skill_id}  station={station_id}  node={node_id}')
+        for k, v in effective.items():
+            click.echo(f'  {k} = {v!r}')
+
+
+@skill_config.command('list')
+@click.option('--skill', 'skill_id', default=None, help='Filter by skill ID')
+@click.option('--dir', 'data_dir', default=_DEFAULT_CONFIG_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def skill_config_list(skill_id: Optional[str], data_dir: str, as_json: bool):
+    """List all config entries."""
+    import json as _json
+    from marketplace.skill_config import ConfigStore
+    store = ConfigStore(Path(data_dir))
+    entries = store.list_entries(skill_id=skill_id)
+    if as_json:
+        click.echo(_json.dumps([e.to_dict() for e in entries], indent=2))
+    else:
+        if not entries:
+            click.echo('No config entries found.')
+            return
+        for e in entries:
+            click.echo(f'{e.skill_id:40s}  scope={e.scope:20s}  '
+                       f'v{e.version}  keys={list(e.values)}')
+
+
+@skill_config.command('remove')
+@click.argument('skill_id')
+@click.option('--scope', default=None, help='Remove one scope (default: ALL)')
+@click.option('--dir', 'data_dir', default=_DEFAULT_CONFIG_DIR, show_default=True)
+def skill_config_remove(skill_id: str, scope: Optional[str], data_dir: str):
+    """Remove config entries for a skill (all scopes, or one scope)."""
+    from marketplace.skill_config import ConfigStore
+    store = ConfigStore(Path(data_dir))
+    if scope:
+        if store.remove(skill_id, scope):
+            click.echo(click.style(
+                f'Removed config for {skill_id} [{scope}].', fg='green'
+            ))
+        else:
+            click.echo(click.style(
+                f'No config for {skill_id} [{scope}].', fg='red'
+            ))
+            raise SystemExit(1)
+    else:
+        n = store.remove_skill(skill_id)
+        click.echo(click.style(
+            f'Removed {n} config entr{"y" if n == 1 else "ies"} '
+            f'for {skill_id}.', fg='green'
+        ))
+
+
 if __name__ == '__main__':
     cli()

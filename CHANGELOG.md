@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.89.0 — Skill configuration store (2072 → 2130 tests)
+
+Per-skill runtime configuration with three scope levels (default → station
+override → node override), version tracking, merge semantics, REST API, CLI.
+
+### Code changes
+
+- `marketplace/skill_config.py` (NEW):
+  - `SkillConfigEntry`: `skill_id`, `scope` (`'*'` / `'station:<id>'` /
+    `'node:<id>'`), `values` (dict), `version` (increments on update),
+    `created_at`, `updated_at`; `to_dict()`/`from_dict()`.
+  - `ConfigStore`: JSON-backed store for `(skill_id, scope)` entries.
+    `set()` — creates (v=1) or replaces (v+1, preserves `created_at`);
+    `get()`, `remove()` (one scope), `remove_skill()` (all scopes, returns
+    count), `list_entries(skill_id=None)`, `list_skills()`, `entry_count`.
+    `get_effective(skill_id, station_id, node_id)` — merges in priority
+    order default < station < node; missing scopes silently skipped.
+    Static `station_scope()`/`node_scope()` helpers. Creates parent dirs;
+    corrupt file loads empty.
+- `api/skill_config.py` (NEW): FastAPI router at `/config`:
+  - `GET    /config/skills` — list distinct skill IDs with config.
+  - `GET    /config/skills/{skill_id}` — all entries for skill.
+  - `PUT    /config/skills/{skill_id}` — set/update (201/200).
+  - `DELETE /config/skills/{skill_id}` — remove ALL entries.
+  - `GET    /config/skills/{skill_id}/effective` — merged config
+    (`?station_id=` `?node_id=` query params).
+  - `GET    /config/skills/{skill_id}/scope/{scope}` — one entry; 404.
+  - `DELETE /config/skills/{skill_id}/scope/{scope}` — remove one; 404.
+- `api/app.py`: mount `/config` router; version → `0.89.0`.
+- `etd_cli.py`: `etd skill-config` group:
+  `set`, `get`, `effective`, `list`, `remove`.
+
+### Tests
+
+- `tests/test_skill_config.py` (NEW): 58 tests covering `_make_scope_key`,
+  `SkillConfigEntry` (defaults/round-trip/to_dict/types), `ConfigStore` CRUD
+  (set/get/version-increment/preserves-created_at/remove/remove_skill/
+  leaves-others/list/list_skills/count), scope helpers, `get_effective`
+  (empty/default/station-override/node-override/node-over-station/no-match/
+  merge-adds-keys/no-overrides/all-three), persistence (persist/create-dir/
+  corrupt-empty), REST API (list, entries, set-201/200/version/skill_id,
+  delete-all/zero, effective-empty/default/station/node/ids, scope-get/404,
+  delete-scope/404/leaves-others).
+
+---
+
 ## 0.88.0 — Skill execution bulkhead (1997 → 2072 tests)
 
 Per-skill (optionally per-node) concurrency limiter — acquire/release
