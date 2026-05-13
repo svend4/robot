@@ -247,3 +247,17 @@ All items below were delivered in the prototype:
   `api/health_monitor.py`: FastAPI router at `/monitor` (skills/nodes/fleet
   list + single, alerts list + resolve). CLI: `etd health skills|nodes|fleet|alerts|resolve`.
   69 tests in `tests/test_health_monitor.py`.
+- [x] **Skill execution circuit breaker.** Three-state circuit breaker
+  (closed → open → half_open) per skill or per skill+node pair; configurable
+  failure thresholds (count and rate), reset timeout, and half-open trial
+  quota; JSON persistence; REST API; CLI.
+  `marketplace/circuit_breaker.py`: `CircuitBreakerConfig`, `CircuitBreakerState`
+  (failure_rate property, half_open_calls quota tracking), `CircuitBreakerResult`,
+  `CircuitBreakerStore` (JSON-backed), `CircuitBreaker` (`allow_execution` —
+  gates half_open quota, auto-promotes open→half_open on timeout;
+  `record_success` — closes on sufficient half_open successes;
+  `record_failure` — trips in closed, re-trips in half_open; `reset`;
+  per-skill config overrides). `api/circuit_breaker.py`: FastAPI router at
+  `/circuit` (list/get/delete breakers, check/success/failure/reset,
+  config get/set). CLI: `etd circuit list|check|success|failure|reset`.
+  67 tests in `tests/test_circuit_breaker.py`.

@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.86.0 — Skill execution circuit breaker (1867 → 1934 tests)
+
+Three-state circuit breaker (closed → open → half_open) per skill or per
+skill+node pair, with configurable thresholds, JSON persistence, REST API,
+and CLI.
+
+### Code changes
+
+- `marketplace/circuit_breaker.py` (NEW):
+  - `CircuitBreakerConfig`: `failure_threshold`, `failure_rate_threshold`,
+    `min_executions` (for rate check), `reset_timeout_seconds`,
+    `half_open_max_calls`; `to_dict()`/`from_dict()`.
+  - `CircuitBreakerState`: per-circuit runtime state — `state`
+    (closed/open/half_open), `failure_count`, `success_count`,
+    `half_open_successes`, `half_open_calls` (calls permitted through in
+    half_open), `total_calls`, `opened_at`, timestamps;
+    `failure_rate` property; `to_dict()`/`from_dict()`.
+  - `CircuitBreakerResult`: `allowed`, `reason`
+    (ok/open/half_open_quota_exceeded), `state`, `remaining_half_open`.
+  - `CircuitBreakerStore`: JSON-backed store — `get_or_create()`, `save()`,
+    `get()`, `remove()`, `list_states()`, `breaker_count`.
+    Creates parent dirs; corrupt file loads empty.
+  - `CircuitBreaker`: `allow_execution()` (transitions open→half_open on
+    timeout, gates quota in half_open), `record_success()` (closes circuit
+    when half_open successes meet threshold), `record_failure()` (opens on
+    count/rate threshold in closed; reopens immediately in half_open),
+    `reset()`, `get_state()`, `list_breakers()`, `remove()`,
+    `set_config()`/`get_config()` per-skill override, `breaker_count`.
+- `api/circuit_breaker.py` (NEW): FastAPI router at `/circuit`:
+  - `GET  /circuit/breakers` — list all states.
+  - `GET  /circuit/breakers/{skill_id}` — get/create state for one skill.
+  - `DELETE /circuit/breakers/{skill_id}` — remove; 404.
+  - `POST /circuit/check` — check if execution allowed.
+  - `POST /circuit/success` — record success.
+  - `POST /circuit/failure` — record failure.
+  - `POST /circuit/reset/{skill_id}` — manual reset to closed; 404.
+  - `GET  /circuit/config` — default config.
+  - `PUT  /circuit/config/{skill_id}` — per-skill config.
+- `api/app.py`: mount `/circuit` router; version → `0.86.0`.
+- `etd_cli.py`: `etd circuit` group with subcommands:
+  `list`, `check`, `success`, `failure`, `reset`.
+
+### Tests
+
+- `tests/test_circuit_breaker.py` (NEW): 67 tests covering
+  `_make_key`, `CircuitBreakerConfig`, `CircuitBreakerState`,
+  `CircuitBreakerStore`, `CircuitBreaker` closed/open/half_open state
+  machines and transitions, reset, misc, and all REST API endpoints.
+
+---
+
 ## 0.85.0 — Skill health monitor (1798 → 1867 tests)
 
 Continuous skill and node health evaluation from telemetry data, with

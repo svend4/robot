@@ -2111,5 +2111,108 @@ def health_resolve(alert_id: str, store_path: str, alert_dir: str):
         raise SystemExit(1)
 
 
+# ── circuit ───────────────────────────────────────────────────────────────────
+
+_DEFAULT_CIRCUIT_DIR = str(Path(__file__).resolve().parent / 'circuits')
+
+
+@cli.group()
+def circuit():
+    """Skill execution circuit breaker: check, record, reset, list."""
+
+
+@circuit.command('list')
+@click.option('--dir', 'data_dir', default=_DEFAULT_CIRCUIT_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def circuit_list(data_dir: str, as_json: bool):
+    """List all circuit breaker states."""
+    import json as _json
+    from marketplace.circuit_breaker import CircuitBreaker
+    cb = CircuitBreaker(data_dir=Path(data_dir))
+    states = cb.list_breakers()
+    if as_json:
+        click.echo(_json.dumps([s.to_dict() for s in states], indent=2))
+    else:
+        if not states:
+            click.echo('No circuit breakers recorded.')
+            return
+        for s in states:
+            colour = 'green' if s.state == 'closed' else (
+                'red' if s.state == 'open' else 'yellow'
+            )
+            click.echo(
+                click.style(f'[{s.state.upper():9s}]', fg=colour) +
+                f'  {s.skill_id:40s}  node={s.node_id}  '
+                f'failures={s.failure_count}  calls={s.total_calls}'
+            )
+
+
+@circuit.command('check')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_CIRCUIT_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def circuit_check(skill_id: str, node_id: str, data_dir: str, as_json: bool):
+    """Check whether an execution is allowed for a skill."""
+    import json as _json
+    from marketplace.circuit_breaker import CircuitBreaker
+    cb = CircuitBreaker(data_dir=Path(data_dir))
+    result = cb.allow_execution(skill_id, node_id)
+    if as_json:
+        click.echo(_json.dumps(result.to_dict(), indent=2))
+    else:
+        colour = 'green' if result.allowed else 'red'
+        click.echo(click.style(
+            f'{"ALLOWED" if result.allowed else "REJECTED"}', fg=colour
+        ) + f'  {skill_id}  state={result.state}  reason={result.reason}')
+    if not result.allowed:
+        raise SystemExit(1)
+
+
+@circuit.command('success')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_CIRCUIT_DIR, show_default=True)
+def circuit_success(skill_id: str, node_id: str, data_dir: str):
+    """Record a successful execution."""
+    from marketplace.circuit_breaker import CircuitBreaker
+    cb = CircuitBreaker(data_dir=Path(data_dir))
+    state = cb.record_success(skill_id, node_id)
+    click.echo(click.style('Recorded success.', fg='green') +
+               f'  {skill_id}  state={state.state}')
+
+
+@circuit.command('failure')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_CIRCUIT_DIR, show_default=True)
+def circuit_failure(skill_id: str, node_id: str, data_dir: str):
+    """Record a failed execution."""
+    from marketplace.circuit_breaker import CircuitBreaker
+    cb = CircuitBreaker(data_dir=Path(data_dir))
+    state = cb.record_failure(skill_id, node_id)
+    colour = 'red' if state.state == 'open' else 'yellow'
+    click.echo(click.style('Recorded failure.', fg=colour) +
+               f'  {skill_id}  state={state.state}  '
+               f'failures={state.failure_count}')
+
+
+@circuit.command('reset')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_CIRCUIT_DIR, show_default=True)
+def circuit_reset(skill_id: str, node_id: str, data_dir: str):
+    """Manually reset a circuit breaker to closed."""
+    from marketplace.circuit_breaker import CircuitBreaker
+    cb = CircuitBreaker(data_dir=Path(data_dir))
+    if cb.reset(skill_id, node_id):
+        click.echo(click.style(f'Circuit {skill_id} reset to closed.', fg='green'))
+    else:
+        click.echo(click.style(
+            f'No circuit breaker found for: {skill_id}', fg='red'
+        ))
+        raise SystemExit(1)
+
+
 if __name__ == '__main__':
     cli()
