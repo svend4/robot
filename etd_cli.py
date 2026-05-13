@@ -848,5 +848,93 @@ def compose_run(package_path: str, as_json: bool):
     raise SystemExit(0 if result.succeeded else 1)
 
 
+@cli.group()
+def platform():
+    """Cross-platform humanoid compatibility checks (humanoid-first marketplace)."""
+
+
+@platform.command('list')
+@click.option('--json', 'as_json', is_flag=True)
+def platform_list(as_json: bool):
+    """List all registered robot platforms."""
+    import json as _json
+    from marketplace.cross_platform import HumanoidRegistry
+    reg = HumanoidRegistry()
+    platforms = reg.list_platforms()
+    if as_json:
+        click.echo(_json.dumps([p.to_dict() for p in platforms], indent=2))
+    else:
+        click.echo(f'{"ID":<20} {"Name":<38} {"Class":<14} {"Families"}')
+        click.echo('─' * 90)
+        for p in platforms:
+            fam = ', '.join(sorted(p.families))
+            click.echo(f'{p.platform_id:<20} {p.name:<38} {p.robot_class:<14} {fam}')
+        click.echo(f'\n{len(platforms)} platform(s) registered.')
+
+
+@platform.command('check')
+@click.argument('package_path')
+@click.option('--source', required=True, help='Source platform ID (skill was written for)')
+@click.option('--target', required=True, help='Target platform ID to check portability to')
+@click.option('--json', 'as_json', is_flag=True)
+def platform_check(package_path: str, source: str, target: str, as_json: bool):
+    """Check if a skill package is portable from SOURCE to TARGET platform."""
+    import json as _json
+    from marketplace.cross_platform import HumanoidRegistry, load_skill_info
+    p = Path(package_path)
+    try:
+        skill_info = load_skill_info(p)
+    except FileNotFoundError as exc:
+        click.echo(click.style(f'Error: {exc}', fg='red'), err=True)
+        raise SystemExit(1)
+    reg = HumanoidRegistry()
+    result = reg.check_compat(skill_info, source=source, target=target)
+    if as_json:
+        click.echo(_json.dumps(result.to_dict(), indent=2))
+    else:
+        label = (click.style('COMPATIBLE', fg='green', bold=True)
+                 if result.compatible
+                 else click.style('INCOMPATIBLE', fg='red', bold=True))
+        click.echo(f'{label}  {result.skill_id}  {source} → {target}')
+        if result.missing_primitives:
+            click.echo(click.style(
+                f'  Missing primitives: {", ".join(result.missing_primitives)}', fg='red'))
+        if result.missing_capability_flags:
+            click.echo(f'  Missing capabilities: {", ".join(result.missing_capability_flags)}')
+        for t in result.topic_remappings.items():
+            click.echo(f'  Remap: {t[0]} → {t[1]}')
+        for w in result.warnings:
+            click.echo(click.style(f'  ⚠  {w}', fg='yellow'))
+        for n in result.adaptation_notes:
+            click.echo(f'  ℹ  {n}')
+    raise SystemExit(0 if result.compatible else 1)
+
+
+@platform.command('matrix')
+@click.option('--skill', 'package_path', default=None,
+              help='Skill package path — if set, evaluate this skill across all pairs')
+@click.option('--family', 'family_filter', default=None,
+              help='Filter to platforms supporting this family')
+@click.option('--json', 'as_json', is_flag=True)
+def platform_matrix(package_path: Optional[str], family_filter: Optional[str], as_json: bool):
+    """Show a cross-platform compatibility matrix."""
+    import json as _json
+    from marketplace.cross_platform import HumanoidRegistry, load_skill_info
+    reg = HumanoidRegistry()
+    skill_info = None
+    if package_path:
+        try:
+            skill_info = load_skill_info(Path(package_path))
+        except FileNotFoundError as exc:
+            click.echo(click.style(f'Error: {exc}', fg='red'), err=True)
+            raise SystemExit(1)
+    families = {family_filter} if family_filter else None
+    if as_json:
+        rows = reg.compat_matrix(skill_info=skill_info, families=families)
+        click.echo(_json.dumps(rows, indent=2))
+    else:
+        click.echo(reg.render_matrix_ascii(skill_info=skill_info, families=families))
+
+
 if __name__ == '__main__':
     cli()

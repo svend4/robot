@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1239 pytest tests
+├── tests/                              # 1303 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -95,6 +95,13 @@ python etd_cli.py compose validate examples/etd.composed.fetch_inspect_place
 python etd_cli.py compose validate examples/etd.composed.fetch_inspect_place --json
 python etd_cli.py compose run examples/etd.composed.fetch_inspect_place
 python etd_cli.py compose run examples/etd.composed.fetch_inspect_place --json
+python etd_cli.py platform list
+python etd_cli.py platform list --json
+python etd_cli.py platform check examples/etd.atlas.humanoid_walkfetch --source atlas --target unitree_g1
+python etd_cli.py platform check examples/etd.atlas.humanoid_walkfetch --source atlas --target unitree_h1
+python etd_cli.py platform matrix
+python etd_cli.py platform matrix --skill examples/etd.atlas.humanoid_walkfetch --json
+python etd_cli.py platform matrix --family humanoid
 
 # REST API
 uvicorn api.app:app --reload
@@ -218,10 +225,11 @@ tests/
 ├── test_acceptance.py        # 98 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan, failed-suite SystemExit(1), exo no-middleware defaults + lumbar mode + read-only, atlas no-middleware defaults + handover loop sleep, wia no-middleware defaults + mid-traverse abort, cobot no-middleware defaults, mobed no-middleware + mid-segment abort, inspect no-middleware defaults
 ├── test_ros2_bridge.py       # 43 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2(), full rclpy mock: ActionServer callback capture + invocation, client timeout/rejected/happy-path, client feedback callback invocation, local-execute sys.path.insert branch
 ├── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
-└── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
+├── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
+└── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
 ```
 
-Run: `python -m pytest` — 1239 tests, all passing.
+Run: `python -m pytest` — 1303 tests, all passing.
 
 ---
 

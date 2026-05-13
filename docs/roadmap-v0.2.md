@@ -137,9 +137,16 @@ All items below were delivered in the prototype:
 
 ## Long-term
 
-- **Humanoid-first marketplace.** As Atlas, Unitree, and Hyundai humanoids
+- [x] **Humanoid-first marketplace.** As Atlas, Unitree, and Hyundai humanoids
   reach production, ETD becomes the neutral application-layer adapter that
   lets a skill written for one humanoid run (with compat checks) on another.
+  `marketplace/cross_platform.py`: `HumanoidPlatform`, `PlatformCompatResult`,
+  `HumanoidRegistry` (6 built-in platforms: Atlas, Unitree G1, Unitree H1,
+  Hyundai H-MEX, Hyundai MobED, Hyundai WIA), `check_compat()` (family +
+  primitive + capability-flag checks with topic namespace remappings),
+  `compat_matrix()`, `render_matrix_ascii()`, `load_skill_info()`.
+  CLI: `etd platform list|check|matrix [--json]`.
+  64 tests in `tests/test_cross_platform.py`.
 - [x] **Skill composition.** Higher-level skills that chain primitives from
   multiple sub-skills (e.g. fetch → inspect → assemble) with shared safety
   context.  `marketplace/composer.py`: `SkillStep`, `ComposedSkill`,

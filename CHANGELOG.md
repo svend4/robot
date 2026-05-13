@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.76.0 — Humanoid-first cross-platform marketplace (1239 → 1303 tests)
+
+Implements the long-term Humanoid-first Marketplace roadmap item.
+
+### Code changes
+
+- `marketplace/cross_platform.py` (NEW): cross-platform compatibility layer.
+  - `HumanoidPlatform(platform_id, name, robot_class, families,
+    topic_namespace, supported_primitives, capability_flags)` — describes one
+    robot platform; `supports_family()`, `supports_primitive()`, `to_dict()`.
+  - Six built-in platforms:
+    - `atlas` — Boston Dynamics Atlas; humanoid/manipulator/pickplace/inspect;
+      `/atlas` namespace; 19 primitives; capabilities: bipedal, dexterous,
+      vision, force-control, human-aware.
+    - `unitree_g1` — Unitree G1; humanoid/manipulator/pickplace/inspect;
+      `/unitree/g1`; 19 primitives; same capabilities minus human_aware_mode.
+    - `unitree_h1` — Unitree H1 (no hands); humanoid/inspect; `/unitree/h1`;
+      7 primitives; bipedal locomotion + vision only.
+    - `hyundai_mex` — Hyundai H-MEX / VEX Exoskeleton; assist/cobot;
+      `/hmex`; 11 primitives; wearable/force-assist/intent-sensing.
+    - `hyundai_mobed` — Hyundai MobED AMR; transport; `/hrise`;
+      5 primitives; wheeled/load-bearing/nav-stack.
+    - `hyundai_wia` — Hyundai WIA H-Motion Cobot; weld/cobot/assembly;
+      `/hwia`; 19 primitives; arc-welding/vision/force-control.
+  - `PlatformCompatResult(skill_id, source_platform, target_platform,
+    compatible, missing_primitives, topic_remappings,
+    missing_capability_flags, warnings, adaptation_notes)`:
+    `summary()` (✓/✗ ASCII), `to_dict()`.
+  - `HumanoidRegistry`: built-in 6-platform registry; `register()` /
+    `unregister()` for custom platforms; `get()` / `list_platforms()`.
+    - `check_compat(skill_info, source, target)` — checks: same-platform
+      short-circuit; family support on target; primitive coverage; capability
+      flag diff; generates per-primitive topic remappings
+      (`source_ns/prim → target_ns/prim`) when namespaces differ.
+    - `compat_matrix(skill_info, families)` — NxN rows for all platform pairs
+      (filtered by family overlap when `families` set).
+    - `render_matrix_ascii(skill_info, families)` — compact grid with
+      `✓`/`✗`/`≈`/`—`/`·` markers.
+  - `load_skill_info(package_path)` — reads `skill.json` from a skill package
+    directory; returns plain dict.
+- `etd_cli.py`: `platform` command group:
+  - `platform list [--json]` — table of all registered platforms.
+  - `platform check PACKAGE_PATH --source ID --target ID [--json]` — exits 0
+    on compatible, 1 on incompatible or missing package.
+  - `platform matrix [--skill PKG] [--family FAM] [--json]` — full or
+    filtered compat grid.
+- `api/app.py`: version bumped to `0.76.0`.
+
+### Tests (1239 → 1303, +64)
+
+- `tests/test_cross_platform.py` (+64, NEW):
+  - `TestHumanoidPlatform`: supports_family/primitive, to_dict sorted keys.
+  - `TestBuiltinPlatforms`: 6 platforms, families, robot_class, namespaces,
+    non-empty primitives.
+  - `TestLoadSkillInfo`: Atlas/MobED, missing raises, string path.
+  - `TestHumanoidRegistry`: default count, get/None, register adds/replaces,
+    unregister removes/silent, list_platforms.
+  - `TestCheckCompat`: same-platform, Atlas→G1 compat, Atlas→H1 incompat
+    (missing grasp primitives), Atlas→MobED family mismatch, MobED→MobED,
+    topic remapping format, unknown target → incompatible, unknown source
+    warns, result fields populated, pickplace Atlas→G1, cobot WIA→WIA,
+    missing capability flags, inspect Atlas→G1, no remappings on same platform.
+  - `TestPlatformCompatResult`: summary COMPATIBLE/INCOMPATIBLE, to_dict keys,
+    compatible true/false in dict.
+  - `TestCompatMatrix`: 30 pairs without skill_info, 30 with skill_info, family
+    humanoid filter (6 pairs), transport filter (0 pairs), row structure, no
+    self-pairs.
+  - `TestRenderMatrixAscii`: renders, contains platform IDs, contains
+    check marks with skill, diagonal is dot.
+  - `TestCLIPlatformList`: list text/JSON.
+  - `TestCLIPlatformCheck`: compatible exits 0, incompatible exits 1, JSON,
+    missing package exits 1.
+  - `TestCLIPlatformMatrix`: ASCII, JSON 30 rows, with-skill JSON, family
+    filter JSON 6 rows.
+
 ## 0.75.0 — Skill composition (1182 → 1239 tests)
 
 Long-term roadmap item: composed multi-step skills with shared safety context.
