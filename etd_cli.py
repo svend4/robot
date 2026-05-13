@@ -2350,5 +2350,136 @@ def retry_advise(skill_id: str, attempt: int, last_status: str,
             f'reason={decision.reason}  delay={decision.delay_ms}ms')
 
 
+# ── bulkhead ──────────────────────────────────────────────────────────────────
+
+_DEFAULT_BULKHEAD_DIR = str(Path(__file__).resolve().parent / 'bulkhead')
+
+
+@cli.group()
+def bulkhead():
+    """Skill execution bulkhead: acquire, release, reset, status, config."""
+
+
+@bulkhead.command('acquire')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def bulkhead_acquire(skill_id: str, node_id: str, data_dir: str, as_json: bool):
+    """Acquire a concurrency slot for a skill."""
+    import json as _json
+    from marketplace.bulkhead import Bulkhead
+    bh = Bulkhead(data_dir=Path(data_dir))
+    result = bh.acquire(skill_id, node_id)
+    if as_json:
+        click.echo(_json.dumps(result.to_dict(), indent=2))
+    else:
+        colour = 'green' if result.acquired else 'red'
+        click.echo(click.style(
+            'ACQUIRED' if result.acquired else 'REJECTED', fg=colour
+        ) + f'  {skill_id}  active={result.active_count}/{result.max_concurrent}'
+            f'  reason={result.reason}')
+    if not result.acquired:
+        raise SystemExit(1)
+
+
+@bulkhead.command('release')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+def bulkhead_release(skill_id: str, node_id: str, data_dir: str):
+    """Release a previously acquired concurrency slot."""
+    from marketplace.bulkhead import Bulkhead
+    bh = Bulkhead(data_dir=Path(data_dir))
+    released = bh.release(skill_id, node_id)
+    if released:
+        click.echo(click.style(f'Released slot for {skill_id}.', fg='green'))
+    else:
+        click.echo(click.style(
+            f'Nothing to release for: {skill_id}', fg='yellow'
+        ))
+
+
+@bulkhead.command('status')
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def bulkhead_status(data_dir: str, as_json: bool):
+    """List all bulkhead states."""
+    import json as _json
+    from marketplace.bulkhead import Bulkhead
+    bh = Bulkhead(data_dir=Path(data_dir))
+    states = bh.list_states()
+    if as_json:
+        click.echo(_json.dumps([s.to_dict() for s in states], indent=2))
+    else:
+        if not states:
+            click.echo('No bulkhead states recorded.')
+            return
+        for s in states:
+            cfg = bh.get_config(s.skill_id)
+            pct = s.active_count / cfg.max_concurrent if cfg.max_concurrent else 0
+            colour = 'red' if pct >= 1.0 else ('yellow' if pct >= 0.75 else 'green')
+            click.echo(
+                click.style(f'{s.active_count:3d}/{cfg.max_concurrent:<3d}',
+                            fg=colour) +
+                f'  {s.skill_id:40s}  node={s.node_id}  '
+                f'acq={s.total_acquired}  rel={s.total_released}'
+            )
+
+
+@bulkhead.command('reset')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default='*', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+def bulkhead_reset(skill_id: str, node_id: str, data_dir: str):
+    """Reset active_count to 0 for a skill bulkhead."""
+    from marketplace.bulkhead import Bulkhead
+    bh = Bulkhead(data_dir=Path(data_dir))
+    if bh.reset(skill_id, node_id):
+        click.echo(click.style(f'Bulkhead for {skill_id} reset.', fg='green'))
+    else:
+        click.echo(click.style(f'No bulkhead state for: {skill_id}', fg='red'))
+        raise SystemExit(1)
+
+
+@bulkhead.command('config-set')
+@click.argument('skill_id')
+@click.option('--max-concurrent', 'max_concurrent', required=True, type=int)
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+def bulkhead_config_set(skill_id: str, max_concurrent: int, data_dir: str):
+    """Set concurrency limit for a skill."""
+    from marketplace.bulkhead import Bulkhead, BulkheadConfig
+    try:
+        cfg = BulkheadConfig(max_concurrent=max_concurrent)
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    Bulkhead(data_dir=Path(data_dir)).set_config(skill_id, cfg)
+    click.echo(click.style(
+        f'Config set for {skill_id}: max_concurrent={max_concurrent}', fg='green'
+    ))
+
+
+@bulkhead.command('config-list')
+@click.option('--dir', 'data_dir', default=_DEFAULT_BULKHEAD_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def bulkhead_config_list(data_dir: str, as_json: bool):
+    """List all per-skill bulkhead configurations."""
+    import json as _json
+    from marketplace.bulkhead import Bulkhead
+    bh = Bulkhead(data_dir=Path(data_dir))
+    configs = bh.list_configs()
+    if as_json:
+        click.echo(_json.dumps(
+            {s: c.to_dict() for s, c in configs.items()}, indent=2
+        ))
+    else:
+        if not configs:
+            click.echo('No bulkhead configs registered.')
+            return
+        for skill_id, cfg in configs.items():
+            click.echo(f'{skill_id:40s}  max_concurrent={cfg.max_concurrent}')
+
+
 if __name__ == '__main__':
     cli()

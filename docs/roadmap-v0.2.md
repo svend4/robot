@@ -272,3 +272,15 @@ All items below were delivered in the prototype:
   `api/retry_policy.py`: FastAPI router at `/retry` (config, list/get/set/
   delete policies, advise endpoint). CLI: `etd retry set|list|get|remove|advise`.
   63 tests in `tests/test_retry_policy.py`.
+- [x] **Skill execution bulkhead.** Per-skill (optionally per-node) concurrency
+  limiter with acquire/release slot semantics, rejection at capacity, and JSON
+  persistence. `marketplace/bulkhead.py`: `BulkheadConfig` (max_concurrent,
+  validates >= 1), `BulkheadState` (active/total counters), `AcquireResult`
+  (acquired/reason/active_count/max_concurrent), `BulkheadStore` (single JSON
+  file for states + configs, corrupt file loads empty), `Bulkhead` (`acquire` —
+  rejects and counts when at capacity; `release` — returns False if already 0;
+  `reset` — clears active_count; per-skill config override; node-specific
+  bulkheads independent). `api/bulkhead.py`: FastAPI router at `/bulkhead`
+  (states list/get/delete, acquire/release/reset, config CRUD with 201/200/422).
+  CLI: `etd bulkhead acquire|release|status|reset|config-set|config-list`.
+  75 tests in `tests/test_bulkhead.py`.

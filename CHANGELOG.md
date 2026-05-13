@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.88.0 — Skill execution bulkhead (1997 → 2072 tests)
+
+Per-skill (optionally per-node) concurrency limiter — acquire/release
+slot semantics, rejection at capacity, JSON persistence, REST API, CLI.
+
+### Code changes
+
+- `marketplace/bulkhead.py` (NEW):
+  - `BulkheadConfig`: `max_concurrent` (default 10); validates >= 1;
+    `to_dict()`/`from_dict()`.
+  - `BulkheadState`: `active_count`, `total_acquired`, `total_released`,
+    `total_rejected`; `to_dict()`/`from_dict()`.
+  - `AcquireResult`: `acquired`, `reason` (ok/capacity_exceeded),
+    `active_count`, `max_concurrent`; `to_dict()`.
+  - `BulkheadStore`: single JSON file stores both states and configs.
+    `get_or_create_state()`, `save_state()`, `get_state()`,
+    `remove_state()`, `list_states()`, `set_config()`, `get_config()`,
+    `remove_config()`, `list_configs()`. Creates parent dirs; corrupt
+    file loads empty.
+  - `Bulkhead`: `acquire(skill_id, node_id)` — increments `active_count` if
+    below `max_concurrent`, otherwise rejects and increments
+    `total_rejected`; `release()` — decrements (returns `False` if
+    already 0 or unknown); `reset()` — clears `active_count` to 0;
+    `get_state()`, `list_states()`, `state_count`, `set_config()`,
+    `get_config()`, `remove_config()`, `list_configs()`.
+    Node-specific and skill-specific bulkheads are independent.
+- `api/bulkhead.py` (NEW): FastAPI router at `/bulkhead`:
+  - `GET  /bulkhead/states` — list all.
+  - `GET  /bulkhead/states/{skill_id}` — get; 404 if never used.
+  - `DELETE /bulkhead/states/{skill_id}` — remove; 404.
+  - `POST /bulkhead/acquire` — acquire slot.
+  - `POST /bulkhead/release` — release slot.
+  - `POST /bulkhead/reset/{skill_id}` — reset active_count; 404.
+  - `GET  /bulkhead/config` — default config.
+  - `GET  /bulkhead/configs` — list all per-skill configs.
+  - `PUT  /bulkhead/configs/{skill_id}` — set (201/200); 422 on invalid.
+  - `DELETE /bulkhead/configs/{skill_id}` — remove; 404.
+- `api/app.py`: mount `/bulkhead` router; version → `0.88.0`.
+- `etd_cli.py`: `etd bulkhead` group:
+  `acquire`, `release`, `status`, `reset`, `config-set`, `config-list`.
+
+### Tests
+
+- `tests/test_bulkhead.py` (NEW): 75 tests covering `_make_key`,
+  `BulkheadConfig`, `BulkheadState`, `AcquireResult`, `BulkheadStore`
+  (CRUD/persist/create-dir/corrupt-empty), `Bulkhead` acquire
+  (fresh/increments/capacity/max-concurrent/totals/per-skill-config/
+  node-specific/different-skills/skill-id), release (decrements/true/
+  total-released/unknown/at-zero/frees-capacity), reset (clears-active/
+  unknown/preserves-totals), misc, REST API (states list/get/delete,
+  acquire/release/reset, config CRUD/422/list).
+
+---
+
 ## 0.87.0 — Skill execution retry policy (1934 → 1997 tests)
 
 Per-skill configurable retry with three backoff strategies and a stateless
