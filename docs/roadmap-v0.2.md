@@ -111,8 +111,14 @@ All items below were delivered in the prototype:
   `best_version`, `sort_versions`. `StoreEntry.runtimeConstraint` field.
   `SkillStore.get_versions()` / `get_entry()` use negotiation.
   CLI: `etd versions SKILL_ID [--runtime VERSION]`.
-- [ ] **Multi-vendor index.** Marketplace can aggregate packages from multiple
+- [x] **Multi-vendor index.** Marketplace can aggregate packages from multiple
   signed publisher feeds (similar to a Linux package repository model).
+  `marketplace/vendor_feed.py`: `VendorFeed` (identity + Ed25519 pubkey),
+  `FeedRecord` (loaded + verified data), `VendorFeedManager` (register, load,
+  aggregate with dedup — verified feeds win, `get_versions`, `find_skill`,
+  `list_skills`, `list_feeds`), `create_feed_payload` (sign entries with
+  NaCl Ed25519), `verify_feed_signature`. CLI: `etd feed create`, `etd feed
+  verify`, `etd feed import [--json]`.
 - [ ] **Dashboard.** Real-time view of active skills, station health, recent
   aborts, and telemetry event stream.
 

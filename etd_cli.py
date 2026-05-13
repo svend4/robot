@@ -468,6 +468,99 @@ def sandbox_check(package_path: str, as_json: bool):
 
 
 @cli.group()
+def feed():
+    """Manage multi-vendor skill feeds (register, import, verify, list)."""
+
+
+@feed.command('create')
+@click.option('--id', 'feed_id', required=True, help='Feed ID (e.g. acme-robotics)')
+@click.option('--name', required=True, help='Human-readable feed name')
+@click.option('--index', 'index_path', default=str(ROOT / 'marketplace' / 'skill_store_index.json'),
+              show_default=True, help='Source skill store index JSON')
+@click.option('--key', 'key_path', default=str(ROOT / 'keys' / 'etd_signing_key.hex'), show_default=True)
+@click.option('--out', 'out_path', default=None, help='Output file path (default: <feed_id>.feed.json)')
+@click.option('--version', 'feed_version', default='1.0.0', show_default=True)
+def feed_create(feed_id: str, name: str, index_path: str, key_path: str,
+                out_path: str | None, feed_version: str):
+    """Create a signed vendor feed from an existing skill store index."""
+    from nacl.signing import SigningKey
+    from marketplace.vendor_feed import create_feed_payload
+    import json as _json
+    key = SigningKey(bytes.fromhex(Path(key_path).read_text().strip()))
+    index = _json.loads(Path(index_path).read_text(encoding='utf-8'))
+    entries = index.get('entries', [])
+    payload = create_feed_payload(
+        feed_id=feed_id, name=name, entries=entries,
+        signing_key=key, feed_version=feed_version,
+    )
+    dest = Path(out_path) if out_path else Path(f'{feed_id}.feed.json')
+    dest.write_text(_json.dumps(payload, indent=2, ensure_ascii=False), encoding='utf-8')
+    click.echo(f'Feed written to {dest}  ({len(entries)} entries, signed)')
+
+
+@feed.command('verify')
+@click.argument('feed_path')
+@click.option('--pubkey', 'pubkey_path', default=str(ROOT / 'keys' / 'etd_verify_key.hex'), show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def feed_verify(feed_path: str, pubkey_path: str, as_json: bool):
+    """Verify the signature on a vendor feed file."""
+    from marketplace.vendor_feed import verify_feed_signature
+    import json as _json
+    p = Path(feed_path)
+    if not p.exists():
+        click.echo(f'Error: feed file not found: {feed_path}', err=True)
+        raise SystemExit(1)
+    payload = _json.loads(p.read_text(encoding='utf-8'))
+    pubkey_hex = Path(pubkey_path).read_text().strip()
+    ok, reason = verify_feed_signature(payload, pubkey_hex)
+    if as_json:
+        click.echo(_json.dumps({'feed_id': payload.get('feedId'), 'verified': ok, 'reason': reason}, indent=2))
+    else:
+        mark = 'OK' if ok else 'FAIL'
+        click.echo(f'Signature: {mark}  ({reason})  — {payload.get("feedId", "?")} v{payload.get("version", "?")}')
+    raise SystemExit(0 if ok else 1)
+
+
+@feed.command('import')
+@click.argument('feed_path')
+@click.option('--pubkey', 'pubkey_path', default=str(ROOT / 'keys' / 'etd_verify_key.hex'), show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+@click.option('--runtime', default='0.0.0', show_default=True, help='Runtime version for best-version display')
+def feed_import(feed_path: str, pubkey_path: str, as_json: bool, runtime: str):
+    """Load a vendor feed file, verify it, and list its skills."""
+    from marketplace.vendor_feed import VendorFeed, VendorFeedManager
+    import json as _json
+    p = Path(feed_path)
+    if not p.exists():
+        click.echo(f'Error: feed file not found: {feed_path}', err=True)
+        raise SystemExit(1)
+    payload = _json.loads(p.read_text(encoding='utf-8'))
+    feed_id = payload.get('feedId', p.stem)
+    pubkey_hex = Path(pubkey_path).read_text().strip()
+    mgr = VendorFeedManager()
+    mgr.register_feed(VendorFeed(feed_id=feed_id, name=payload.get('name', feed_id), public_key_hex=pubkey_hex))
+    record = mgr.load_feed(feed_id, payload)
+    if as_json:
+        click.echo(_json.dumps({
+            'feed_id': record.feed_id,
+            'name': record.feed_name,
+            'verified': record.verified,
+            'error': record.error,
+            'entry_count': record.entry_count,
+            'skills': mgr.list_skills(),
+        }, indent=2, ensure_ascii=False))
+    else:
+        mark = 'verified' if record.verified else f'UNVERIFIED ({record.error})'
+        click.echo(f'Feed: {record.feed_name} ({record.feed_id}) — {mark}')
+        click.echo(f'  {record.entry_count} entries')
+        for sk in mgr.list_skills():
+            best = mgr.find_skill(sk['skillId'], runtime)
+            tag = ' [best]' if best and best.version == sk['version'] else ''
+            click.echo(f"  {sk['skillId']}  v{sk['version']}{tag}  ({sk['licenseModel']})")
+    raise SystemExit(0 if record.verified else 1)
+
+
+@cli.group()
 def token():
     """Issue and verify signed entitlement tokens (Ed25519)."""
 

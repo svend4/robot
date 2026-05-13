@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.72.0 — v1.0.0: multi-vendor index (1047 → 1098 tests)
+
+### Code changes
+
+- `marketplace/vendor_feed.py` (NEW): multi-vendor skill index aggregation.
+  - `VendorFeed(feed_id, name, public_key_hex)` — publisher identity record.
+  - `FeedRecord(feed_id, feed_name, feed_version, entries, verified, error)` —
+    loaded feed data with `entry_count` property.
+  - `create_feed_payload(feed_id, name, entries, signing_key, feed_version)` →
+    signed dict: canonical `json.dumps(entries, sort_keys=True)` signed with
+    NaCl Ed25519, base64url-encoded signature.
+  - `verify_feed_signature(payload, public_key_hex)` → `(bool, reason)`.
+    Reasons: `signature_valid`, `missing_signature`, `signature_invalid`,
+    `key_error`, `verification_error`, `nacl_not_available` (soft-pass).
+  - `VendorFeedManager`: register/unregister feeds; `load_feed(feed_id, payload)`
+    — verifies signature, parses `StoreEntry` objects; `load_feed_from_file(path)`;
+    `aggregate()` — deduplicates by `(skillId, version)`, verified feeds win;
+    `get_versions(skill_id)`, `find_skill(skill_id, runtime_version)`,
+    `list_feeds()`, `list_skills()`, `feed_count`, `total_entries`.
+- `etd_cli.py`: `feed` command group:
+  - `feed create --id FEED_ID --name NAME [--index INDEX] [--key KEY] [--out OUT]`
+    — create and sign a vendor feed from an existing skill store index
+  - `feed verify FEED_PATH [--pubkey PUBKEY] [--json]` — verify signature,
+    exits 0 on OK / 1 on failure
+  - `feed import FEED_PATH [--pubkey PUBKEY] [--json] [--runtime VER]` —
+    load, verify, and list entries; exits 0 if verified / 1 if not
+
+### Tests (1047 → 1098)
+
+- `tests/test_vendor_feed.py` (+51, NEW):
+  - `TestVendorFeed`, `TestFeedRecord`: dataclass fields, `entry_count`,
+    `error` default
+  - `TestCreateFeedPayload`: required keys, feed_id preserved, entries count,
+    signature string, custom feed_version, roundtrip verify
+  - `TestVerifyFeedSignature`: valid sig, wrong key, missing sig, empty sig,
+    tampered entries, tampered entry field, invalid pubkey hex
+  - `TestVendorFeedManagerRegistration`: register, unregister, unregister clears
+    record, load unregistered raises, load-from-file unregistered raises
+  - `TestVendorFeedManagerLoading`: verified feed, invalid sig marks unverified,
+    entries parsed as `StoreEntry`, load-from-file, feed name/version from payload
+  - `TestVendorFeedManagerAggregation`: empty, single feed, two feeds, dedup
+    same skill+version, different versions both present, verified wins dedup,
+    `feed_count`, `total_entries`
+  - `TestVendorFeedManagerQueries`: `get_versions` sorted desc, unknown skill,
+    `find_skill` best version, unknown returns None, `list_feeds` keys,
+    `list_skills` all entries, `list_skills` keys
+  - `TestFeedCLI`: `feed create` creates file; `feed verify` valid exits 0,
+    invalid exits 1, `--json` output, missing file; `feed import` valid entries,
+    `--json`, invalid sig exits 1
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for multi-vendor index
+  (6 of 7 v1.0.0 items complete — only Dashboard remains)
+
+---
+
 ## 0.71.0 — v1.0.0: package sandboxing (981 → 1047 tests)
 
 ### Code changes
