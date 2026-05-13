@@ -234,3 +234,16 @@ All items below were delivered in the prototype:
   `api/telemetry.py`: FastAPI router at `/telemetry` (record, list, stats,
   report, anomalies endpoints). CLI: `etd telemetry record|stats|anomalies|report`.
   70 tests in `tests/test_telemetry_analytics.py`.
+- [x] **Skill health monitor.** Continuous health evaluation of skills and
+  robot nodes from telemetry data; fleet-wide reporting; persistent alert
+  management with duplicate suppression and resolve lifecycle.
+  `marketplace/health_monitor.py`: `HealthThresholds` (warn/critical
+  success-rate + failure-streak + min_executions), `SkillHealthReport`,
+  `NodeHealthReport`, `HealthAlert` (info/warning/critical levels),
+  `AlertStore` (JSON-backed, add/get/resolve/active/all_alerts),
+  `FleetHealthReport` (overall = worst status), `HealthMonitor`
+  (`check_skill`, `check_node`, `check_fleet`, `active_alerts`,
+  `resolve_alert`; suppresses duplicate unresolved alerts for same subject).
+  `api/health_monitor.py`: FastAPI router at `/monitor` (skills/nodes/fleet
+  list + single, alerts list + resolve). CLI: `etd health skills|nodes|fleet|alerts|resolve`.
+  69 tests in `tests/test_health_monitor.py`.

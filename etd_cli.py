@@ -1962,5 +1962,154 @@ def telemetry_report(store_path: str, as_json: bool):
                        f'p95={s["p95_ms"]:.0f} ms')
 
 
+# ── health ────────────────────────────────────────────────────────────────────
+
+_DEFAULT_TELEMETRY_STORE_HM = str(
+    Path(__file__).resolve().parent / 'telemetry' / 'executions.jsonl'
+)
+_DEFAULT_ALERT_DIR = str(Path(__file__).resolve().parent / 'health')
+
+
+@cli.group()
+def health():
+    """Skill and node health monitoring: skills, nodes, fleet, alerts."""
+
+
+@health.command('skills')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE_HM, show_default=True)
+@click.option('--alert-dir', 'alert_dir', default=_DEFAULT_ALERT_DIR, show_default=True)
+@click.option('--window', 'window_hours', default=1, type=int, show_default=True,
+              help='Look-back window in hours')
+@click.option('--json', 'as_json', is_flag=True)
+def health_skills(store_path: str, alert_dir: str, window_hours: int, as_json: bool):
+    """Show health report for all known skills."""
+    import json as _json
+    from marketplace.health_monitor import HealthMonitor
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = TelemetryStore(Path(store_path))
+    mon = HealthMonitor(store, alert_dir=Path(alert_dir))
+    skill_ids = store.skill_ids()
+    reports = [mon.check_skill(s, window_hours) for s in skill_ids]
+    if as_json:
+        click.echo(_json.dumps([r.to_dict() for r in reports], indent=2))
+    else:
+        if not reports:
+            click.echo('No skills in telemetry store.')
+            return
+        for r in reports:
+            colour = 'green' if r.status == 'healthy' else (
+                'red' if r.status == 'critical' else 'yellow'
+            )
+            click.echo(
+                click.style(f'[{r.status.upper():8s}]', fg=colour) +
+                f'  {r.skill_id:40s}  {r.success_rate:.0%}  {r.execution_count} runs'
+            )
+
+
+@health.command('nodes')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE_HM, show_default=True)
+@click.option('--alert-dir', 'alert_dir', default=_DEFAULT_ALERT_DIR, show_default=True)
+@click.option('--window', 'window_hours', default=1, type=int, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def health_nodes(store_path: str, alert_dir: str, window_hours: int, as_json: bool):
+    """Show health report for all known robot nodes."""
+    import json as _json
+    from marketplace.health_monitor import HealthMonitor
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = TelemetryStore(Path(store_path))
+    mon = HealthMonitor(store, alert_dir=Path(alert_dir))
+    node_ids = store.node_ids()
+    reports = [mon.check_node(n, window_hours) for n in node_ids]
+    if as_json:
+        click.echo(_json.dumps([r.to_dict() for r in reports], indent=2))
+    else:
+        if not reports:
+            click.echo('No nodes in telemetry store.')
+            return
+        for r in reports:
+            colour = 'green' if r.status == 'healthy' else (
+                'red' if r.status == 'critical' else 'yellow'
+            )
+            click.echo(
+                click.style(f'[{r.status.upper():8s}]', fg=colour) +
+                f'  {r.node_id:30s}  {r.success_rate:.0%}  {r.execution_count} runs'
+            )
+
+
+@health.command('fleet')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE_HM, show_default=True)
+@click.option('--alert-dir', 'alert_dir', default=_DEFAULT_ALERT_DIR, show_default=True)
+@click.option('--window', 'window_hours', default=1, type=int, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def health_fleet(store_path: str, alert_dir: str, window_hours: int, as_json: bool):
+    """Show fleet-wide health report."""
+    import json as _json
+    from marketplace.health_monitor import HealthMonitor
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = TelemetryStore(Path(store_path))
+    mon = HealthMonitor(store, alert_dir=Path(alert_dir))
+    rpt = mon.check_fleet(window_hours)
+    if as_json:
+        click.echo(_json.dumps(rpt.to_dict(), indent=2))
+    else:
+        colour = 'green' if rpt.overall_status == 'healthy' else (
+            'red' if rpt.overall_status == 'critical' else 'yellow'
+        )
+        click.echo(
+            f'Fleet status : ' +
+            click.style(rpt.overall_status.upper(), fg=colour)
+        )
+        click.echo(f'Generated    : {rpt.generated_at}')
+        click.echo(f'Skills       : {len(rpt.skill_reports)}')
+        click.echo(f'Nodes        : {len(rpt.node_reports)}')
+        click.echo(f'Active alerts: {len(rpt.alerts)}')
+
+
+@health.command('alerts')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE_HM, show_default=True)
+@click.option('--alert-dir', 'alert_dir', default=_DEFAULT_ALERT_DIR, show_default=True)
+@click.option('--all', 'show_all', is_flag=True, help='Include resolved alerts')
+@click.option('--json', 'as_json', is_flag=True)
+def health_alerts(store_path: str, alert_dir: str, show_all: bool, as_json: bool):
+    """List health alerts."""
+    import json as _json
+    from marketplace.health_monitor import HealthMonitor
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = TelemetryStore(Path(store_path))
+    mon = HealthMonitor(store, alert_dir=Path(alert_dir))
+    alerts = mon.all_alerts() if show_all else mon.active_alerts()
+    if as_json:
+        click.echo(_json.dumps([a.to_dict() for a in alerts], indent=2))
+    else:
+        if not alerts:
+            click.echo('No active alerts.')
+            return
+        for a in alerts:
+            colour = 'red' if a.level == 'critical' else 'yellow'
+            tag = click.style(f'[{a.level.upper()}]', fg=colour)
+            resolved = '  (resolved)' if a.resolved else ''
+            click.echo(f'{tag}  {a.subject_type}/{a.subject_id}{resolved}')
+            click.echo(f'      {a.message}')
+
+
+@health.command('resolve')
+@click.argument('alert_id')
+@click.option('--store', 'store_path', default=_DEFAULT_TELEMETRY_STORE_HM, show_default=True)
+@click.option('--alert-dir', 'alert_dir', default=_DEFAULT_ALERT_DIR, show_default=True)
+def health_resolve(alert_id: str, store_path: str, alert_dir: str):
+    """Resolve a health alert by ID."""
+    from marketplace.health_monitor import HealthMonitor
+    from marketplace.telemetry_analytics import TelemetryStore
+    store = TelemetryStore(Path(store_path))
+    mon = HealthMonitor(store, alert_dir=Path(alert_dir))
+    if mon.resolve_alert(alert_id):
+        click.echo(click.style(f'Alert {alert_id} resolved.', fg='green'))
+    else:
+        click.echo(click.style(
+            f'Alert not found or already resolved: {alert_id}', fg='red'
+        ))
+        raise SystemExit(1)
+
+
 if __name__ == '__main__':
     cli()

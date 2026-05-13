@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.85.0 — Skill health monitor (1798 → 1867 tests)
+
+Continuous skill and node health evaluation from telemetry data, with
+fleet-wide reporting, persistent alert management, REST API, and CLI.
+
+### Code changes
+
+- `marketplace/health_monitor.py` (NEW):
+  - `HealthThresholds`: configurable `warn_success_rate` (0.90),
+    `critical_success_rate` (0.70), `warn_failure_streak` (3),
+    `critical_failure_streak` (5), `min_executions` (2);
+    `to_dict()`/`from_dict()`.
+  - `SkillHealthReport`: `skill_id`, `status` (healthy/degraded/critical/unknown),
+    `success_rate`, `execution_count`, `recent_failure_count`, `failure_streak`,
+    `last_run_at`, `message`, `window_hours`; `to_dict()`.
+  - `NodeHealthReport`: node-level equivalent with `skills_executed`.
+  - `HealthAlert`: `alert_id`, `level` (info/warning/critical), `subject_type`
+    (skill/node), `subject_id`, `message`, `triggered_at`, `resolved`,
+    `resolved_at`; `to_dict()`/`from_dict()`.
+  - `AlertStore`: JSON-backed alert store. `add()`, `get()`, `resolve()` (marks
+    resolved + timestamp, returns `False` if already resolved or unknown),
+    `active()`, `all_alerts()`, `alert_count`. Creates parent dirs; corrupt
+    file loads empty.
+  - `FleetHealthReport`: `overall_status` (worst across all skill + node reports),
+    `skill_reports`, `node_reports`, `alerts`; `to_dict()`.
+  - `HealthMonitor`: reads `TelemetryStore`, evaluates health.
+    `_failure_streak()` — counts consecutive failed/aborted records from most
+    recent. `_classify()` — returns status by comparing success rate and streak
+    against thresholds; returns `unknown` below `min_executions`.
+    `_maybe_alert()` — creates and persists an alert, suppresses duplicates for
+    the same subject/level while unresolved. `check_skill()`, `check_node()`,
+    `check_fleet()` — fleet uses worst-case status; `active_alerts()`,
+    `all_alerts()`, `resolve_alert()`.
+- `api/health_monitor.py` (NEW): FastAPI router at `/monitor`:
+  - `GET  /monitor/skills` — list health for all known skills.
+  - `GET  /monitor/skills/{skill_id}` — health for one skill.
+  - `GET  /monitor/nodes` — list health for all known nodes.
+  - `GET  /monitor/nodes/{node_id}` — health for one node.
+  - `GET  /monitor/fleet` — fleet-wide health report.
+  - `GET  /monitor/alerts` — list active alerts (`?all_alerts=true` for all).
+  - `DELETE /monitor/alerts/{alert_id}` — resolve alert; 404 if unknown/resolved.
+- `api/app.py`: mount `/monitor` router; bump version to `0.85.0`.
+- `etd_cli.py`: `etd health` group with subcommands:
+  `skills`, `nodes`, `fleet`, `alerts` (with `--all` flag), `resolve`.
+
+### Tests
+
+- `tests/test_health_monitor.py` (NEW): 69 tests covering `HealthThresholds`,
+  `SkillHealthReport`, `NodeHealthReport`, `HealthAlert`, `AlertStore`,
+  `HealthMonitor._classify`, `._failure_streak`, `.check_skill`,
+  `.check_node`, `.check_fleet`, `._maybe_alert`, alert management,
+  and all 7 REST API endpoints.
+
+---
+
 ## 0.84.0 — Skill dependency resolver (1739 → 1798 tests)
 
 Topological install-order computation, cycle detection, optional dependency
