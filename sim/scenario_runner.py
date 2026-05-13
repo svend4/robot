@@ -43,7 +43,7 @@ def _pick_context(pkg_name: str) -> Path:
 def run_all_scenarios() -> List[Dict]:
     results = []
     for pkg in sorted((ROOT / 'examples').iterdir()):
-        if not pkg.is_dir():
+        if not pkg.is_dir() or not (pkg / 'manifest.yaml').exists():
             continue
         ctx_path = _pick_context(pkg.name)
         ctx = load_runtime_context(ctx_path)

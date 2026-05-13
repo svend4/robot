@@ -1,5 +1,81 @@
 # Changelog
 
+## 0.75.0 — Skill composition (1182 → 1239 tests)
+
+Long-term roadmap item: composed multi-step skills with shared safety context.
+
+### Code changes
+
+- `marketplace/composer.py` (NEW): composed skill execution engine.
+  - `SkillStep(skill_id, version_constraint, on_failure, retry_count, params)` —
+    per-step descriptor; validates `on_failure ∈ {abort,skip,retry}` and
+    `retry_count ≥ 0`; `from_dict()` / `to_dict()` using camelCase JSON keys.
+  - `ComposedSkill(skill_id, version, name, description, steps)` — manifest
+    dataclass; `from_dict()` / `to_dict()` for `composed_skill.json` I/O.
+  - `SafetyContext(violations, aborted, abort_reason)` — shared mutable state
+    threaded through every step; `record_violation()`, `abort()`, `.safe`
+    property.
+  - `StepResult(step_index, skill_id, status, attempts, error, duration_ms)` —
+    per-step outcome; `.succeeded` property.
+  - `ComposedSkillResult(skill_id, version, status, step_results,
+    safety_context, total_duration_ms)` — overall outcome; `.summary()` (ASCII
+    with ✓/✗/~/!/↺ markers) and `.to_dict()`.
+  - `StepExecutor` type alias: `(step, safety_ctx, params) → (bool, str|None)`.
+  - `mock_executor` — dry-run default; succeeds unless `SafetyContext` is
+    aborted.
+  - `SkillComposer(store, runtime_version)`:
+    - `validate(composed)` → `List[str]` — checks: non-empty steps, valid
+      `on_failure`, no self-reference cycle, store-based skill existence and
+      version constraint satisfiability.
+    - `run(composed, executor, safety_context)` → `ComposedSkillResult` —
+      sequences steps; `abort` policy calls `safety_context.abort()` and marks
+      remaining steps `aborted`; `skip` continues; `retry` exhausts
+      `retryCount` attempts; executor exceptions caught and turned into failed
+      `StepResult`.
+  - `load_composed_skill(package_path)` — loads `composed_skill.json` from a
+    composed skill package directory.
+- `examples/etd.composed.fetch_inspect_place/composed_skill.json` (NEW):
+  reference three-step composed skill: `etd.atlas.humanoid_walkfetch` (abort,
+  retry×1) → `etd.inspect.vision` (skip) → `etd.pickplace.basic` (abort,
+  retry×2).
+- `etd_cli.py`: `compose` command group:
+  - `compose validate PACKAGE_PATH [--json]` — exits 0 on valid; prints issues
+    on error; exit 1 on invalid or missing package.
+  - `compose run PACKAGE_PATH [--json]` — dry-run with `mock_executor`; exit
+    0 on success, 1 on failure.
+- `sim/scenario_runner.py`, `etd_demo_runner.py`, `validate_examples.py`,
+  `sim/report_runner.py`: skip `examples/` subdirectories that lack
+  `manifest.yaml` so composed-skill packages are not fed to the ETD validator.
+
+### Tests (1182 → 1239, +57)
+
+- `tests/test_skill_composer.py` (+57, NEW):
+  - `TestSkillStep`: defaults, invalid `on_failure` raises, negative
+    `retry_count` raises, `from_dict` full/defaults, `to_dict` roundtrip, all
+    valid `on_failure` values.
+  - `TestComposedSkill`: `from_dict` full/defaults, `to_dict` roundtrip.
+  - `TestSafetyContext`: initial safe state, violation → unsafe, abort →
+    unsafe+reason, multiple violations.
+  - `TestStepResult`: `succeeded` true/false for all statuses.
+  - `TestMockExecutor`: succeeds on safe ctx, fails on aborted ctx, fails on
+    violated ctx.
+  - `TestSkillComposerValidate`: valid skill, no-steps, self-reference, multiple
+    steps, store-miss, version-unsatisfiable, version-satisfiable, no-constraint.
+  - `TestSkillComposerRun`: all-succeed, default mock executor, abort stops
+    sequence, skip continues, retry succeeds on 2nd attempt, retry exhausted →
+    failed×3, executor exception caught, shared safety context, pre-aborted
+    context skips all, duration fields set, result skill_id/version, overall
+    failed on skip-step failure.
+  - `TestComposedSkillResult`: summary contains skill_id/step ids, `to_dict`
+    structure, succeeded/failed/skipped counts, summary shows ×N attempts,
+    summary shows safety violations.
+  - `TestLoadComposedSkill`: loads example package, step IDs, on_failure
+    values, missing dir raises, string path accepted.
+  - `TestCLIComposeValidate`: valid example exits 0, `--json` valid, missing
+    package exits 1, self-reference in steps → issues in JSON.
+  - `TestCLIComposeRun`: example exits 0 with SUCCESS, `--json` status=success
+    with 3 step_results, missing package exits 1.
+
 ## 0.74.0 — Publisher portal (1137 → 1182 tests)
 
 All v1.0.0 roadmap items now complete including the publisher portal.

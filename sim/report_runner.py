@@ -37,7 +37,7 @@ def main():
 
     validation = []
     for pkg in sorted((root / 'examples').iterdir()):
-        if not pkg.is_dir():
+        if not pkg.is_dir() or not (pkg / 'manifest.yaml').exists():
             continue
         ctx = _pick_context(pkg.name, ctxs)
         rep = ETDReferenceValidator(ctx).validate_package(pkg)

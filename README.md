@@ -22,15 +22,16 @@ The validator checks every package before installation. The marketplace manages 
 ## Project structure
 
 ```
-├── examples/                           # 8 reference skill packages (all level A)
-│   ├── etd.pickplace.basic/            # pick-and-place (MIT, free)
-│   ├── etd.assembly.precision/         # precision force-controlled insertion
-│   ├── etd.inspect.vision/             # vision QA / defect scan
-│   ├── etd.cobot.safeassist/           # human-collaborative handover
-│   ├── etd.atlas.humanoid_walkfetch/   # Boston Dynamics Atlas walk-and-fetch
-│   ├── etd.hyundai.wia_welding/        # Hyundai WIA H-Motion arc-welding
-│   ├── etd.hyundai.mobed_transport/    # Hyundai MobED AMR logistics
-│   └── etd.hyundai.vest_exoskeleton/  # Hyundai VEX/H-MEX wearable assist
+├── examples/                               # 8 reference skill packages (all level A) + 1 composed
+│   ├── etd.pickplace.basic/                # pick-and-place (MIT, free)
+│   ├── etd.assembly.precision/             # precision force-controlled insertion
+│   ├── etd.inspect.vision/                 # vision QA / defect scan
+│   ├── etd.cobot.safeassist/               # human-collaborative handover
+│   ├── etd.atlas.humanoid_walkfetch/       # Boston Dynamics Atlas walk-and-fetch
+│   ├── etd.hyundai.wia_welding/            # Hyundai WIA H-Motion arc-welding
+│   ├── etd.hyundai.mobed_transport/        # Hyundai MobED AMR logistics
+│   ├── etd.hyundai.vest_exoskeleton/       # Hyundai VEX/H-MEX wearable assist
+│   └── etd.composed.fetch_inspect_place/   # composed: walk-fetch → vision QA → pick-and-place
 ├── marketplace/                        # skill store: index, policy, license, revocation, rollout, audit
 ├── adapters/                           # orbit event bridge, station profile loader, OEM adapters
 ├── sim/                                # simulation, demo runners, visualizer
@@ -38,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 160 pytest tests
+├── tests/                              # 1239 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -90,6 +91,10 @@ python etd_cli.py publisher submit examples/etd.hyundai.wia_welding --json
 python etd_cli.py publisher list
 python etd_cli.py publisher approve <SUBMISSION_ID>
 python etd_cli.py publisher reject <SUBMISSION_ID> --reason "safety issue"
+python etd_cli.py compose validate examples/etd.composed.fetch_inspect_place
+python etd_cli.py compose validate examples/etd.composed.fetch_inspect_place --json
+python etd_cli.py compose run examples/etd.composed.fetch_inspect_place
+python etd_cli.py compose run examples/etd.composed.fetch_inspect_place --json
 
 # REST API
 uvicorn api.app:app --reload
@@ -212,10 +217,11 @@ tests/
 ├── test_sim_modules.py       # 225 — event_replay __main__ block, visualizer.main(), FakeMiddleware, all main()s, _pick_context fallback, report_runner release_out+missing-OEM-ctx+non-dir-skip, failure_scenarios exception branch+detail else-branches, demo fail_fast break, scenario_runner non-dir skip, marketplace_demo exit-1+pick-ctx-path-not-exists, ascii_timeline empty-result+no-summary-keys+zero-duration, run_traced open-primitive cleanup, _plot_gantt matplotlib happy path + --save main branch + plt.show() no-save path, validate_examples failing-package
 ├── test_acceptance.py        # 98 — 39 YAML scenarios + AcceptanceMiddleware topics, _run_test edges, adapter safety branches (exo/cobot/wia/mobed/assembly/inspect/atlas), main() CLI, inject empty-patch, legacy 'expected' key, inject without at_primitive+safety_state, test_id name/unknown fallback, _load_run default entrypoint, main() no-skill directory scan, failed-suite SystemExit(1), exo no-middleware defaults + lumbar mode + read-only, atlas no-middleware defaults + handover loop sleep, wia no-middleware defaults + mid-traverse abort, cobot no-middleware defaults, mobed no-middleware + mid-segment abort, inspect no-middleware defaults
 ├── test_ros2_bridge.py       # 43 — server/client main(--dry-run), no-middleware branches, all-8 parametrized, main() without --dry-run → run_ros2(), full rclpy mock: ActionServer callback capture + invocation, client timeout/rejected/happy-path, client feedback callback invocation, local-execute sys.path.insert branch
-└── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
+├── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
+└── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
 ```
 
-Run: `python -m pytest` — 1182 tests, all passing.
+Run: `python -m pytest` — 1239 tests, all passing.
 
 ---
 

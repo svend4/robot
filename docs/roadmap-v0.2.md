@@ -140,8 +140,15 @@ All items below were delivered in the prototype:
 - **Humanoid-first marketplace.** As Atlas, Unitree, and Hyundai humanoids
   reach production, ETD becomes the neutral application-layer adapter that
   lets a skill written for one humanoid run (with compat checks) on another.
-- **Skill composition.** Higher-level skills that chain primitives from
+- [x] **Skill composition.** Higher-level skills that chain primitives from
   multiple sub-skills (e.g. fetch → inspect → assemble) with shared safety
-  context.
+  context.  `marketplace/composer.py`: `SkillStep`, `ComposedSkill`,
+  `SafetyContext`, `StepResult`, `ComposedSkillResult`, `SkillComposer`
+  (`validate()` + `run()`) with per-step failure policies (`abort` / `skip`
+  / `retry`), `mock_executor` (dry-run), `load_composed_skill()`.
+  Reference composed skill package at
+  `examples/etd.composed.fetch_inspect_place/` (walk-fetch → vision QA →
+  pick-and-place).  CLI: `etd compose validate|run [--json]`.
+  57 tests in `tests/test_skill_composer.py`.
 - **On-robot skill store.** Embedded marketplace running on the robot's
   compute unit, with offline entitlement cache and mesh sync to central index.

@@ -44,7 +44,8 @@ def _level_ok(level: str) -> bool:
 
 def run_all(fail_fast: bool = False) -> list[dict]:
     examples_dir = ROOT / 'examples'
-    packages = sorted(p for p in examples_dir.iterdir() if p.is_dir())
+    packages = sorted(p for p in examples_dir.iterdir()
+                      if p.is_dir() and (p / 'manifest.yaml').exists())
     results = []
     for pkg in packages:
         ctx_path = _pick_context(pkg.name)

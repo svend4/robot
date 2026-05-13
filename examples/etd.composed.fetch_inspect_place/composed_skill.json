@@ -1,0 +1,38 @@
+{
+    "skillId":     "etd.composed.fetch_inspect_place",
+    "version":     "1.0.0",
+    "name":        "Fetch, Inspect, and Place",
+    "description": "Walk to a bin, fetch the target object, run vision QA inspection, then execute pick-and-place to the destination fixture.",
+    "steps": [
+        {
+            "skillId":            "etd.atlas.humanoid_walkfetch",
+            "versionConstraint":  ">=0.1.0",
+            "onFailure":          "abort",
+            "retryCount":         1,
+            "params": {
+                "target_bin":     "bin-A",
+                "walk_speed":     0.4
+            }
+        },
+        {
+            "skillId":            "etd.inspect.vision",
+            "versionConstraint":  ">=0.1.0",
+            "onFailure":          "skip",
+            "retryCount":         0,
+            "params": {
+                "defect_threshold": 0.05,
+                "scan_mode":        "full"
+            }
+        },
+        {
+            "skillId":            "etd.pickplace.basic",
+            "versionConstraint":  ">=0.1.0",
+            "onFailure":          "abort",
+            "retryCount":         2,
+            "params": {
+                "destination":    "fixture-01",
+                "approach_speed": 0.2
+            }
+        }
+    ]
+}

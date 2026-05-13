@@ -783,5 +783,70 @@ def serve(host: str, port: int, hot_reload: bool):
     uvicorn.run('api.app:app', host=host, port=port, reload=hot_reload)
 
 
+@cli.group()
+def compose():
+    """Validate and run composed multi-step skill manifests."""
+
+
+@compose.command('validate')
+@click.argument('package_path')
+@click.option('--json', 'as_json', is_flag=True)
+def compose_validate(package_path: str, as_json: bool):
+    """Validate a composed skill package at PACKAGE_PATH."""
+    import json as _json
+    from marketplace.composer import SkillComposer, load_composed_skill
+    from marketplace.skill_store import SkillStore
+    p = Path(package_path)
+    try:
+        composed = load_composed_skill(p)
+    except FileNotFoundError as exc:
+        click.echo(click.style(f'Error: {exc}', fg='red'), err=True)
+        raise SystemExit(1)
+    store = SkillStore(ROOT)
+    composer = SkillComposer(store)
+    issues = composer.validate(composed)
+    ok = len(issues) == 0
+    if as_json:
+        click.echo(_json.dumps({
+            'skill_id': composed.skill_id,
+            'version': composed.version,
+            'valid': ok,
+            'issues': issues,
+            'step_count': len(composed.steps),
+        }, indent=2))
+    else:
+        label = click.style('VALID', fg='green', bold=True) if ok else click.style('INVALID', fg='red', bold=True)
+        click.echo(f'Composed skill: {label}  {composed.skill_id} v{composed.version}')
+        click.echo(f'  Steps: {len(composed.steps)}')
+        if issues:
+            for iss in issues:
+                click.echo(click.style(f'  ✗ {iss}', fg='red'))
+        else:
+            click.echo(click.style('  All checks passed.', fg='green'))
+    raise SystemExit(0 if ok else 1)
+
+
+@compose.command('run')
+@click.argument('package_path')
+@click.option('--json', 'as_json', is_flag=True)
+def compose_run(package_path: str, as_json: bool):
+    """Dry-run a composed skill package at PACKAGE_PATH (mock executor)."""
+    import json as _json
+    from marketplace.composer import SkillComposer, load_composed_skill
+    p = Path(package_path)
+    try:
+        composed = load_composed_skill(p)
+    except FileNotFoundError as exc:
+        click.echo(click.style(f'Error: {exc}', fg='red'), err=True)
+        raise SystemExit(1)
+    composer = SkillComposer()
+    result = composer.run(composed)
+    if as_json:
+        click.echo(_json.dumps(result.to_dict(), indent=2))
+    else:
+        click.echo(result.summary())
+    raise SystemExit(0 if result.succeeded else 1)
+
+
 if __name__ == '__main__':
     cli()
