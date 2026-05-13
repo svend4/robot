@@ -167,3 +167,14 @@ All items below were delivered in the prototype:
   sync_from_central, get_offline_skills, evict_expired_entitlements).
   CLI: `etd onrobot cache list|add|evict` and `etd onrobot sync status`.
   66 tests in `tests/test_onrobot_store.py`.
+- [x] **Fleet management.** Coordinate skill deployment across a fleet of
+  robot nodes with per-node compat gating and deployment lifecycle tracking.
+  `marketplace/fleet_manager.py`: `RobotNode`, `NodeDeployResult`,
+  `FleetDeployment` (pending→in_progress→completed|failed|partial lifecycle,
+  `summary()`), `FleetHealthSnapshot` (ASCII render + JSON, skill_coverage
+  map), `FleetManager` (register/unregister/heartbeat, `deploy()` with
+  cross-platform compat gating, `fleet_status()`, `list_deployments()`,
+  persists to `fleet_registry.json` + `fleet_deployments.json`).
+  CLI: `etd fleet nodes list|register|unregister`, `etd fleet deploy`,
+  `etd fleet status`, `etd fleet deployments [--json]`.
+  61 tests in `tests/test_fleet_manager.py`.

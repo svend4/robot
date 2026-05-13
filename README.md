@@ -39,7 +39,7 @@ The validator checks every package before installation. The marketplace manages 
 ├── station_profiles/                   # 6 station compatibility profiles
 ├── scripts/                            # release packaging, signing, keypair generation
 ├── api/                                # FastAPI REST skill store
-├── tests/                              # 1369 pytest tests
+├── tests/                              # 1430 pytest tests
 ├── docs/                               # architecture, roadmap, licensing, commercialization
 ├── integrations/ros2/                  # ROS 2 action server/client bridge (stub)
 ├── etd_reference_validator.py          # core validator
@@ -108,6 +108,15 @@ python etd_cli.py onrobot cache add etd.pickplace.basic --token <TOKEN> --expiry
 python etd_cli.py onrobot cache evict
 python etd_cli.py onrobot sync status
 python etd_cli.py onrobot sync status --json
+python etd_cli.py fleet nodes register robot-01 --station workcell-01 --platform atlas
+python etd_cli.py fleet nodes list
+python etd_cli.py fleet nodes list --json
+python etd_cli.py fleet deploy etd.pickplace.basic --nodes robot-01 --version 0.1.0
+python etd_cli.py fleet deploy etd.pickplace.basic --json
+python etd_cli.py fleet status
+python etd_cli.py fleet status --json
+python etd_cli.py fleet deployments
+python etd_cli.py fleet deployments --skill etd.pickplace.basic --json
 
 # REST API
 uvicorn api.app:app --reload
@@ -233,10 +242,11 @@ tests/
 ├── test_signing.py           # 62 — generate/sign/verify main(), keypair gen, release_package, all-8 roundtrip, generic-name else-branch, release validation failure exit-1, whitespace pub-key → False, actual signing else-branch, manifest-parse exception → default version, verify no-sig-file prints error
 ├── test_skill_composer.py    # 57 — SkillStep validation/from_dict/to_dict, ComposedSkill from_dict/to_dict, SafetyContext violations/abort, StepResult.succeeded, mock_executor, SkillComposer.validate (no-steps/self-ref/store-miss/version-unsatisfiable), run (success/abort/skip/retry/exhausted-retry/exception/shared-ctx/pre-aborted/durations), ComposedSkillResult.summary/to_dict, load_composed_skill, CLI compose validate|run
 ├── test_cross_platform.py    # 64 — HumanoidPlatform (families/primitives/to_dict), BUILTIN_PLATFORMS (6 platforms, namespaces, families), load_skill_info, HumanoidRegistry (register/unregister/get/list), check_compat (same-platform/compatible/incompatible/family-mismatch/topic-remappings/unknown-platform/missing-capability-flags), PlatformCompatResult (summary/to_dict), compat_matrix (no-skill/with-skill/family-filter), render_matrix_ascii, CLI platform list|check|matrix
-└── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
+├── test_onrobot_store.py     # 66 — CachedEntitlement (expiry/covers/wildcard/to_dict), EntitlementCache (add/get/evict/list/valid_count/persist/node_id), CachedManifest (roundtrip/defaults), SkillManifestCache (put/get/remove/list/persist/source_node), MeshSyncRecord (roundtrip), MeshSync (register/announce/receive/sync_status/auto-register/clear-pending), OnRobotStore (install_offline/is_available/sync_from_central/get_offline_skills/evict/summary/to_dict/autocreate-dir), CLI onrobot cache list|add|evict + sync status
+└── test_fleet_manager.py     # 61 — RobotNode (defaults/to_dict), NodeDeployResult (roundtrip), FleetDeployment (counts/summary/to_dict), FleetHealthSnapshot (to_dict/render_ascii), FleetManager (register/replace/unregister/get/list/persist/autocreate), heartbeat (status/last_seen/skills/unknown), deploy (all-ok/unknown-node/partial/updates-inventory/no-duplicates/completed_at/result-fields/persists/platform-compat-incompatible/compat-compatible), deployment queries (list-all/filter-skill/filter-status/get/not-found/count), fleet_status (node-counts/coverage/deployment-count/to_dict/render_ascii), CLI fleet nodes list|register|unregister + deploy + status + deployments
 ```
 
-Run: `python -m pytest` — 1369 tests, all passing.
+Run: `python -m pytest` — 1430 tests, all passing.
 
 ---
 

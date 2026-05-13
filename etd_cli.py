@@ -1035,5 +1035,140 @@ def onrobot_sync_status(cache_dir: str, as_json: bool):
                 )
 
 
+_DEFAULT_FLEET_DIR = str(ROOT / 'fleet')
+
+
+@cli.group()
+def fleet():
+    """Manage a fleet of robot nodes — register nodes, deploy skills, check health."""
+
+
+@fleet.group('nodes')
+def fleet_nodes():
+    """Fleet node registry commands."""
+
+
+@fleet_nodes.command('list')
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def fleet_nodes_list(fleet_dir: str, as_json: bool):
+    """List all registered fleet nodes."""
+    import json as _json
+    from marketplace.fleet_manager import FleetManager
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    nodes = fm.list_nodes()
+    if as_json:
+        click.echo(_json.dumps([n.to_dict() for n in nodes], indent=2))
+    else:
+        if not nodes:
+            click.echo('No nodes registered.')
+            return
+        click.echo(f'{"NODE ID":<22} {"STATION":<18} {"PLATFORM":<18} {"STATUS":<10} SKILLS')
+        click.echo('─' * 85)
+        for n in nodes:
+            skills = ', '.join(n.installed_skills) or '—'
+            click.echo(f'{n.node_id:<22} {n.station_id:<18} {n.platform_id:<18} '
+                       f'{n.status:<10} {skills}')
+        click.echo(f'\n{len(nodes)} node(s) registered.')
+
+
+@fleet_nodes.command('register')
+@click.argument('node_id')
+@click.option('--station', required=True, help='Station ID for this node')
+@click.option('--platform', 'platform_id', required=True,
+              help='Platform ID (e.g. atlas, unitree_g1)')
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+def fleet_nodes_register(node_id: str, station: str, platform_id: str, fleet_dir: str):
+    """Register a robot node in the fleet."""
+    from marketplace.fleet_manager import FleetManager, RobotNode
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    fm.register_node(RobotNode(node_id=node_id, station_id=station,
+                                platform_id=platform_id))
+    click.echo(click.style(f'Registered: {node_id} @ {station} [{platform_id}]', fg='green'))
+
+
+@fleet_nodes.command('unregister')
+@click.argument('node_id')
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+def fleet_nodes_unregister(node_id: str, fleet_dir: str):
+    """Unregister a robot node from the fleet."""
+    from marketplace.fleet_manager import FleetManager
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    removed = fm.unregister_node(node_id)
+    if removed:
+        click.echo(f'Unregistered: {node_id}')
+    else:
+        click.echo(click.style(f'Node not found: {node_id}', fg='yellow'))
+        raise SystemExit(1)
+
+
+@fleet.command('deploy')
+@click.argument('skill_id')
+@click.option('--version', default='0.1.0', show_default=True)
+@click.option('--nodes', 'node_ids', default='',
+              help='Comma-separated node IDs (empty = all nodes)')
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def fleet_deploy(skill_id: str, version: str, node_ids: str,
+                 fleet_dir: str, as_json: bool):
+    """Deploy a skill to fleet nodes."""
+    import json as _json
+    from marketplace.fleet_manager import FleetManager
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    targets = [n.strip() for n in node_ids.split(',') if n.strip()] \
+        if node_ids else [n.node_id for n in fm.list_nodes()]
+    if not targets:
+        click.echo(click.style('No target nodes available.', fg='yellow'))
+        raise SystemExit(1)
+    deployment = fm.deploy(skill_id=skill_id, version=version,
+                           target_node_ids=targets)
+    if as_json:
+        click.echo(_json.dumps(deployment.to_dict(), indent=2))
+    else:
+        click.echo(deployment.summary())
+    raise SystemExit(0 if deployment.status in ('completed', 'partial') else 1)
+
+
+@fleet.command('status')
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def fleet_status(fleet_dir: str, as_json: bool):
+    """Show fleet health snapshot."""
+    import json as _json
+    from marketplace.fleet_manager import FleetManager
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    snap = fm.fleet_status()
+    if as_json:
+        click.echo(_json.dumps(snap.to_dict(), indent=2))
+    else:
+        click.echo(snap.render_ascii())
+
+
+@fleet.command('deployments')
+@click.option('--skill', 'skill_id', default=None)
+@click.option('--status', 'status_filter', default=None)
+@click.option('--fleet-dir', default=_DEFAULT_FLEET_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def fleet_deployments(skill_id: Optional[str], status_filter: Optional[str],
+                      fleet_dir: str, as_json: bool):
+    """List fleet deployments."""
+    import json as _json
+    from marketplace.fleet_manager import FleetManager
+    fm = FleetManager(data_dir=Path(fleet_dir))
+    deps = fm.list_deployments(skill_id=skill_id, status=status_filter)
+    if as_json:
+        click.echo(_json.dumps([d.to_dict() for d in deps], indent=2))
+    else:
+        if not deps:
+            click.echo('No deployments found.')
+            return
+        for d in deps:
+            click.echo(
+                f'[{d.status:<11}] {d.deployment_id[:8]}  '
+                f'{d.skill_id} v{d.version}  '
+                f'{d.nodes_succeeded}✓/{d.nodes_failed}✗'
+            )
+
+
 if __name__ == '__main__':
     cli()

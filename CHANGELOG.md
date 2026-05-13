@@ -1,5 +1,72 @@
 # Changelog
 
+## 0.78.0 — Fleet management (1369 → 1430 tests)
+
+Fleet-level coordination layer above the per-robot OnRobotStore.
+
+### Code changes
+
+- `marketplace/fleet_manager.py` (NEW): fleet skill deployment coordination.
+  - `RobotNode(node_id, station_id, platform_id, last_seen, status,
+    installed_skills, metadata)` — robot descriptor; `to_dict()` /
+    `from_dict()`.
+  - `NodeDeployResult(node_id, station_id, success, reason, deployed_at)` —
+    per-node deployment outcome; `to_dict()` / `from_dict()`.
+  - `FleetDeployment(deployment_id, skill_id, version, target_node_ids,
+    status, created_at, completed_at, node_results)`:
+    - Status lifecycle: `pending → in_progress → completed | failed | partial`.
+    - `nodes_succeeded` / `nodes_failed` properties; `summary()` (✓/✗ per
+      node); `to_dict()` / `from_dict()`.
+  - `FleetHealthSnapshot(generated_at, total_nodes, online/offline/unknown
+    _nodes, total/active_deployments, skill_coverage)`: `to_dict()`,
+    `render_ascii()` — box-drawing grid with skill coverage bars.
+  - `FleetManager(data_dir, check_platform_compat=True)`:
+    - Node registry: `register_node()` / `unregister_node()` / `get_node()` /
+      `list_nodes()` / `heartbeat(node_id, status, installed_skills)`.
+    - `deploy(skill_id, version, target_node_ids, entitlement_tokens,
+      skill_info, source_platform)` — for each target node: (1) resolve node;
+      (2) optional cross-platform compat gate via `HumanoidRegistry`; (3) mark
+      `installed_skills`; (4) record `NodeDeployResult`. Finalises to
+      `completed`, `failed`, or `partial`.
+    - `get_deployment()` / `list_deployments(skill_id, status)`.
+    - `fleet_status()` → `FleetHealthSnapshot`.
+    - Persists registry to `fleet_registry.json` and deployments to
+      `fleet_deployments.json`; both auto-loaded on init; data dir
+      auto-created.
+- `etd_cli.py`: `fleet` command group:
+  - `fleet nodes list [--json]`
+  - `fleet nodes register NODE_ID --station S --platform P`
+  - `fleet nodes unregister NODE_ID`
+  - `fleet deploy SKILL_ID [--version V] [--nodes N1,N2] [--json]`
+    — exits 0 on completed/partial, 1 on failed/no-nodes.
+  - `fleet status [--json]`
+  - `fleet deployments [--skill S] [--status S] [--json]`
+- `api/app.py`: version bumped to `0.78.0`.
+
+### Tests (1369 → 1430, +61)
+
+- `tests/test_fleet_manager.py` (+61, NEW):
+  - `TestRobotNode`: defaults, to_dict roundtrip, from_dict defaults.
+  - `TestNodeDeployResult`: to_dict roundtrip, from_dict defaults.
+  - `TestFleetDeployment`: nodes_succeeded/failed, summary, to_dict roundtrip,
+    to_dict counts, valid DEPLOY_STATUSES.
+  - `TestFleetHealthSnapshot`: to_dict keys, render_ascii nodes/skills.
+  - `TestFleetManagerRegistry`: no nodes, register, replace, unregister
+    existing/nonexistent, get None, list, persist, autocreate dir.
+  - `TestFleetManagerHeartbeat`: updates status/last_seen/skills, unknown
+    node returns False.
+  - `TestFleetManagerDeploy`: all-ok→completed, unknown-node→failed,
+    partial, updates inventory, no-duplicate skill, completed_at set, result
+    fields, persists, platform-compat gates incompatible (mobed), compat OK
+    (atlas→G1).
+  - `TestFleetManagerDeploymentQueries`: list-all, filter-skill, filter-status,
+    get found/not-found, deployment_count.
+  - `TestFleetManagerFleetStatus`: node counts, skill coverage, deployment
+    count, to_dict, render_ascii.
+  - CLI: fleet nodes list (empty/register+list/json/unregister/unregister-ghost),
+    fleet deploy (success/json/no-nodes-exits-1), fleet status (ascii/json),
+    fleet deployments (empty/json).
+
 ## 0.77.0 — On-robot embedded skill store (1303 → 1369 tests)
 
 Implements the final long-term roadmap item: on-robot embedded marketplace
