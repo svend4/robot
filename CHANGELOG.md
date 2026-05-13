@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.92.0 — Skill feature flag system (2235 → 2294 tests)
+
+Per-skill (and optionally per-node) boolean feature toggles with a three-level
+resolution cascade (node-specific → skill-wide → global `*` → false). REST API
+and CLI included.
+
+### Code changes
+
+- `marketplace/feature_flags.py` (NEW):
+  - `FlagEntry`: `skill_id` (`'*'` for global), `flag_key`, `enabled`,
+    `node_id` (optional), `description`, `created_at`, `updated_at`;
+    `to_dict()`/`from_dict()`.
+  - `_make_key(skill_id, flag_key, node_id)` — `'::'`-separated storage key.
+  - `FeatureFlagStore`: JSON-backed flat dict (`feature_flags.json`).
+    `set_flag()` — creates or updates, returns `(entry, created)`;
+    `get_flag()` — exact match only; `remove_flag()` — returns `False` if absent;
+    `list_flags(skill_id=None)`; `flag_count`.
+    `is_enabled(skill_id, flag_key, node_id=None)` — full cascade resolution;
+    `resolve_source()` — returns `'node'|'skill'|'global'|'default'`.
+    Creates parent dirs; corrupt file loads empty.
+- `api/feature_flags.py` (NEW): FastAPI router at `/flags`:
+  - `GET  /flags` — list all (`?skill_id=` filter).
+  - `POST /flags` — set flag (201 create / 200 update).
+  - `GET  /flags/resolve` — cascade resolution (`?skill_id=&flag_key=&node_id=`).
+    Registered before `/{skill_id}/{flag_key}` to avoid capture.
+  - `GET  /flags/{skill_id}/{flag_key}` — exact entry (`?node_id=`); 404.
+  - `DELETE /flags/{skill_id}/{flag_key}` — remove (`?node_id=`); 404.
+- `api/app.py`: version bumped to `0.92.0`; router mounted.
+- `etd_cli.py`: `etd flag` group — `set`, `get`, `resolve`, `list`, `remove`.
+- `tests/test_feature_flags.py` (NEW): 59 tests.
+
+---
+
 ## 0.91.0 — Skill rating & review system (2187 → 2235 tests)
 
 Operators submit 1–5 star ratings with optional comments for skill packages.

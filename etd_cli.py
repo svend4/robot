@@ -2838,5 +2838,110 @@ def rating_skills(data_dir: str):
             click.echo(s)
 
 
+
+# ── etd flag ──────────────────────────────────────────────────────────────────
+
+_DEFAULT_FLAGS_DIR = str(Path(__file__).resolve().parent / 'feature_flags_data')
+
+
+@cli.group('flag')
+def flag_group():
+    """Manage skill feature flags."""
+
+
+@flag_group.command('set')
+@click.argument('skill_id')
+@click.argument('flag_key')
+@click.argument('enabled', type=click.BOOL)
+@click.option('--node', 'node_id', default=None, help='Restrict to a specific node.')
+@click.option('--description', default='', help='Optional description.')
+@click.option('--dir', 'data_dir', default=_DEFAULT_FLAGS_DIR, show_default=True)
+def flag_set(skill_id: str, flag_key: str, enabled: bool,
+             node_id: Optional[str], description: str, data_dir: str):
+    """Set (create or update) a feature flag.
+
+    Use skill_id='*' for a global default.
+    ENABLED must be 'true' or 'false'.
+    """
+    from marketplace.feature_flags import FeatureFlagStore
+    entry, created = FeatureFlagStore(Path(data_dir)).set_flag(
+        skill_id, flag_key, enabled, node_id=node_id, description=description,
+    )
+    scope = f'node={node_id}' if node_id else 'all nodes'
+    action = 'Created' if created else 'Updated'
+    click.echo(f'{action} {skill_id}/{flag_key} → {enabled}  ({scope})')
+
+
+@flag_group.command('get')
+@click.argument('skill_id')
+@click.argument('flag_key')
+@click.option('--node', 'node_id', default=None)
+@click.option('--dir', 'data_dir', default=_DEFAULT_FLAGS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def flag_get(skill_id: str, flag_key: str, node_id: Optional[str],
+             data_dir: str, as_json: bool):
+    """Get an exact flag entry (no cascade)."""
+    from marketplace.feature_flags import FeatureFlagStore
+    entry = FeatureFlagStore(Path(data_dir)).get_flag(skill_id, flag_key, node_id=node_id)
+    if entry is None:
+        click.echo(click.style(f'Flag not found: {skill_id}/{flag_key}', fg='red'))
+        raise SystemExit(1)
+    if as_json:
+        click.echo(json.dumps(entry.to_dict(), indent=2))
+    else:
+        click.echo(f'{skill_id}/{flag_key}: {entry.enabled}')
+
+
+@flag_group.command('resolve')
+@click.argument('skill_id')
+@click.argument('flag_key')
+@click.option('--node', 'node_id', default=None)
+@click.option('--dir', 'data_dir', default=_DEFAULT_FLAGS_DIR, show_default=True)
+def flag_resolve(skill_id: str, flag_key: str, node_id: Optional[str], data_dir: str):
+    """Resolve a flag using the full cascade (node → skill → global → false)."""
+    from marketplace.feature_flags import FeatureFlagStore
+    store = FeatureFlagStore(Path(data_dir))
+    enabled = store.is_enabled(skill_id, flag_key, node_id=node_id)
+    source = store.resolve_source(skill_id, flag_key, node_id=node_id)
+    color = 'green' if enabled else 'yellow'
+    click.echo(f'{skill_id}/{flag_key}: ' +
+               click.style(str(enabled), fg=color) +
+               f'  (resolved from: {source})')
+
+
+@flag_group.command('list')
+@click.option('--skill', 'skill_id', default=None, help='Filter by skill ID.')
+@click.option('--dir', 'data_dir', default=_DEFAULT_FLAGS_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def flag_list(skill_id: Optional[str], data_dir: str, as_json: bool):
+    """List all feature flags."""
+    from marketplace.feature_flags import FeatureFlagStore
+    entries = FeatureFlagStore(Path(data_dir)).list_flags(skill_id=skill_id)
+    if as_json:
+        click.echo(json.dumps([e.to_dict() for e in entries], indent=2))
+    elif not entries:
+        click.echo('No flags found.')
+    else:
+        for e in entries:
+            scope = f'[node:{e.node_id}]' if e.node_id else ''
+            color = 'green' if e.enabled else 'yellow'
+            click.echo(f'{e.skill_id}/{e.flag_key}{scope}: ' +
+                       click.style(str(e.enabled), fg=color))
+
+
+@flag_group.command('remove')
+@click.argument('skill_id')
+@click.argument('flag_key')
+@click.option('--node', 'node_id', default=None)
+@click.option('--dir', 'data_dir', default=_DEFAULT_FLAGS_DIR, show_default=True)
+def flag_remove(skill_id: str, flag_key: str, node_id: Optional[str], data_dir: str):
+    """Delete an exact feature flag entry."""
+    from marketplace.feature_flags import FeatureFlagStore
+    if not FeatureFlagStore(Path(data_dir)).remove_flag(skill_id, flag_key, node_id=node_id):
+        click.echo(click.style(f'Flag not found: {skill_id}/{flag_key}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Removed {skill_id}/{flag_key}.')
+
+
 if __name__ == '__main__':
     cli()

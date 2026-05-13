@@ -323,3 +323,17 @@ All items below were delivered in the prototype:
   to avoid route capture, `DELETE /{rating_id}`; 201/404/422).
   CLI: `etd rating add|list|stats|remove|skills`.
   48 tests in `tests/test_skill_ratings.py`.
+- [x] **Skill feature flag system.** Per-skill (and optionally per-node) boolean
+  feature toggles with three-level cascade resolution.
+  `marketplace/feature_flags.py`: `FlagEntry` (`skill_id` — `'*'` for global,
+  `flag_key`, `enabled`, optional `node_id`, `description`, timestamps),
+  `_make_key` (`'::'`-separated storage key), `FeatureFlagStore` (`set_flag`
+  returns `(entry, created)`; `get_flag` exact match; `remove_flag`;
+  `list_flags(skill_id=None)`; `flag_count`; `is_enabled` — cascade:
+  node-specific → skill-wide → global `'*'` → `False`; `resolve_source`
+  returns `'node'|'skill'|'global'|'default'`; persists to `feature_flags.json`).
+  `api/feature_flags.py`: FastAPI router at `/flags` (`GET/POST ''`,
+  `GET /resolve` registered before `/{skill_id}/{flag_key}`,
+  `GET|DELETE /{skill_id}/{flag_key}` with `?node_id=`; 201/200/404).
+  CLI: `etd flag set|get|resolve|list|remove`.
+  59 tests in `tests/test_feature_flags.py`.
