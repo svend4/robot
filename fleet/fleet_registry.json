@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "node_id": "api-r01",
+      "station_id": "ws-api-01",
+      "platform_id": "atlas",
+      "last_seen": null,
+      "status": "unknown",
+      "installed_skills": [],
+      "metadata": {}
+    },
+    {
+      "node_id": "api-r99",
+      "station_id": "ws-99",
+      "platform_id": "unitree_g1",
+      "last_seen": null,
+      "status": "unknown",
+      "installed_skills": [],
+      "metadata": {}
+    },
+    {
+      "node_id": "api-get-01",
+      "station_id": "ws-01",
+      "platform_id": "atlas",
+      "last_seen": null,
+      "status": "unknown",
+      "installed_skills": [],
+      "metadata": {}
+    },
+    {
+      "node_id": "api-hb-01",
+      "station_id": "ws-hb",
+      "platform_id": "atlas",
+      "last_seen": "2026-05-13T15:24:28+00:00",
+      "status": "online",
+      "installed_skills": [],
+      "metadata": {}
+    },
+    {
+      "node_id": "api-dep-node",
+      "station_id": "ws-dep",
+      "platform_id": "atlas",
+      "last_seen": null,
+      "status": "unknown",
+      "installed_skills": [
+        "etd.pickplace.basic"
+      ],
+      "metadata": {}
+    },
+    {
+      "node_id": "api-filter-node",
+      "station_id": "ws-dep",
+      "platform_id": "atlas",
+      "last_seen": null,
+      "status": "unknown",
+      "installed_skills": [
+        "etd.inspect.vision"
+      ],
+      "metadata": {}
+    }
+  ]
+}
