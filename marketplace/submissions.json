@@ -1970,6 +1970,225 @@
       "decision_reason": "all pipeline stages passed; auto-approved",
       "decided_at": "2026-05-13T15:00:45Z",
       "decided_by": "auto"
+    },
+    {
+      "submission_id": "b1f2c384-6eda-4d24-860f-3bbc4808950a",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+      "publisher": "etd-lab",
+      "submitted_at": "2026-05-13T15:06:01Z",
+      "status": "approved",
+      "pipeline_passed": true,
+      "human_review_required": false,
+      "review_result": {
+        "skill_id": "etd.pickplace.basic",
+        "version": "0.1.0",
+        "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+        "passed": true,
+        "risk_level": "unknown",
+        "human_review_required": false,
+        "stages": [
+          {
+            "name": "sandbox_check",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "schema_validation",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "capability_audit",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "safety_boundary",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          }
+        ],
+        "compat_matrix": {
+          "robot_classes": [
+            "humanoid",
+            "mobile_manipulator",
+            "fixed_manipulator"
+          ],
+          "required_services": [
+            "manipulation.arm_control",
+            "perception.object_pose",
+            "safety.zone_monitor",
+            "state.arm_state",
+            "state.robot_pose",
+            "state.safety_state",
+            "state.wrist_state",
+            "workflow.job_context"
+          ],
+          "optional_services": [
+            "perception.part_alignment",
+            "telemetry.metrics"
+          ],
+          "runtime_constraint": ">=0.1.0",
+          "compatible_stations": [],
+          "station_count": 0
+        }
+      },
+      "blocking_findings": [],
+      "decision_reason": "all pipeline stages passed; auto-approved",
+      "decided_at": "2026-05-13T15:06:01Z",
+      "decided_by": "auto"
+    },
+    {
+      "submission_id": "0f2a6d03-6bda-4313-9eeb-6dbcbb5b2a5e",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+      "publisher": "etd-cli",
+      "submitted_at": "2026-05-13T15:06:01Z",
+      "status": "approved",
+      "pipeline_passed": true,
+      "human_review_required": false,
+      "review_result": {
+        "skill_id": "etd.pickplace.basic",
+        "version": "0.1.0",
+        "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+        "passed": true,
+        "risk_level": "unknown",
+        "human_review_required": false,
+        "stages": [
+          {
+            "name": "sandbox_check",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "schema_validation",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "capability_audit",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "safety_boundary",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          }
+        ],
+        "compat_matrix": {
+          "robot_classes": [
+            "humanoid",
+            "mobile_manipulator",
+            "fixed_manipulator"
+          ],
+          "required_services": [
+            "manipulation.arm_control",
+            "perception.object_pose",
+            "safety.zone_monitor",
+            "state.arm_state",
+            "state.robot_pose",
+            "state.safety_state",
+            "state.wrist_state",
+            "workflow.job_context"
+          ],
+          "optional_services": [
+            "perception.part_alignment",
+            "telemetry.metrics"
+          ],
+          "runtime_constraint": ">=0.1.0",
+          "compatible_stations": [],
+          "station_count": 0
+        }
+      },
+      "blocking_findings": [],
+      "decision_reason": "all pipeline stages passed; auto-approved",
+      "decided_at": "2026-05-13T15:06:01Z",
+      "decided_by": "auto"
+    },
+    {
+      "submission_id": "816a34bb-849b-4463-b8f7-959251e9eda2",
+      "skill_id": "etd.pickplace.basic",
+      "version": "0.1.0",
+      "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+      "publisher": "etd-cli",
+      "submitted_at": "2026-05-13T15:06:01Z",
+      "status": "approved",
+      "pipeline_passed": true,
+      "human_review_required": false,
+      "review_result": {
+        "skill_id": "etd.pickplace.basic",
+        "version": "0.1.0",
+        "package_path": "/home/user/robot/examples/etd.pickplace.basic",
+        "passed": true,
+        "risk_level": "unknown",
+        "human_review_required": false,
+        "stages": [
+          {
+            "name": "sandbox_check",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "schema_validation",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "capability_audit",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          },
+          {
+            "name": "safety_boundary",
+            "passed": true,
+            "findings": [],
+            "warnings": []
+          }
+        ],
+        "compat_matrix": {
+          "robot_classes": [
+            "humanoid",
+            "mobile_manipulator",
+            "fixed_manipulator"
+          ],
+          "required_services": [
+            "manipulation.arm_control",
+            "perception.object_pose",
+            "safety.zone_monitor",
+            "state.arm_state",
+            "state.robot_pose",
+            "state.safety_state",
+            "state.wrist_state",
+            "workflow.job_context"
+          ],
+          "optional_services": [
+            "perception.part_alignment",
+            "telemetry.metrics"
+          ],
+          "runtime_constraint": ">=0.1.0",
+          "compatible_stations": [],
+          "station_count": 0
+        }
+      },
+      "blocking_findings": [],
+      "decision_reason": "all pipeline stages passed; auto-approved",
+      "decided_at": "2026-05-13T15:06:01Z",
+      "decided_by": "auto"
     }
   ]
 }
