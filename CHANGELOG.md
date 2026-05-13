@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.93.0 — Skill maintenance window scheduler (2294 → 2344 tests)
+
+Named time-bounded windows during which skill executions should be blocked.
+Supports wildcard `'*'` skill matching and per-node targeting. Injectable
+`_now` parameter throughout for deterministic testing.
+
+### Code changes
+
+- `marketplace/maintenance.py` (NEW):
+  - `MaintenanceWindow`: `window_id`, `skill_id` (`'*'` for all), `start_at`,
+    `end_at`, `reason`, `node_id` (optional), `created_by`, `created_at`;
+    `is_active(now)` — half-open `[start, end)`; `to_dict()`/`from_dict()`.
+  - `MaintenanceStore`: JSON-backed flat dict (`maintenance.json`).
+    `add_window()` — raises `ValueError` if `end_at ≤ start_at`; auto-UUID;
+    `get_window()`, `remove_window()`, `list_windows(skill_id, active_only, _now)`,
+    `active_windows(_now)`, `window_count`.
+    `is_in_maintenance(skill_id, node_id, _now)` — True if any active window
+    matches: `skill_id` exactly or `'*'`, AND `node_id` exactly or `None`.
+    Creates parent dirs; corrupt file loads empty.
+- `api/maintenance.py` (NEW): FastAPI router at `/maintenance`:
+  - `GET  /maintenance` — list (`?skill_id=` `?active=true`).
+  - `POST /maintenance` — add window (201; 422 if end ≤ start).
+  - `GET  /maintenance/check` — `is_in_maintenance` (`?skill_id=&node_id=`).
+    Registered before `/{window_id}` to avoid capture.
+  - `GET  /maintenance/{window_id}` — single entry; 404.
+  - `DELETE /maintenance/{window_id}` — remove; 404.
+- `api/app.py`: version bumped to `0.93.0`; router mounted.
+- `etd_cli.py`: `etd maintenance` group — `add`, `list`, `check`, `remove`.
+- `tests/test_maintenance.py` (NEW): 50 tests.
+
+---
+
 ## 0.92.0 — Skill feature flag system (2235 → 2294 tests)
 
 Per-skill (and optionally per-node) boolean feature toggles with a three-level

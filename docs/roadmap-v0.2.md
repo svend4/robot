@@ -337,3 +337,17 @@ All items below were delivered in the prototype:
   `GET|DELETE /{skill_id}/{flag_key}` with `?node_id=`; 201/200/404).
   CLI: `etd flag set|get|resolve|list|remove`.
   59 tests in `tests/test_feature_flags.py`.
+- [x] **Skill maintenance window scheduler.** Named time-bounded windows during
+  which skill executions should be blocked; wildcard `'*'` skill and per-node
+  targeting; injectable `_now` for deterministic testing.
+  `marketplace/maintenance.py`: `MaintenanceWindow` (`skill_id` `'*'` for all,
+  `start_at`/`end_at` ISO 8601, `reason`, optional `node_id`, `created_by`;
+  `is_active(now)` half-open `[start, end)`), `MaintenanceStore` (`add_window`
+  raises `ValueError` if `end_at ≤ start_at`; `get_window`; `remove_window`;
+  `list_windows(skill_id, active_only, _now)`; `active_windows(_now)`;
+  `is_in_maintenance(skill_id, node_id, _now)` — matches `skill_id` exact or
+  `'*'` AND `node_id` exact or `None`; persists to `maintenance.json`).
+  `api/maintenance.py`: FastAPI router at `/maintenance` (`GET/POST ''`,
+  `GET /check` registered before `/{window_id}`, `GET|DELETE /{window_id}`;
+  201/404/422). CLI: `etd maintenance add|list|check|remove`.
+  50 tests in `tests/test_maintenance.py`.

@@ -2943,5 +2943,93 @@ def flag_remove(skill_id: str, flag_key: str, node_id: Optional[str], data_dir: 
     click.echo(f'Removed {skill_id}/{flag_key}.')
 
 
+
+# ── etd maintenance ───────────────────────────────────────────────────────────
+
+_DEFAULT_MAINTENANCE_DIR = str(Path(__file__).resolve().parent / 'maintenance_data')
+
+
+@cli.group('maintenance')
+def maintenance_group():
+    """Manage skill maintenance windows."""
+
+
+@maintenance_group.command('add')
+@click.argument('skill_id')
+@click.argument('start_at')
+@click.argument('end_at')
+@click.option('--reason', default='', help='Reason for maintenance.')
+@click.option('--node', 'node_id', default=None, help='Restrict to a specific node.')
+@click.option('--created-by', default='system', show_default=True)
+@click.option('--dir', 'data_dir', default=_DEFAULT_MAINTENANCE_DIR, show_default=True)
+def maintenance_add(skill_id: str, start_at: str, end_at: str, reason: str,
+                    node_id: Optional[str], created_by: str, data_dir: str):
+    """Schedule a maintenance window.
+
+    START_AT and END_AT must be ISO 8601 timestamps, e.g.
+    2026-06-01T02:00:00+00:00.
+    """
+    from marketplace.maintenance import MaintenanceStore
+    try:
+        w = MaintenanceStore(Path(data_dir)).add_window(
+            skill_id, start_at, end_at, reason=reason,
+            node_id=node_id, created_by=created_by,
+        )
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    scope = f' [node:{node_id}]' if node_id else ''
+    click.echo(f'Scheduled {skill_id}{scope}: {start_at} → {end_at}  (id: {w.window_id})')
+
+
+@maintenance_group.command('list')
+@click.option('--skill', 'skill_id', default=None, help='Filter by skill ID.')
+@click.option('--active', is_flag=True, default=False, help='Only active windows.')
+@click.option('--dir', 'data_dir', default=_DEFAULT_MAINTENANCE_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True, default=False)
+def maintenance_list(skill_id: Optional[str], active: bool, data_dir: str, as_json: bool):
+    """List maintenance windows."""
+    from marketplace.maintenance import MaintenanceStore
+    windows = MaintenanceStore(Path(data_dir)).list_windows(
+        skill_id=skill_id, active_only=active,
+    )
+    if as_json:
+        click.echo(json.dumps([w.to_dict() for w in windows], indent=2))
+    elif not windows:
+        click.echo('No maintenance windows found.')
+    else:
+        for w in windows:
+            scope = f' [node:{w.node_id}]' if w.node_id else ''
+            click.echo(f'{w.skill_id}{scope}  {w.start_at} → {w.end_at}'
+                       + (f'  "{w.reason}"' if w.reason else ''))
+
+
+@maintenance_group.command('check')
+@click.argument('skill_id')
+@click.option('--node', 'node_id', default=None)
+@click.option('--dir', 'data_dir', default=_DEFAULT_MAINTENANCE_DIR, show_default=True)
+def maintenance_check(skill_id: str, node_id: Optional[str], data_dir: str):
+    """Check whether a skill is currently in a maintenance window."""
+    from marketplace.maintenance import MaintenanceStore
+    in_maint = MaintenanceStore(Path(data_dir)).is_in_maintenance(
+        skill_id, node_id=node_id,
+    )
+    color = 'red' if in_maint else 'green'
+    status = 'IN MAINTENANCE' if in_maint else 'operational'
+    click.echo(f'{skill_id}: ' + click.style(status, fg=color))
+
+
+@maintenance_group.command('remove')
+@click.argument('window_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_MAINTENANCE_DIR, show_default=True)
+def maintenance_remove(window_id: str, data_dir: str):
+    """Delete a maintenance window by ID."""
+    from marketplace.maintenance import MaintenanceStore
+    if not MaintenanceStore(Path(data_dir)).remove_window(window_id):
+        click.echo(click.style(f'Window not found: {window_id!r}', fg='red'))
+        raise SystemExit(1)
+    click.echo(f'Removed maintenance window {window_id}.')
+
+
 if __name__ == '__main__':
     cli()
