@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.73.0 — v1.0.0 COMPLETE: dashboard (1098 → 1137 tests)
+
+All 7/7 v1.0.0 roadmap items are now implemented and tested.
+
+### Code changes
+
+- `marketplace/dashboard.py` (NEW): runtime dashboard that aggregates skill
+  store, rollout state, station profiles, and audit log into a single view.
+  - `StationHealth(station_id, allowed_families, compatible_skill_count,
+    last_event_ts, last_result, status)` — per-station summary. Status is
+    `'active'` when the latest audit event for the station is within 24 h.
+  - `RolloutEntry(skill_id, version, stage, approved_stations, updated_at)`.
+  - `RecentEvent(timestamp, skill_id, result, reason, station_id, validation_level)`.
+  - `DashboardSnapshot`: `render_ascii(width=62)` — 5-section box drawing
+    (SUMMARY | STATION HEALTH | ROLLOUT STATE | RECENT AUDIT EVENTS);
+    `to_dict()` — full JSON-serialisable representation; OK/FAIL marks on events.
+  - `Dashboard(repo_root, audit_log_path, station_profiles_dir, rollout_state_path)`:
+    `snapshot(last_n_events=10)` — reads all data sources, builds snapshot;
+    `watch(interval_s, refresh_count, clear_screen)` — refresh loop with
+    Ctrl-C exit, parameterised stop count.
+- `etd_cli.py`: `dashboard [--json] [--watch N] [--interval S] [--events N]`
+  — single snapshot by default; `--watch -1` runs until Ctrl-C.
+
+### Tests (1098 → 1137)
+
+- `tests/test_dashboard.py` (+39, NEW):
+  - `TestStationHealth`, `TestRolloutEntry`, `TestRecentEvent`: dataclass fields,
+    defaults
+  - `TestDashboardSnapshot`: ASCII render (header, SUMMARY, STATION HEALTH,
+    ROLLOUT STATE, RECENT EVENTS, placeholders, OK/FAIL marks), `to_dict` keys,
+    JSON-serialisable, station health field set, custom width
+  - `TestDashboardDataLoading`: no data sources; store entries; rollout; station
+    profiles; audit events; `last_n_events` limit; newest-first ordering
+  - `TestDashboardSummary`: allowed/blocked counts; rollout_count in summary
+  - `TestDashboardStationHealth`: compatible count by family; active (recent
+    event); idle (no events); idle (event older than 24 h)
+  - `TestDashboardWatch`: `refresh_count=2` renders twice; once no-clear
+  - `TestDashboardRealData`: real repo snapshot (≥8 skills, ≥6 stations,
+    ≥1 rollout entry); ASCII render ≥10 lines
+  - `TestDashboardCLI`: ASCII output; `--json` structure; all sections present;
+    `--events 3` limits recent events
+
+### Roadmap
+
+- `docs/roadmap-v0.2.md`: ticked [x] for Dashboard — all 7/7 v1.0.0 items
+  complete. ETD marketplace is production-grade.
+
+---
+
 ## 0.72.0 — v1.0.0: multi-vendor index (1047 → 1098 tests)
 
 ### Code changes

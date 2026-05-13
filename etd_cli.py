@@ -448,6 +448,34 @@ def versions_cmd(skill_id: str, runtime: str):
         click.echo(f'  {entry.version}  constraint={constraint}{marker}')
 
 
+@cli.command('dashboard')
+@click.option('--json', 'as_json', is_flag=True, help='Output as JSON instead of ASCII')
+@click.option('--watch', 'watch_n', default=0, type=int, metavar='N',
+              help='Refresh N times (0 = once, -1 = loop until Ctrl-C)')
+@click.option('--interval', default=5.0, show_default=True, type=float,
+              help='Seconds between refreshes in watch mode')
+@click.option('--events', 'last_n_events', default=10, show_default=True,
+              help='Number of recent audit events to show')
+def dashboard_cmd(as_json: bool, watch_n: int, interval: float, last_n_events: int):
+    """Show a real-time dashboard of skills, station health, and recent events."""
+    from marketplace.dashboard import Dashboard
+    import json as _json
+    dash = Dashboard(ROOT)
+    if watch_n == -1:
+        dash.watch(interval_s=interval, refresh_count=None,
+                   last_n_events=last_n_events, clear_screen=not as_json)
+        return
+    if watch_n > 1:
+        dash.watch(interval_s=interval, refresh_count=watch_n,
+                   last_n_events=last_n_events, clear_screen=not as_json)
+        return
+    snap = dash.snapshot(last_n_events=last_n_events)
+    if as_json:
+        click.echo(_json.dumps(snap.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        click.echo(snap.render_ascii())
+
+
 @cli.command('sandbox-check')
 @click.argument('package_path')
 @click.option('--json', 'as_json', is_flag=True, help='Output as JSON')

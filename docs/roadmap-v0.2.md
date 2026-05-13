@@ -119,8 +119,13 @@ All items below were delivered in the prototype:
   `list_skills`, `list_feeds`), `create_feed_payload` (sign entries with
   NaCl Ed25519), `verify_feed_signature`. CLI: `etd feed create`, `etd feed
   verify`, `etd feed import [--json]`.
-- [ ] **Dashboard.** Real-time view of active skills, station health, recent
-  aborts, and telemetry event stream.
+- [x] **Dashboard.** Real-time view of active skills, station health, recent
+  aborts, and telemetry event stream. `marketplace/dashboard.py`:
+  `DashboardSnapshot` (ASCII render + JSON), `Dashboard.snapshot()` aggregates
+  skill store, rollout state, station profiles, audit log; `Dashboard.watch()`
+  live refresh loop. `StationHealth` tracks compatible skill count, last event
+  timestamp, active/idle status (24 h window). CLI: `etd dashboard [--json]
+  [--watch N] [--interval S] [--events N]`. All 7/7 v1.0.0 items complete.
 
 ---
 
