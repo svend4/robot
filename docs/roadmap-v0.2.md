@@ -261,3 +261,14 @@ All items below were delivered in the prototype:
   `/circuit` (list/get/delete breakers, check/success/failure/reset,
   config get/set). CLI: `etd circuit list|check|success|failure|reset`.
   67 tests in `tests/test_circuit_breaker.py`.
+- [x] **Skill execution retry policy.** Per-skill configurable retry with
+  three backoff strategies (fixed, linear, exponential), delay capping,
+  uniform jitter, retryable-status filtering, and a stateless `RetryEngine`
+  advisor. `marketplace/retry_policy.py`: `RetryConfig` (validates backoff
+  strategy and params, `delay_for_attempt`, `is_retryable`), `RetryDecision`
+  (retry/reason/delay_ms/attempt fields), `RetryPolicyStore` (JSON-backed
+  CRUD), `RetryEngine` (`get_config`, `set_policy`, `remove_policy`,
+  `list_policies`, `should_retry` with injectable default config).
+  `api/retry_policy.py`: FastAPI router at `/retry` (config, list/get/set/
+  delete policies, advise endpoint). CLI: `etd retry set|list|get|remove|advise`.
+  63 tests in `tests/test_retry_policy.py`.

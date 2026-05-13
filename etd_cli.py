@@ -2214,5 +2214,141 @@ def circuit_reset(skill_id: str, node_id: str, data_dir: str):
         raise SystemExit(1)
 
 
+# ── retry ─────────────────────────────────────────────────────────────────────
+
+_DEFAULT_RETRY_DIR = str(Path(__file__).resolve().parent / 'retry')
+
+
+@cli.group()
+def retry():
+    """Skill execution retry policy: set, list, get, remove, advise."""
+
+
+@retry.command('set')
+@click.argument('skill_id')
+@click.option('--max-attempts', default=3, type=int, show_default=True)
+@click.option('--backoff', default='exponential',
+              type=click.Choice(['fixed', 'linear', 'exponential']),
+              show_default=True)
+@click.option('--base-delay-ms', 'base_delay_ms', default=500, type=int,
+              show_default=True)
+@click.option('--max-delay-ms', 'max_delay_ms', default=30000, type=int,
+              show_default=True)
+@click.option('--jitter-ms', 'jitter_ms', default=100, type=int,
+              show_default=True)
+@click.option('--retryable', 'retryable_statuses', multiple=True,
+              default=['failed', 'aborted'],
+              help='Retryable status (repeatable)')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RETRY_DIR, show_default=True)
+def retry_set(skill_id: str, max_attempts: int, backoff: str,
+              base_delay_ms: int, max_delay_ms: int, jitter_ms: int,
+              retryable_statuses, data_dir: str):
+    """Set retry policy for a skill."""
+    from marketplace.retry_policy import RetryConfig, RetryEngine
+    try:
+        cfg = RetryConfig(
+            max_attempts=max_attempts, backoff=backoff,
+            base_delay_ms=base_delay_ms, max_delay_ms=max_delay_ms,
+            jitter_ms=jitter_ms, retryable_statuses=list(retryable_statuses),
+        )
+    except ValueError as exc:
+        click.echo(click.style(str(exc), fg='red'))
+        raise SystemExit(1)
+    engine = RetryEngine(data_dir=Path(data_dir))
+    engine.set_policy(skill_id, cfg)
+    click.echo(click.style(f'Policy set for {skill_id}.', fg='green'))
+    click.echo(f'  max_attempts={cfg.max_attempts}  backoff={cfg.backoff}  '
+               f'base={cfg.base_delay_ms}ms  max={cfg.max_delay_ms}ms')
+
+
+@retry.command('list')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RETRY_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def retry_list(data_dir: str, as_json: bool):
+    """List all registered retry policies."""
+    import json as _json
+    from marketplace.retry_policy import RetryEngine
+    engine = RetryEngine(data_dir=Path(data_dir))
+    policies = engine.list_policies()
+    if as_json:
+        click.echo(_json.dumps(
+            {s: c.to_dict() for s, c in policies.items()}, indent=2
+        ))
+    else:
+        if not policies:
+            click.echo('No retry policies registered.')
+            return
+        for skill_id, cfg in policies.items():
+            click.echo(
+                f'{skill_id:40s}  max={cfg.max_attempts}  '
+                f'{cfg.backoff}  base={cfg.base_delay_ms}ms'
+            )
+
+
+@retry.command('get')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RETRY_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def retry_get(skill_id: str, data_dir: str, as_json: bool):
+    """Get the retry policy for a skill (shows default if none set)."""
+    import json as _json
+    from marketplace.retry_policy import RetryEngine
+    engine = RetryEngine(data_dir=Path(data_dir))
+    cfg = engine.get_config(skill_id)
+    explicit = engine._store.get(skill_id) is not None
+    if as_json:
+        click.echo(_json.dumps({'skill_id': skill_id,
+                                'explicit': explicit,
+                                'config': cfg.to_dict()}, indent=2))
+    else:
+        tag = '' if explicit else '  (default)'
+        click.echo(f'{skill_id}{tag}')
+        click.echo(f'  max_attempts  : {cfg.max_attempts}')
+        click.echo(f'  backoff       : {cfg.backoff}')
+        click.echo(f'  base_delay_ms : {cfg.base_delay_ms}')
+        click.echo(f'  max_delay_ms  : {cfg.max_delay_ms}')
+        click.echo(f'  jitter_ms     : {cfg.jitter_ms}')
+        click.echo(f'  retryable     : {cfg.retryable_statuses}')
+
+
+@retry.command('remove')
+@click.argument('skill_id')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RETRY_DIR, show_default=True)
+def retry_remove(skill_id: str, data_dir: str):
+    """Remove the explicit retry policy for a skill."""
+    from marketplace.retry_policy import RetryEngine
+    engine = RetryEngine(data_dir=Path(data_dir))
+    if engine.remove_policy(skill_id):
+        click.echo(click.style(f'Policy for {skill_id} removed.', fg='green'))
+    else:
+        click.echo(click.style(f'No policy found for: {skill_id}', fg='red'))
+        raise SystemExit(1)
+
+
+@retry.command('advise')
+@click.argument('skill_id')
+@click.option('--attempt', 'attempt', required=True, type=int,
+              help='1-based attempt number that just completed')
+@click.option('--status', 'last_status', required=True,
+              help='Execution status of the completed attempt')
+@click.option('--dir', 'data_dir', default=_DEFAULT_RETRY_DIR, show_default=True)
+@click.option('--json', 'as_json', is_flag=True)
+def retry_advise(skill_id: str, attempt: int, last_status: str,
+                 data_dir: str, as_json: bool):
+    """Get a retry recommendation for a skill execution outcome."""
+    import json as _json
+    from marketplace.retry_policy import RetryEngine
+    engine = RetryEngine(data_dir=Path(data_dir))
+    decision = engine.should_retry(skill_id, attempt, last_status)
+    if as_json:
+        click.echo(_json.dumps(decision.to_dict(), indent=2))
+    else:
+        colour = 'green' if decision.retry else 'red'
+        click.echo(click.style(
+            f'{"RETRY" if decision.retry else "STOP"}', fg=colour
+        ) + f'  {skill_id}  attempt={attempt}  '
+            f'reason={decision.reason}  delay={decision.delay_ms}ms')
+
+
 if __name__ == '__main__':
     cli()

@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.87.0 — Skill execution retry policy (1934 → 1997 tests)
+
+Per-skill configurable retry with three backoff strategies and a stateless
+RetryEngine that tells callers whether to retry and with what delay.
+
+### Code changes
+
+- `marketplace/retry_policy.py` (NEW):
+  - `FIXED`, `LINEAR`, `EXPONENTIAL`: backoff strategy constants.
+  - `RetryConfig`: `max_attempts`, `backoff`, `base_delay_ms`, `max_delay_ms`,
+    `jitter_ms` (uniform random noise), `retryable_statuses`;
+    `delay_for_attempt(attempt, _rng)` — no delay on attempt 1, fixed/linear/
+    exponential thereafter, capped at `max_delay_ms`; `is_retryable(status)`;
+    `to_dict()`/`from_dict()`; validates strategy and non-negative values.
+  - `RetryDecision`: `retry` (bool), `reason`
+    (ok_to_retry/not_retryable_status/max_attempts_reached), `attempt`,
+    `next_attempt`, `delay_ms`, `max_attempts`; `to_dict()`.
+  - `RetryPolicyStore`: JSON-backed per-skill policies — `set()`, `get()`,
+    `remove()`, `list_skills()`, `policy_count`. Creates parent dirs; corrupt
+    file loads empty.
+  - `RetryEngine`: stateless retry advisor. `get_config(skill_id)` — returns
+    explicit policy or default. `set_policy()`, `remove_policy()`,
+    `list_policies()`, `should_retry(skill_id, attempt, last_status, _rng)`
+    — returns `RetryDecision`; per-skill config override; injectable default.
+- `api/retry_policy.py` (NEW): FastAPI router at `/retry`:
+  - `GET  /retry/config` — default config.
+  - `GET  /retry/policies` — list all explicit policies.
+  - `GET  /retry/policies/{skill_id}` — get (returns default + `explicit=False`
+    if none set).
+  - `PUT  /retry/policies/{skill_id}` — set (201 create / 200 update); 422
+    on invalid backoff.
+  - `DELETE /retry/policies/{skill_id}` — remove; 404.
+  - `POST /retry/advise` — retry decision for skill + attempt + last_status.
+- `api/app.py`: mount `/retry` router; version → `0.87.0`.
+- `etd_cli.py`: `etd retry` group with subcommands:
+  `set`, `list`, `get`, `remove`, `advise`.
+
+### Tests
+
+- `tests/test_retry_policy.py` (NEW): 63 tests covering `RetryConfig`
+  (defaults/round-trip/from_dict/to_dict/validation), `delay_for_attempt`
+  (first-attempt/fixed/linear/exponential/max-cap/jitter),
+  `RetryPolicyStore` (CRUD/persist/create-dir/corrupt-empty),
+  `RetryEngine` (config/set/remove/list/custom-default),
+  `should_retry` (success/failed/aborted/max-reached/within-limit/
+  attempt-fields/delay-zero-on-stop/delay-positive/exponential-grows/
+  custom-retryable/to_dict), REST API (config, list, get/explicit/default,
+  set-201/200/422, delete/404/returns-default, advise-success/failed/
+  max/fields/explicit-policy).
+
+---
+
 ## 0.86.0 — Skill execution circuit breaker (1867 → 1934 tests)
 
 Three-state circuit breaker (closed → open → half_open) per skill or per
