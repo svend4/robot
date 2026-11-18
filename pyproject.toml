@@ -46,7 +46,13 @@ etd = "etd_cli:cli"
 Repository = "https://github.com/svend4/robot"
 
 [tool.setuptools]
-py-modules = ["etd_cli", "etd_reference_validator", "validate_examples"]
+py-modules = [
+    "etd_cli",
+    "etd_demo_runner",
+    "etd_middleware_contract",
+    "etd_reference_validator",
+    "validate_examples",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
